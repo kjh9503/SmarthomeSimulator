@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "smarthome-sim"
+version = "0.1.0"
+description = "Smart-home + phone life-log simulator and probabilistic agent runner (Python port of smarthome-sim.html)"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+check = ["jsonschema>=4.18"]
+
+[project.scripts]
+smarthome-sim-run = "smarthome_sim.run:main"
+
+[tool.setuptools]
+packages = ["smarthome_sim"]
+
+[tool.setuptools.package-data]
+smarthome_sim = ["data/*.jsonl", "data/*.json", "off_rules.json"]

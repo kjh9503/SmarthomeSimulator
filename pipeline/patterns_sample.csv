@@ -1,0 +1,7 @@
+personaId,patternId,patternType,text
+001,p1_commute_0730,temporal_numeric,"On weekdays at Home, if the current time is between 07:20 and 07:40 and a work shift begins at or before 09:00, the user starts commute navigation to Office."
+001,p2_daycare_rain,conditional_logic,"If the user is at Office, daycare pickup begins within 60 minutes, and a rain notification is posted, the user adds an umbrella item to the daycare pickup checklist."
+001,p3_evening_media_shift,preference_shift,"After arriving Home between 19:00 and 20:30 with paused media, the user preference shifts from resuming playback on the phone speaker to resuming playback on the living-room speaker."
+002,p1_study_lamp_65,temporal_numeric,"During study calendar blocks at Home between 20:00 and 22:00, if study_room illuminanceLux is 180 or lower, the user sets the desk lamp brightness to 65 percent."
+002,p2_washer_away,conditional_logic,"If the washing machine reports cycle complete while the user is Away, the user adds laundry transfer to the arrival checklist."
+003,p1_workout_45_stretching,temporal_numeric,"For workouts at Gym, if durationMinutes is 45 or higher, the user starts the post-workout stretching timer."

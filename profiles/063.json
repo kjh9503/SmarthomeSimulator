@@ -1,0 +1,1835 @@
+{
+  "personaId": "063",
+  "notes": "University student living alone in a 3-room flat. Weekdays on Campus, evenings mostly at home. Only pattern p63_a is included; p63_b (Campus) is not in this profile.",
+  "houseType": "3room",
+  "variant": "3room-A",
+  "roomRoles": {
+    "bedroom": "room1",
+    "study_room": "room2"
+  },
+  "simulation": {
+    "startDate": "2026-01-01",
+    "days": 365,
+    "seed": 63
+  },
+  "start": {
+    "place": "home",
+    "room": "room1",
+    "asleep": true,
+    "battery": 100
+  },
+  "cookingMinutes": {
+    "dist": "lognormal",
+    "median": 15,
+    "sigma": 0.6
+  },
+  "behaviours": [
+    {
+      "id": "p63_a",
+      "kind": "pattern",
+      "description": "After 21:00 at home, living-room PM2.5 >= 35 and living-room window closed -> purifier to 60 % from the phone, off (0 %) by its own timer after 30 minutes.",
+      "trigger": {
+        "kind": "time_window",
+        "window": {
+          "from": "21:00",
+          "to": "23:30"
+        }
+      },
+      "conditions": [
+        {
+          "kind": "place",
+          "op": "is",
+          "place": "home"
+        },
+        {
+          "kind": "device",
+          "device": "living_room.air_quality_sensor",
+          "capability": "fineDustSensor",
+          "attribute": "fineDustLevel",
+          "op": ">=",
+          "value": 35
+        },
+        {
+          "kind": "device",
+          "device": "living_room.window_contact",
+          "capability": "contactSensor",
+          "attribute": "contact",
+          "op": "==",
+          "value": "closed"
+        }
+      ],
+      "actions": [
+        {
+          "do": "phone.openApp",
+          "args": {
+            "package": "com.samsung.android.oneconnect"
+          }
+        },
+        {
+          "do": "home.command",
+          "args": {
+            "device": "living_room.air_purifier",
+            "capability": "fanSpeedPercent",
+            "command": "setPercent",
+            "args": [
+              60
+            ],
+            "channel": "mobile_app"
+          },
+          "revert": {
+            "afterMinutes": 30,
+            "byDevice": true,
+            "action": {
+              "do": "home.command",
+              "args": {
+                "device": "living_room.air_purifier",
+                "capability": "fanSpeedPercent",
+                "command": "setPercent",
+                "args": [
+                  0
+                ],
+                "channel": "mobile_app"
+              }
+            }
+          }
+        },
+        {
+          "do": "wait",
+          "args": {
+            "minutes": {
+              "min": 0,
+              "max": 1
+            }
+          }
+        },
+        {
+          "do": "phone.closeApp",
+          "args": {}
+        }
+      ],
+      "probability": 0.85,
+      "maxPerDay": 1,
+      "priority": 10,
+      "pattern": {
+        "personaId": "063",
+        "patternId": "p63_a",
+        "patternType": "temporal_numeric",
+        "sourceText": "After 21:00 at Home when living-room PM2.5 is 35 or higher and the window contact is closed, set the living-room air purifier to 60 percent fan speed for 30 minutes.",
+        "summary": "After 21:00 at home, living-room PM2.5 >= 35 and window closed -> purifier at 60 % for 30 minutes.",
+        "houseType": "3room",
+        "roomRoles": {},
+        "trigger": {
+          "kind": "time_window",
+          "window": {
+            "from": "21:00",
+            "to": "23:30"
+          }
+        },
+        "conditions": [
+          {
+            "kind": "place",
+            "op": "is",
+            "place": "home"
+          },
+          {
+            "kind": "device",
+            "device": "living_room.air_quality_sensor",
+            "capability": "fineDustSensor",
+            "attribute": "fineDustLevel",
+            "op": ">=",
+            "value": 35
+          },
+          {
+            "kind": "device",
+            "device": "living_room.window_contact",
+            "capability": "contactSensor",
+            "attribute": "contact",
+            "op": "==",
+            "value": "closed"
+          }
+        ],
+        "actions": [
+          {
+            "do": "phone.openApp",
+            "args": {
+              "package": "com.samsung.android.oneconnect"
+            }
+          },
+          {
+            "do": "home.command",
+            "args": {
+              "device": "living_room.air_purifier",
+              "capability": "fanSpeedPercent",
+              "command": "setPercent",
+              "args": [
+                60
+              ],
+              "channel": "mobile_app"
+            },
+            "revert": {
+              "afterMinutes": 30,
+              "byDevice": true,
+              "action": {
+                "do": "home.command",
+                "args": {
+                  "device": "living_room.air_purifier",
+                  "capability": "fanSpeedPercent",
+                  "command": "setPercent",
+                  "args": [
+                    0
+                  ],
+                  "channel": "mobile_app"
+                }
+              }
+            }
+          },
+          {
+            "do": "wait",
+            "args": {
+              "minutes": {
+                "min": 0,
+                "max": 1
+              }
+            }
+          },
+          {
+            "do": "phone.closeApp",
+            "args": {}
+          }
+        ],
+        "followProbability": 0.85,
+        "maxPerDay": 1,
+        "shift": null,
+        "prerequisites": [
+          {
+            "kind": "presence",
+            "description": "Home on most evenings: back from Campus between 17:30 and 19:30 on weekdays; some evenings at the library, out on Friday or out on weekends until after 21:00.",
+            "spec": {
+              "days": "weekdays",
+              "start": {
+                "from": "08:20",
+                "to": "09:10"
+              },
+              "durationMinutes": {
+                "min": 480,
+                "max": 660
+              },
+              "place": "campus",
+              "travelMode": "subway",
+              "probability": 0.92
+            }
+          },
+          {
+            "kind": "other",
+            "description": "The living-room window is opened on some evenings (more in April-October) and closed again 5-90 minutes later, so the window condition is false on some evenings.",
+            "spec": {
+              "months": [
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10
+              ],
+              "start": {
+                "from": "18:00",
+                "to": "22:30"
+              },
+              "durationMinutes": {
+                "min": 15,
+                "max": 90
+              },
+              "device": "living_room.window_contact",
+              "probability": 0.35
+            }
+          },
+          {
+            "kind": "other",
+            "description": "The purifier is also used on weekend daytimes at 30-50 % (decoy use outside the pattern).",
+            "spec": {
+              "days": "weekends",
+              "start": {
+                "from": "10:00",
+                "to": "17:00"
+              },
+              "durationMinutes": {
+                "min": 60,
+                "max": 180
+              },
+              "device": "living_room.air_purifier",
+              "probability": 0.25
+            }
+          }
+        ],
+        "approximations": [
+          {
+            "text": "After 21:00",
+            "mappedTo": "time_window 21:00-23:30 (bedtime routine starts 23:20)"
+          },
+          {
+            "text": "for 30 minutes",
+            "mappedTo": "revert byDevice after 30 minutes: the purifier's own off-timer sets the fan to 0 %"
+          },
+          {
+            "text": "set (from where)",
+            "mappedTo": "channel mobile_app through the SmartThings app (person may be in any room)"
+          },
+          {
+            "text": "(no frequency word)",
+            "mappedTo": "followProbability 0.85 (plain statement)"
+          }
+        ]
+      }
+    },
+    {
+      "id": "r_wake_weekday",
+      "kind": "routine",
+      "description": "Wake up on weekdays and unplug the phone.",
+      "trigger": {
+        "kind": "daily",
+        "window": {
+          "from": "07:10",
+          "to": "08:00"
+        },
+        "days": "weekdays"
+      },
+      "conditions": [
+        {
+          "kind": "phone_state",
+          "field": "asleep",
+          "op": "==",
+          "value": true
+        }
+      ],
+      "actions": [
+        {
+          "do": "phone.wake",
+          "args": {}
+        },
+        {
+          "do": "phone.power",
+          "args": {
+            "connected": false
+          }
+        }
+      ],
+      "probability": 1,
+      "maxPerDay": 1,
+      "priority": 5
+    },
+    {
+      "id": "r_wake_weekend",
+      "kind": "routine",
+      "description": "Wake up later on weekends.",
+      "trigger": {
+        "kind": "daily",
+        "window": {
+          "from": "08:30",
+          "to": "10:40"
+        },
+        "days": "weekends"
+      },
+      "conditions": [
+        {
+          "kind": "phone_state",
+          "field": "asleep",
+          "op": "==",
+          "value": true
+        }
+      ],
+      "actions": [
+        {
+          "do": "phone.wake",
+          "args": {}
+        },
+        {
+          "do": "phone.power",
+          "args": {
+            "connected": false
+          }
+        }
+      ],
+      "probability": 1,
+      "maxPerDay": 1,
+      "priority": 5
+    },
+    {
+      "id": "r_morning",
+      "kind": "routine",
+      "description": "Bathroom, breakfast in the kitchen, open the living-room curtain, back to the bedroom.",
+      "trigger": {
+        "kind": "event",
+        "event": {
+          "source": "person",
+          "what": "wake"
+        },
+        "delayMinutes": {
+          "min": 1,
+          "max": 6
+        }
+      },
+      "conditions": [
+        {
+          "kind": "place",
+          "op": "is",
+          "place": "home"
+        }
+      ],
+      "actions": [
+        {
+          "do": "person.moveRoom",
+          "args": {
+            "room": "bathroom"
+          }
+        },
+        {
+          "do": "home.command",
+          "args": {
+            "device": "bathroom.light",
+            "capability": "switch",
+            "command": "on",
+            "args": [],
+            "channel": "physical"
+          }
+        },
+        {
+          "do": "wait",
+          "args": {
+            "minutes": {
+              "min": 8,
+              "max": 20
+            }
+          }
+        },
+        {
+          "do": "home.command",
+          "args": {
+            "device": "bathroom.light",
+            "capability": "switch",
+            "command": "off",
+            "args": [],
+            "channel": "physical"
+          }
+        },
+        {
+          "do": "person.moveRoom",
+          "args": {
+            "room": "kitchen"
+          }
+        },
+        {
+          "do": "home.command",
+          "args": {
+            "device": "kitchen.stove",
+            "capability": "switch",
+            "command": "on",
+            "args": [],
+            "channel": "physical"
+          },
+          "probability": 0.35,
+          "cookingMinutes": {
+            "dist": "lognormal",
+            "median": 6,
+            "sigma": 0.5
+          }
+        },
+        {
+          "do": "wait",
+          "args": {
+            "minutes": {
+              "min": 8,
+              "max": 15
+            }
+          }
+        },
+        {
+          "do": "person.moveRoom",
+          "args": {
+            "room": "dining_room"
+          }
+        },
+        {
+          "do": "wait",
+          "args": {
+            "minutes": {
+              "min": 8,
+              "max": 15
+            }
+          }
+        },
+        {
+          "do": "person.moveRoom",
+          "args": {
+            "room": "living_room"
+          }
+        },
+        {
+          "do": "home.command",
+          "args": {
+            "device": "living_room.curtain",
+            "capability": "windowShade",
+            "command": "open",
+            "args": [],
+            "channel": "physical"
+          },
+          "probability": 0.8,
+          "when": [
+            {
+              "kind": "device",
+              "device": "living_room.curtain",
+              "capability": "windowShade",
+              "attribute": "windowShade",
+              "op": "!=",
+              "value": "open"
+            }
+          ]
+        },
+        {
+          "do": "person.moveRoom",
+          "args": {
+            "room": "bedroom"
+          }
+        }
+      ],
+      "probability": 0.9,
+      "maxPerDay": 1
+    },
+    {
+      "id": "r_window_morning",
+      "kind": "routine",
+      "description": "Air the bedroom in the morning.",
+      "trigger": {
+        "kind": "daily",
+        "window": {
+          "from": "07:30",
+          "to": "10:30"
+        }
+      },
+      "conditions": [
+        {
+          "kind": "place",
+          "op": "is",
+          "place": "home"
+        },
+        {
+          "kind": "phone_state",
+          "field": "asleep",
+          "op": "==",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "do": "person.moveRoom",
+          "args": {
+            "room": "bedroom"
+          }
+        },
+        {
+          "do": "home.record",
+          "args": {
+            "device": "bedroom.window_contact",
+            "capability": "contactSensor",
+            "attribute": "contact",
+            "value": "open"
+          },
+          "revert": {
+            "afterMinutes": {
+              "min": 5,
+              "max": 25
+            },
+            "action": {
+              "do": "home.record",
+              "args": {
+                "device": "bedroom.window_contact",
+                "capability": "contactSensor",
+                "attribute": "contact",
+                "value": "closed"
+              }
+            }
+          }
+        }
+      ],
+      "probability": 0.3,
+      "maxPerDay": 1
+    },
+    {
+      "id": "r_commute_music",
+      "kind": "routine",
+      "description": "Earbuds and music when leaving home.",
+      "trigger": {
+        "kind": "event",
+        "event": {
+          "source": "person",
+          "what": "depart",
+          "place": "home"
+        }
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "do": "phone.btConnect",
+          "args": {
+            "name": "Galaxy Buds"
+          }
+        },
+        {
+          "do": "phone.openApp",
+          "args": {
+            "package": "com.spotify.music"
+          }
+        },
+        {
+          "do": "phone.media",
+          "args": {
+            "state": "PLAYING",
+            "title": {
+              "choice": [
+                "Morning Mix",
+                "Lo-fi Beats",
+                "Daily Mix 1",
+                "Indie Chill"
+              ]
+            },
+            "artist": "Various"
+          }
+        },
+        {
+          "do": "phone.closeApp",
+          "args": {}
+        }
+      ],
+      "probability": 0.7,
+      "maxPerDay": 3
+    },
+    {
+      "id": "r_arrive_music_off",
+      "kind": "routine",
+      "description": "Music off and earbuds out on arrival.",
+      "trigger": {
+        "kind": "event",
+        "event": {
+          "source": "person",
+          "what": "arrive"
+        }
+      },
+      "conditions": [
+        {
+          "kind": "phone_state",
+          "field": "bluetooth",
+          "op": "contains",
+          "value": "Galaxy Buds"
+        }
+      ],
+      "actions": [
+        {
+          "do": "phone.media",
+          "args": {
+            "state": "PAUSED"
+          }
+        },
+        {
+          "do": "phone.btDisconnect",
+          "args": {
+            "name": "Galaxy Buds"
+          }
+        }
+      ],
+      "probability": 1,
+      "maxPerDay": 6
+    },
+    {
+      "id": "r_to_campus",
+      "kind": "routine",
+      "description": "Weekday trip to Campus.",
+      "trigger": {
+        "kind": "daily",
+        "window": {
+          "from": "08:20",
+          "to": "09:10"
+        },
+        "days": "weekdays"
+      },
+      "conditions": [
+        {
+          "kind": "place",
+          "op": "is",
+          "place": "home"
+        },
+        {
+          "kind": "phone_state",
+          "field": "asleep",
+          "op": "==",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "do": "person.travel",
+          "args": {
+            "to": "campus",
+            "mode": {
+              "choice": [
+                "subway",
+                "bus"
+              ],
+              "weights": [
+                0.8,
+                0.2
+              ]
+            }
+          }
+        }
+      ],
+      "probability": 0.92,
+      "maxPerDay": 1
+    },
+    {
+      "id": "r_campus_to_library",
+      "kind": "routine",
+      "description": "Some weekdays: study at the library after classes.",
+      "trigger": {
+        "kind": "daily",
+        "window": {
+          "from": "16:30",
+          "to": "17:20"
+        },
+        "days": "weekdays"
+      },
+      "conditions": [
+        {
+          "kind": "place",
+          "op": "is",
+          "place": "campus"
+        }
+      ],
+      "actions": [
+        {
+          "do": "person.travel",
+          "args": {
+            "to": "library",
+            "mode": "walk"
+          }
+        }
+      ],
+      "probability": 0.15,
+      "maxPerDay": 1
+    },
+    {
+      "id": "r_campus_home",
+      "kind": "routine",
+      "description": "Weekday trip home from Campus.",
+      "trigger": {
+        "kind": "daily",
+        "window": {
+          "from": "17:30",
+          "to": "19:30"
+        },
+        "days": "weekdays"
+      },
+      "conditions": [
+        {
+          "kind": "place",
+          "op": "is",
+          "place": "campus"
+        }
+      ],
+      "actions": [
+        {
+          "do": "person.travel",
+          "args": {
+            "to": "home",
+            "mode": {
+              "choice": [
+                "subway",
+                "bus"
+              ],
+              "weights": [
+                0.8,
+                0.2
+              ]
+            }
+          }
+        }
+      ],
+      "probability": 1,
+      "maxPerDay": 1
+    },
+    {
+      "id": "r_library_home",
+      "kind": "routine",
+      "description": "Home from the library late in the evening.",
+      "trigger": {
+        "kind": "daily",
+        "window": {
+          "from": "20:30",
+          "to": "22:30"
+        }
+      },
+      "conditions": [
+        {
+          "kind": "place",
+          "op": "is",
+          "place": "library"
+        }
+      ],
+      "actions": [
+        {
+          "do": "person.travel",
+          "args": {
+            "to": "home",
+            "mode": "subway"
+          }
+        }
+      ],
+      "probability": 1,
+      "maxPerDay": 1
+    },
+    {
+      "id": "r_friday_out",
+      "kind": "routine",
+      "description": "Some Fridays: dinner or drinks with friends.",
+      "trigger": {
+        "kind": "daily",
+        "window": {
+          "from": "17:00",
+          "to": "17:25"
+        },
+        "days": [
+          "fri"
+        ]
+      },
+      "conditions": [
+        {
+          "kind": "place",
+          "op": "is",
+          "place": "campus"
+        }
+      ],
+      "actions": [
+        {
+          "do": "person.travel",
+          "args": {
+            "to": {
+              "choice": [
+                "restaurant",
+                "bar"
+              ]
+            },
+            "mode": "subway"
+          }
+        }
+      ],
+      "probability": 0.3,
+      "maxPerDay": 1
+    },
+    {
+      "id": "r_friday_back",
+      "kind": "routine",
+      "description": "Home late after the Friday evening out.",
+      "trigger": {
+        "kind": "daily",
+        "window": {
+          "from": "21:30",
+          "to": "23:40"
+        },
+        "days": [
+          "fri"
+        ]
+      },
+      "conditions": [
+        {
+          "kind": "place",
+          "op": "in",
+          "place": [
+            "restaurant",
+            "bar"
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "do": "person.travel",
+          "args": {
+            "to": "home",
+            "mode": {
+              "choice": [
+                "subway",
+                "taxi"
+              ],
+              "weights": [
+                0.6,
+                0.4
+              ]
+            }
+          }
+        }
+      ],
+      "probability": 1,
+      "maxPerDay": 1
+    },
+    {
+      "id": "r_weekend_out",
+      "kind": "routine",
+      "description": "Weekend outing.",
+      "trigger": {
+        "kind": "daily",
+        "window": {
+          "from": "11:00",
+          "to": "15:00"
+        },
+        "days": "weekends"
+      },
+      "conditions": [
+        {
+          "kind": "place",
+          "op": "is",
+          "place": "home"
+        },
+        {
+          "kind": "phone_state",
+          "field": "asleep",
+          "op": "==",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "do": "person.travel",
+          "args": {
+            "to": {
+              "choice": [
+                "cafe",
+                "park",
+                "mall",
+                "market",
+                "cinema",
+                "library"
+              ],
+              "weights": [
+                3,
+                2,
+                2,
+                1,
+                1,
+                1
+              ]
+            },
+            "mode": {
+              "choice": [
+                "subway",
+                "bus"
+              ],
+              "weights": [
+                0.7,
+                0.3
+              ]
+            }
+          }
+        }
+      ],
+      "probability": 0.55,
+      "maxPerDay": 1
+    },
+    {
+      "id": "r_weekend_back",
+      "kind": "routine",
+      "description": "Home from the weekend outing (some after 21:00).",
+      "trigger": {
+        "kind": "daily",
+        "window": {
+          "from": "16:30",
+          "to": "21:40"
+        },
+        "days": "weekends"
+      },
+      "conditions": [
+        {
+          "kind": "place",
+          "op": "in",
+          "place": [
+            "cafe",
+            "park",
+            "mall",
+            "market",
+            "cinema",
+            "library"
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "do": "person.travel",
+          "args": {
+            "to": "home",
+            "mode": {
+              "choice": [
+                "subway",
+                "bus"
+              ],
+              "weights": [
+                0.7,
+                0.3
+              ]
+            }
+          }
+        }
+      ],
+      "probability": 1,
+      "maxPerDay": 1
+    },
+    {
+      "id": "r_sunday_run",
+      "kind": "routine",
+      "description": "Some Sunday mornings: a run at the riverside park.",
+      "trigger": {
+        "kind": "daily",
+        "window": {
+          "from": "09:30",
+          "to": "10:30"
+        },
+        "days": [
+          "sun"
+        ]
+      },
+      "conditions": [
+        {
+          "kind": "place",
+          "op": "is",
+          "place": "home"
+        },
+        {
+          "kind": "phone_state",
+          "field": "asleep",
+          "op": "==",
+          "value": false
+        },
+        {
+          "kind": "weather",
+          "op": "in",
+          "value": [
+            "clear",
+            "cloudy"
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "do": "person.travel",
+          "args": {
+            "to": "river_park",
+            "mode": "walk"
+          }
+        },
+        {
+          "do": "phone.exerciseStart",
+          "args": {
+            "kind": "Running"
+          }
+        },
+        {
+          "do": "wait",
+          "args": {
+            "minutes": {
+              "min": 25,
+              "max": 45
+            }
+          }
+        },
+        {
+          "do": "phone.exerciseEnd",
+          "args": {}
+        },
+        {
+          "do": "person.travel",
+          "args": {
+            "to": "home",
+            "mode": "walk"
+          }
+        }
+      ],
+      "probability": 0.4,
+      "maxPerDay": 1
+    },
+    {
+      "id": "r_arrive_home",
+      "kind": "routine",
+      "description": "On arriving home: entryway light on if the entryway is dark, off again before going in; living-room light on if the living room is dark.",
+      "trigger": {
+        "kind": "event",
+        "event": {
+          "source": "person",
+          "what": "arrive",
+          "place": "home"
+        }
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "do": "home.command",
+          "args": {
+            "device": "entryway.light",
+            "capability": "switch",
+            "command": "on",
+            "args": [],
+            "channel": "physical"
+          },
+          "when": [
+            {
+              "kind": "device",
+              "device": "entryway.light_sensor",
+              "capability": "illuminanceMeasurement",
+              "attribute": "illuminance",
+              "op": "<=",
+              "value": 10
+            }
+          ]
+        },
+        {
+          "do": "wait",
+          "args": {
+            "minutes": {
+              "min": 1,
+              "max": 3
+            }
+          }
+        },
+        {
+          "do": "home.command",
+          "args": {
+            "device": "entryway.light",
+            "capability": "switch",
+            "command": "off",
+            "args": [],
+            "channel": "physical"
+          },
+          "when": [
+            {
+              "kind": "device",
+              "device": "entryway.light",
+              "capability": "switch",
+              "attribute": "switch",
+              "op": "==",
+              "value": "on"
+            }
+          ]
+        },
+        {
+          "do": "person.moveRoom",
+          "args": {
+            "room": "living_room"
+          }
+        },
+        {
+          "do": "home.command",
+          "args": {
+            "device": "living_room.light",
+            "capability": "switch",
+            "command": "on",
+            "args": [],
+            "channel": "physical"
+          },
+          "when": [
+            {
+              "kind": "device",
+              "device": "living_room.light_sensor",
+              "capability": "illuminanceMeasurement",
+              "attribute": "illuminance",
+              "op": "<=",
+              "value": 50
+            }
+          ],
+          "revert": {
+            "afterMinutes": {
+              "min": 120,
+              "max": 360
+            },
+            "action": {
+              "do": "home.command",
+              "args": {
+                "device": "living_room.light",
+                "capability": "switch",
+                "command": "off",
+                "args": [],
+                "channel": "physical"
+              }
+            }
+          }
+        }
+      ],
+      "probability": 0.95,
+      "maxPerDay": 4
+    },
+    {
+      "id": "r_curtain_close",
+      "kind": "routine",
+      "description": "Close the living-room curtain when it gets dark outside.",
+      "trigger": {
+        "kind": "time_window",
+        "window": {
+          "from": "16:30",
+          "to": "23:30"
+        }
+      },
+      "conditions": [
+        {
+          "kind": "place",
+          "op": "is",
+          "place": "home"
+        },
+        {
+          "kind": "phone_state",
+          "field": "asleep",
+          "op": "==",
+          "value": false
+        },
+        {
+          "kind": "outdoor",
+          "variable": "daylight",
+          "op": "<=",
+          "value": 1000
+        },
+        {
+          "kind": "device",
+          "device": "living_room.curtain",
+          "capability": "windowShade",
+          "attribute": "windowShade",
+          "op": "!=",
+          "value": "closed"
+        }
+      ],
+      "actions": [
+        {
+          "do": "person.moveRoom",
+          "args": {
+            "room": "living_room"
+          }
+        },
+        {
+          "do": "home.command",
+          "args": {
+            "device": "living_room.curtain",
+            "capability": "windowShade",
+            "command": "close",
+            "args": [],
+            "channel": "physical"
+          }
+        }
+      ],
+      "probability": 0.8,
+      "maxPerDay": 1
+    },
+    {
+      "id": "r_dinner",
+      "kind": "routine",
+      "description": "Cook dinner after getting home.",
+      "trigger": {
+        "kind": "event",
+        "event": {
+          "source": "person",
+          "what": "arrive",
+          "place": "home"
+        },
+        "delayMinutes": {
+          "min": 10,
+          "max": 40
+        }
+      },
+      "conditions": [
+        {
+          "kind": "place",
+          "op": "is",
+          "place": "home"
+        },
+        {
+          "kind": "time",
+          "window": {
+            "from": "17:30",
+            "to": "20:45"
+          }
+        }
+      ],
+      "actions": [
+        {
+          "do": "person.moveRoom",
+          "args": {
+            "room": "kitchen"
+          }
+        },
+        {
+          "do": "home.command",
+          "args": {
+            "device": "kitchen.stove",
+            "capability": "switch",
+            "command": "on",
+            "args": [],
+            "channel": "physical"
+          }
+        },
+        {
+          "do": "wait",
+          "args": {
+            "minutes": {
+              "min": 12,
+              "max": 30
+            }
+          }
+        },
+        {
+          "do": "person.moveRoom",
+          "args": {
+            "room": "dining_room"
+          }
+        },
+        {
+          "do": "wait",
+          "args": {
+            "minutes": {
+              "min": 15,
+              "max": 30
+            }
+          }
+        },
+        {
+          "do": "home.command",
+          "args": {
+            "device": "kitchen.dishwasher",
+            "capability": "cycleState",
+            "command": "start",
+            "args": [],
+            "channel": "physical"
+          },
+          "probability": 0.3
+        },
+        {
+          "do": "person.moveRoom",
+          "args": {
+            "room": "living_room"
+          }
+        }
+      ],
+      "probability": 0.6,
+      "maxPerDay": 1
+    },
+    {
+      "id": "r_evening_tv",
+      "kind": "routine",
+      "description": "TV in the living room in the evening.",
+      "trigger": {
+        "kind": "daily",
+        "window": {
+          "from": "19:30",
+          "to": "21:30"
+        }
+      },
+      "conditions": [
+        {
+          "kind": "place",
+          "op": "is",
+          "place": "home"
+        },
+        {
+          "kind": "phone_state",
+          "field": "asleep",
+          "op": "==",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "do": "person.moveRoom",
+          "args": {
+            "room": "living_room"
+          }
+        },
+        {
+          "do": "home.command",
+          "args": {
+            "device": "living_room.tv",
+            "capability": "switch",
+            "command": "on",
+            "args": [],
+            "channel": "physical"
+          },
+          "revert": {
+            "afterMinutes": {
+              "min": 40,
+              "max": 150
+            },
+            "action": {
+              "do": "home.command",
+              "args": {
+                "device": "living_room.tv",
+                "capability": "switch",
+                "command": "off",
+                "args": [],
+                "channel": "physical"
+              }
+            }
+          }
+        }
+      ],
+      "probability": 0.55,
+      "maxPerDay": 1
+    },
+    {
+      "id": "r_study_evening",
+      "kind": "routine",
+      "description": "Study in the study room on some evenings.",
+      "trigger": {
+        "kind": "daily",
+        "window": {
+          "from": "20:00",
+          "to": "22:00"
+        },
+        "days": [
+          "sun",
+          "mon",
+          "tue",
+          "wed",
+          "thu"
+        ]
+      },
+      "conditions": [
+        {
+          "kind": "place",
+          "op": "is",
+          "place": "home"
+        },
+        {
+          "kind": "phone_state",
+          "field": "asleep",
+          "op": "==",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "do": "person.moveRoom",
+          "args": {
+            "room": "study_room"
+          }
+        },
+        {
+          "do": "home.command",
+          "args": {
+            "device": "study_room.lamp",
+            "capability": "switch",
+            "command": "on",
+            "args": [],
+            "channel": "physical"
+          },
+          "revert": {
+            "afterMinutes": {
+              "min": 45,
+              "max": 120
+            },
+            "action": {
+              "do": "home.command",
+              "args": {
+                "device": "study_room.lamp",
+                "capability": "switch",
+                "command": "off",
+                "args": [],
+                "channel": "physical"
+              }
+            }
+          }
+        },
+        {
+          "do": "wait",
+          "args": {
+            "minutes": {
+              "min": 45,
+              "max": 120
+            }
+          }
+        },
+        {
+          "do": "person.moveRoom",
+          "args": {
+            "room": "living_room"
+          }
+        }
+      ],
+      "probability": 0.4,
+      "maxPerDay": 1
+    },
+    {
+      "id": "r_window_evening_warm",
+      "kind": "routine",
+      "description": "Air the living room on some evenings, April-October.",
+      "trigger": {
+        "kind": "daily",
+        "window": {
+          "from": "18:00",
+          "to": "22:30"
+        },
+        "months": [
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ]
+      },
+      "conditions": [
+        {
+          "kind": "place",
+          "op": "is",
+          "place": "home"
+        },
+        {
+          "kind": "phone_state",
+          "field": "asleep",
+          "op": "==",
+          "value": false
+        },
+        {
+          "kind": "weather",
+          "op": "in",
+          "value": [
+            "clear",
+            "cloudy"
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "do": "person.moveRoom",
+          "args": {
+            "room": "living_room"
+          }
+        },
+        {
+          "do": "home.record",
+          "args": {
+            "device": "living_room.window_contact",
+            "capability": "contactSensor",
+            "attribute": "contact",
+            "value": "open"
+          },
+          "revert": {
+            "afterMinutes": {
+              "min": 15,
+              "max": 90
+            },
+            "action": {
+              "do": "home.record",
+              "args": {
+                "device": "living_room.window_contact",
+                "capability": "contactSensor",
+                "attribute": "contact",
+                "value": "closed"
+              }
+            }
+          }
+        }
+      ],
+      "probability": 0.35,
+      "maxPerDay": 1
+    },
+    {
+      "id": "r_window_evening_cold",
+      "kind": "routine",
+      "description": "Short airing of the living room on some evenings, November-March.",
+      "trigger": {
+        "kind": "daily",
+        "window": {
+          "from": "19:00",
+          "to": "22:30"
+        },
+        "months": [
+          11,
+          12,
+          1,
+          2,
+          3
+        ]
+      },
+      "conditions": [
+        {
+          "kind": "place",
+          "op": "is",
+          "place": "home"
+        },
+        {
+          "kind": "phone_state",
+          "field": "asleep",
+          "op": "==",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "do": "person.moveRoom",
+          "args": {
+            "room": "living_room"
+          }
+        },
+        {
+          "do": "home.record",
+          "args": {
+            "device": "living_room.window_contact",
+            "capability": "contactSensor",
+            "attribute": "contact",
+            "value": "open"
+          },
+          "revert": {
+            "afterMinutes": {
+              "min": 5,
+              "max": 15
+            },
+            "action": {
+              "do": "home.record",
+              "args": {
+                "device": "living_room.window_contact",
+                "capability": "contactSensor",
+                "attribute": "contact",
+                "value": "closed"
+              }
+            }
+          }
+        }
+      ],
+      "probability": 0.12,
+      "maxPerDay": 1
+    },
+    {
+      "id": "r_purifier_weekend",
+      "kind": "routine",
+      "description": "Purifier at 30-50 % on some weekend daytimes (use outside the pattern).",
+      "trigger": {
+        "kind": "daily",
+        "window": {
+          "from": "10:00",
+          "to": "17:00"
+        },
+        "days": "weekends"
+      },
+      "conditions": [
+        {
+          "kind": "place",
+          "op": "is",
+          "place": "home"
+        },
+        {
+          "kind": "phone_state",
+          "field": "asleep",
+          "op": "==",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "do": "home.command",
+          "args": {
+            "device": "living_room.air_purifier",
+            "capability": "fanSpeedPercent",
+            "command": "setPercent",
+            "args": [
+              {
+                "choice": [
+                  30,
+                  40,
+                  50
+                ]
+              }
+            ],
+            "channel": "mobile_app"
+          },
+          "revert": {
+            "afterMinutes": {
+              "min": 60,
+              "max": 180
+            },
+            "action": {
+              "do": "home.command",
+              "args": {
+                "device": "living_room.air_purifier",
+                "capability": "fanSpeedPercent",
+                "command": "setPercent",
+                "args": [
+                  0
+                ],
+                "channel": "mobile_app"
+              }
+            }
+          }
+        }
+      ],
+      "probability": 0.25,
+      "maxPerDay": 1
+    },
+    {
+      "id": "r_phone_use",
+      "kind": "routine",
+      "description": "Ordinary phone use during waking hours.",
+      "trigger": {
+        "kind": "rate",
+        "window": {
+          "from": "07:30",
+          "to": "23:50"
+        },
+        "perHour": 2.5
+      },
+      "conditions": [
+        {
+          "kind": "phone_state",
+          "field": "asleep",
+          "op": "==",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "do": "phone.openApp",
+          "args": {
+            "package": {
+              "choice": [
+                "com.kakao.talk",
+                "com.instagram.android",
+                "com.google.android.youtube",
+                "com.android.chrome",
+                "com.nhn.android.nmap"
+              ],
+              "weights": [
+                5,
+                3,
+                2,
+                2,
+                0.5
+              ]
+            }
+          }
+        },
+        {
+          "do": "wait",
+          "args": {
+            "minutes": {
+              "min": 1,
+              "max": 12
+            }
+          }
+        },
+        {
+          "do": "phone.closeApp",
+          "args": {}
+        }
+      ],
+      "probability": 1,
+      "maxPerDay": 60
+    },
+    {
+      "id": "r_bedtime",
+      "kind": "routine",
+      "description": "Go to bed: bedroom, phone on the charger, sleep.",
+      "trigger": {
+        "kind": "daily",
+        "window": {
+          "from": "23:20",
+          "to": "00:50"
+        }
+      },
+      "conditions": [
+        {
+          "kind": "place",
+          "op": "is",
+          "place": "home"
+        },
+        {
+          "kind": "phone_state",
+          "field": "asleep",
+          "op": "==",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "do": "person.moveRoom",
+          "args": {
+            "room": "bedroom"
+          }
+        },
+        {
+          "do": "phone.power",
+          "args": {
+            "connected": true
+          }
+        },
+        {
+          "do": "wait",
+          "args": {
+            "minutes": {
+              "min": 5,
+              "max": 25
+            }
+          }
+        },
+        {
+          "do": "phone.sleep",
+          "args": {}
+        }
+      ],
+      "probability": 1,
+      "maxPerDay": 1,
+      "priority": 5
+    },
+    {
+      "id": "r_bedtime_late",
+      "kind": "routine",
+      "description": "Straight to bed after a late arrival.",
+      "trigger": {
+        "kind": "event",
+        "event": {
+          "source": "person",
+          "what": "arrive",
+          "place": "home"
+        },
+        "delayMinutes": {
+          "min": 10,
+          "max": 25
+        }
+      },
+      "conditions": [
+        {
+          "kind": "time",
+          "window": {
+            "from": "23:30",
+            "to": "03:00"
+          }
+        },
+        {
+          "kind": "phone_state",
+          "field": "asleep",
+          "op": "==",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "do": "person.moveRoom",
+          "args": {
+            "room": "bedroom"
+          }
+        },
+        {
+          "do": "phone.power",
+          "args": {
+            "connected": true
+          }
+        },
+        {
+          "do": "phone.sleep",
+          "args": {}
+        }
+      ],
+      "probability": 1,
+      "maxPerDay": 1,
+      "priority": 5
+    }
+  ]
+}

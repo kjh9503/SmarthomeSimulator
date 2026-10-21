@@ -1,0 +1,1014 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "structured-pattern.schema.json",
+  "title": "Structured pattern",
+  "description": "One natural-language pattern turned into conditions and actions the agent engine can run on the smart home + phone simulator. Names must come from vocabulary.json.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "personaId",
+    "patternId",
+    "patternType",
+    "sourceText",
+    "summary",
+    "houseType",
+    "roomRoles",
+    "trigger",
+    "conditions",
+    "actions",
+    "followProbability",
+    "maxPerDay",
+    "shift",
+    "prerequisites",
+    "approximations"
+  ],
+  "properties": {
+    "personaId": {
+      "type": "string"
+    },
+    "patternId": {
+      "type": "string"
+    },
+    "patternType": {
+      "enum": [
+        "temporal_numeric",
+        "conditional_logic",
+        "preference_shift"
+      ]
+    },
+    "sourceText": {
+      "type": "string",
+      "description": "The pattern text exactly as given."
+    },
+    "summary": {
+      "type": "string",
+      "description": "One short English sentence: when -> what."
+    },
+    "houseType": {
+      "enum": [
+        "2room",
+        "3room",
+        "4room"
+      ]
+    },
+    "roomRoles": {
+      "type": "object",
+      "description": "Every room role the pattern uses (study_room, bedroom, ...) -> a real room id of houseType. Empty object if none.",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "trigger": {
+      "$ref": "#/$defs/trigger"
+    },
+    "conditions": {
+      "type": "array",
+      "description": "All must hold when the trigger fires (AND).",
+      "items": {
+        "$ref": "#/$defs/condition"
+      }
+    },
+    "actions": {
+      "type": "array",
+      "minItems": 1,
+      "description": "What the person does, in order. For preference_shift: the behaviour AFTER the shift.",
+      "items": {
+        "$ref": "#/$defs/action"
+      }
+    },
+    "followProbability": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Chance the person acts on the pattern when trigger and conditions hold."
+    },
+    "maxPerDay": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "shift": {
+      "description": "Only for preference_shift; null otherwise.",
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "before",
+            "at",
+            "transitionDays"
+          ],
+          "properties": {
+            "before": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/action"
+              },
+              "description": "Behaviour before the shift (same trigger and conditions)."
+            },
+            "at": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "When the shift happens: a month-day of the simulated year, or after the pattern has fired N times.",
+              "properties": {
+                "monthDay": {
+                  "type": "string",
+                  "pattern": "^\\d{2}-\\d{2}$"
+                },
+                "afterFirings": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "minProperties": 1,
+              "maxProperties": 1
+            },
+            "transitionDays": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Days over which the chance of the new behaviour rises from 0 to 1 (0 = sudden)."
+            }
+          }
+        }
+      ]
+    },
+    "prerequisites": {
+      "type": "array",
+      "description": "Recurring things the scenario must produce so the trigger and conditions can ever happen (a weekday work calendar event, being at the office in the afternoon, a daily study block...). The engine generates them.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "description",
+          "spec"
+        ],
+        "properties": {
+          "kind": {
+            "enum": [
+              "calendar",
+              "presence",
+              "device_use",
+              "phone_use",
+              "exercise",
+              "other"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "spec": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "days": {
+                "$ref": "#/$defs/days"
+              },
+              "months": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 12
+                }
+              },
+              "start": {
+                "$ref": "#/$defs/timeRange"
+              },
+              "durationMinutes": {
+                "$ref": "#/$defs/minutes"
+              },
+              "probability": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "Share of matching days it happens."
+              },
+              "title": {
+                "type": "string",
+                "description": "calendar: event title (free text, reused in conditions)"
+              },
+              "location": {
+                "type": "string"
+              },
+              "place": {
+                "type": "string",
+                "description": "presence: place name from vocabulary"
+              },
+              "travelMode": {
+                "type": "string"
+              },
+              "device": {
+                "type": "string"
+              },
+              "action": {
+                "$ref": "#/$defs/action"
+              }
+            }
+          }
+        }
+      }
+    },
+    "approximations": {
+      "type": "array",
+      "description": "Every place where the text could not be expressed exactly with vocabulary names, and what was used instead.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "text",
+          "mappedTo"
+        ],
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "mappedTo": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "hhmm": {
+      "type": "string",
+      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+    },
+    "timeRange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "from",
+        "to"
+      ],
+      "properties": {
+        "from": {
+          "$ref": "#/$defs/hhmm"
+        },
+        "to": {
+          "$ref": "#/$defs/hhmm"
+        }
+      }
+    },
+    "minutes": {
+      "oneOf": [
+        {
+          "type": "number",
+          "minimum": 0
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "min",
+            "max"
+          ],
+          "properties": {
+            "min": {
+              "type": "number",
+              "minimum": 0
+            },
+            "max": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        }
+      ]
+    },
+    "days": {
+      "oneOf": [
+        {
+          "enum": [
+            "all",
+            "weekdays",
+            "weekends"
+          ]
+        },
+        {
+          "type": "array",
+          "items": {
+            "enum": [
+              "mon",
+              "tue",
+              "wed",
+              "thu",
+              "fri",
+              "sat",
+              "sun"
+            ]
+          },
+          "minItems": 1
+        }
+      ]
+    },
+    "op": {
+      "enum": [
+        "==",
+        "!=",
+        "<",
+        "<=",
+        ">",
+        ">=",
+        "in",
+        "not_in",
+        "contains"
+      ]
+    },
+    "value": {
+      "type": [
+        "string",
+        "number",
+        "boolean",
+        "array"
+      ]
+    },
+    "trigger": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "window"
+          ],
+          "description": "Checked every simulated minute inside the window.",
+          "properties": {
+            "kind": {
+              "const": "time_window"
+            },
+            "window": {
+              "$ref": "#/$defs/timeRange"
+            },
+            "days": {
+              "$ref": "#/$defs/days"
+            },
+            "months": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 12
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "event"
+          ],
+          "description": "Fires the moment a matching event happens.",
+          "properties": {
+            "kind": {
+              "const": "event"
+            },
+            "event": {
+              "$ref": "#/$defs/eventRef"
+            },
+            "delayMinutes": {
+              "$ref": "#/$defs/minutes"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "window"
+          ],
+          "description": "Once a day at a random minute inside the window (uniform), on matching days; then conditions are checked once.",
+          "properties": {
+            "kind": {
+              "const": "daily"
+            },
+            "window": {
+              "$ref": "#/$defs/timeRange"
+            },
+            "days": {
+              "$ref": "#/$defs/days"
+            },
+            "months": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 12
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "window",
+            "perHour"
+          ],
+          "description": "Random moments inside the window: each minute fires with chance perHour/60 (conditions checked each time).",
+          "properties": {
+            "kind": {
+              "const": "rate"
+            },
+            "window": {
+              "$ref": "#/$defs/timeRange"
+            },
+            "perHour": {
+              "type": "number",
+              "minimum": 0
+            },
+            "days": {
+              "$ref": "#/$defs/days"
+            },
+            "months": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 12
+              }
+            }
+          }
+        }
+      ],
+      "description": "time_window: checked every minute in the window, the first minute the conditions hold decides (follow with followProbability, else skip that day). event: the moment a matching event happens. daily: one random minute per day in the window. rate: random moments in the window."
+    },
+    "eventRef": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "source",
+            "deviceType",
+            "capability",
+            "attribute",
+            "value"
+          ],
+          "description": "A home log line (device report or command).",
+          "properties": {
+            "source": {
+              "const": "home"
+            },
+            "deviceType": {
+              "type": "string"
+            },
+            "room": {
+              "type": "string",
+              "description": "room id or role; omit for any room"
+            },
+            "capability": {
+              "type": "string"
+            },
+            "attribute": {
+              "type": "string"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            },
+            "previousValue": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "source",
+            "type"
+          ],
+          "description": "A phone event (NOTIFICATION, CALENDAR REMINDER, HEALTH EXERCISE end, SMARTTHINGS notification, TELEPHONY ...).",
+          "properties": {
+            "source": {
+              "const": "phone"
+            },
+            "type": {
+              "type": "string"
+            },
+            "eventSource": {
+              "type": "string",
+              "description": "the event's 'source' field, e.g. package, EXERCISE, SLEEP, call"
+            },
+            "action": {
+              "type": "string",
+              "description": "payload.action, e.g. REMINDER, ADD, FOREGROUND"
+            },
+            "category": {
+              "type": "string",
+              "description": "SMARTTHINGS notification category"
+            },
+            "textContains": {
+              "type": "string"
+            },
+            "titleContains": {
+              "type": "string"
+            },
+            "field": {
+              "type": "string",
+              "description": "payload field to compare, e.g. durationMinutes"
+            },
+            "op": {
+              "$ref": "#/$defs/op"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "source",
+            "what"
+          ],
+          "description": "The person's own movement.",
+          "properties": {
+            "source": {
+              "const": "person"
+            },
+            "what": {
+              "enum": [
+                "arrive",
+                "depart",
+                "enter_room",
+                "wake",
+                "fall_asleep"
+              ]
+            },
+            "place": {
+              "type": "string"
+            },
+            "room": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "source",
+            "to"
+          ],
+          "description": "Outdoor weather changes.",
+          "properties": {
+            "source": {
+              "const": "weather"
+            },
+            "from": {
+              "type": "string"
+            },
+            "to": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "condition": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "window"
+          ],
+          "properties": {
+            "kind": {
+              "const": "time"
+            },
+            "window": {
+              "$ref": "#/$defs/timeRange"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "days"
+          ],
+          "properties": {
+            "kind": {
+              "const": "day"
+            },
+            "days": {
+              "$ref": "#/$defs/days"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "months"
+          ],
+          "properties": {
+            "kind": {
+              "const": "month"
+            },
+            "months": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 12
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "op",
+            "place"
+          ],
+          "description": "Where the person is. 'away' = is_not home.",
+          "properties": {
+            "kind": {
+              "const": "place"
+            },
+            "op": {
+              "enum": [
+                "is",
+                "is_not",
+                "in"
+              ]
+            },
+            "place": {
+              "type": [
+                "string",
+                "array"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "room"
+          ],
+          "properties": {
+            "kind": {
+              "const": "room"
+            },
+            "room": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "device",
+            "capability",
+            "attribute",
+            "op",
+            "value"
+          ],
+          "description": "A home device or sensor value now.",
+          "properties": {
+            "kind": {
+              "const": "device"
+            },
+            "device": {
+              "type": "string"
+            },
+            "capability": {
+              "type": "string"
+            },
+            "attribute": {
+              "type": "string"
+            },
+            "op": {
+              "$ref": "#/$defs/op"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "op",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "weather"
+            },
+            "op": {
+              "enum": [
+                "==",
+                "!=",
+                "in"
+              ]
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            },
+            "withinMinutes": {
+              "type": "number",
+              "description": "true if the state held at any time in the last N minutes"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "variable",
+            "op",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "outdoor"
+            },
+            "variable": {
+              "type": "string"
+            },
+            "op": {
+              "$ref": "#/$defs/op"
+            },
+            "value": {
+              "type": "number"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "titleContains",
+            "relation"
+          ],
+          "description": "The person's calendar. starts_within: an event starts in the next N minutes; ongoing; today; none_today; starts_before: today's event starts at or before 'time'.",
+          "properties": {
+            "kind": {
+              "const": "calendar"
+            },
+            "titleContains": {
+              "type": "string"
+            },
+            "relation": {
+              "enum": [
+                "starts_within",
+                "ongoing",
+                "today",
+                "none_today",
+                "starts_before"
+              ]
+            },
+            "minutes": {
+              "type": "number"
+            },
+            "time": {
+              "$ref": "#/$defs/hhmm"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "type",
+            "withinMinutes"
+          ],
+          "description": "A phone event happened in the last N minutes.",
+          "properties": {
+            "kind": {
+              "const": "phone_event"
+            },
+            "type": {
+              "type": "string"
+            },
+            "eventSource": {
+              "type": "string"
+            },
+            "category": {
+              "type": "string"
+            },
+            "textContains": {
+              "type": "string"
+            },
+            "withinMinutes": {
+              "type": "number"
+            },
+            "negate": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "field",
+            "op",
+            "value"
+          ],
+          "description": "Phone state now: screenOn, charging, battery, activity, asleep, media.state, bluetooth (list of names), wifi (ssid).",
+          "properties": {
+            "kind": {
+              "const": "phone_state"
+            },
+            "field": {
+              "enum": [
+                "screenOn",
+                "charging",
+                "battery",
+                "activity",
+                "asleep",
+                "media.state",
+                "bluetooth",
+                "wifi",
+                "foregroundApp"
+              ]
+            },
+            "op": {
+              "$ref": "#/$defs/op"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "record",
+            "field",
+            "op",
+            "value"
+          ],
+          "description": "A health record (the latest one, or within N minutes).",
+          "properties": {
+            "kind": {
+              "const": "health"
+            },
+            "record": {
+              "enum": [
+                "EXERCISE",
+                "SLEEP",
+                "HOURLY"
+              ]
+            },
+            "field": {
+              "type": "string"
+            },
+            "op": {
+              "$ref": "#/$defs/op"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            },
+            "withinMinutes": {
+              "type": "number"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "action",
+            "withinMinutes"
+          ],
+          "description": "The person did (or, with negate, did not do) an action in the last N minutes.",
+          "properties": {
+            "kind": {
+              "const": "recent_action"
+            },
+            "action": {
+              "$ref": "#/$defs/action"
+            },
+            "withinMinutes": {
+              "type": "number"
+            },
+            "negate": {
+              "type": "boolean"
+            }
+          }
+        }
+      ]
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "do",
+        "args"
+      ],
+      "properties": {
+        "do": {
+          "type": "string",
+          "description": "A key of vocabulary.personActions (home.command, person.travel, phone.openApp, wait, ...)."
+        },
+        "args": {
+          "type": "object"
+        },
+        "probability": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Chance this step happens (default 1)."
+        },
+        "revert": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "afterMinutes",
+            "action"
+          ],
+          "description": "Undo later, e.g. turn the TV off 30-120 minutes after turning it on, or a purifier's own 30-minute timer (byDevice).",
+          "properties": {
+            "afterMinutes": {
+              "$ref": "#/$defs/minutes"
+            },
+            "action": {
+              "$ref": "#/$defs/action"
+            },
+            "byDevice": {
+              "type": "boolean",
+              "description": "true: the device's own timer does it (logged as the device's report, works while the person sleeps or is away). false/absent: the person does it."
+            }
+          }
+        },
+        "when": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/condition"
+          },
+          "description": "Optional: this step runs only if all these conditions hold at the moment the step is reached (e.g. turn the entryway light on only if the entryway is dark). Otherwise the step is skipped and the next step follows."
+        },
+        "cookingMinutes": {
+          "$ref": "#/$defs/cookingMinutes",
+          "description": "Only on a step that turns the kitchen stove on: this step's cooking time, instead of the profile's cookingMinutes."
+        }
+      }
+    },
+    "cookingMinutes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dist"
+      ],
+      "description": "How long the person cooks once the stove is on; the runner draws a time and the person turns the stove off then. lognormal: median (min) and sigma; shifted_exp: min (min) + exponential with mean (min); exp: exponential with mean (min).",
+      "properties": {
+        "dist": {
+          "enum": [
+            "lognormal",
+            "shifted_exp",
+            "exp"
+          ]
+        },
+        "median": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "sigma": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "min": {
+          "type": "number",
+          "minimum": 0
+        },
+        "mean": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      }
+    }
+  }
+}

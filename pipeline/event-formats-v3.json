@@ -1,0 +1,1412 @@
+{
+  "ACTIVITY ENTER": {
+    "type": "ACTIVITY",
+    "source": "WALKING",
+    "title": "Walking",
+    "text": "Start",
+    "timestamp": 1780357260000,
+    "collectedAt": 1780357260000,
+    "dedupeKey": "ACTIVITY:WALKING:ENTER:117660000000000",
+    "payload": {
+      "activity": "WALKING",
+      "transition": "ENTER",
+      "activityType": 7,
+      "transitionType": 0,
+      "elapsedRealtimeNanos": 117660000000000
+    },
+    "context": {
+      "battery": {
+        "level": 59,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5665,
+        "longitude": 126.978,
+        "accuracy": 12
+      }
+    }
+  },
+  "ACTIVITY EXIT": {
+    "type": "ACTIVITY",
+    "source": "STILL",
+    "title": "Still",
+    "text": "End",
+    "timestamp": 1780357260000,
+    "collectedAt": 1780357260000,
+    "dedupeKey": "ACTIVITY:STILL:EXIT:117660000000000",
+    "payload": {
+      "activity": "STILL",
+      "transition": "EXIT",
+      "activityType": 3,
+      "transitionType": 1,
+      "elapsedRealtimeNanos": 117660000000000
+    },
+    "context": {
+      "battery": {
+        "level": 59,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5665,
+        "longitude": 126.978,
+        "accuracy": 12
+      }
+    }
+  },
+  "APP_LIFECYCLE INSTALLED": {
+    "type": "APP_LIFECYCLE",
+    "source": "com.example.app",
+    "title": "Example",
+    "text": "Installed",
+    "timestamp": 1780354200000,
+    "collectedAt": 1780354200000,
+    "dedupeKey": "APP:INSTALLED:com.example.app:1780354200000",
+    "payload": {
+      "action": "INSTALLED",
+      "packageName": "com.example.app",
+      "label": "Example"
+    },
+    "context": {
+      "battery": {
+        "level": 66,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5013,
+        "longitude": 127.0396,
+        "accuracy": 12
+      }
+    }
+  },
+  "APP_LIFECYCLE REMOVED": {
+    "type": "APP_LIFECYCLE",
+    "source": "com.example.app",
+    "title": "Example",
+    "text": "Removed",
+    "timestamp": 1780354500000,
+    "collectedAt": 1780354500000,
+    "dedupeKey": "APP:REMOVED:com.example.app:1780354500000",
+    "payload": {
+      "action": "REMOVED",
+      "packageName": "com.example.app",
+      "label": "Example"
+    },
+    "context": {
+      "battery": {
+        "level": 65,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5013,
+        "longitude": 127.0396,
+        "accuracy": 12
+      }
+    }
+  },
+  "APP_USAGE BACKGROUND": {
+    "type": "APP_USAGE",
+    "source": "com.android.chrome",
+    "title": "Chrome",
+    "text": "BACKGROUND",
+    "timestamp": 1780354860000,
+    "collectedAt": 1780354860000,
+    "dedupeKey": "USAGE:com.android.chrome:1780354860000:2",
+    "payload": {
+      "packageName": "com.android.chrome",
+      "action": "BACKGROUND",
+      "eventType": 2,
+      "timestamp": 1780354860000,
+      "className": "com.android.chrome.MainActivity"
+    },
+    "context": {
+      "battery": {
+        "level": 63,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5013,
+        "longitude": 127.0396,
+        "accuracy": 12
+      }
+    }
+  },
+  "APP_USAGE FOREGROUND": {
+    "type": "APP_USAGE",
+    "source": "com.android.chrome",
+    "title": "Chrome",
+    "text": "FOREGROUND",
+    "timestamp": 1780351320000,
+    "collectedAt": 1780351320000,
+    "dedupeKey": "USAGE:com.android.chrome:1780351320000:1",
+    "payload": {
+      "packageName": "com.android.chrome",
+      "action": "FOREGROUND",
+      "eventType": 1,
+      "timestamp": 1780351320000,
+      "className": "com.android.chrome.MainActivity"
+    },
+    "context": {
+      "battery": {
+        "level": 67,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5013,
+        "longitude": 127.0396,
+        "accuracy": 12
+      }
+    }
+  },
+  "CALENDAR ADD": {
+    "type": "CALENDAR",
+    "source": "Personal",
+    "title": "Team meeting",
+    "text": "Event added · 6/2 14:00 - 15:00",
+    "timestamp": 1780351560000,
+    "collectedAt": 1780351560000,
+    "dedupeKey": "CALENDAR:ADD:1:1780376400000:1780351560000",
+    "payload": {
+      "eventId": 1,
+      "action": "ADD",
+      "title": "Team meeting",
+      "begin": 1780376400000,
+      "end": 1780380000000,
+      "allDay": false,
+      "location": "Meeting room A",
+      "calendar": "Personal"
+    },
+    "context": {
+      "battery": {
+        "level": 66,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5013,
+        "longitude": 127.0396,
+        "accuracy": 12
+      }
+    }
+  },
+  "CALENDAR DELETE": {
+    "type": "CALENDAR",
+    "source": "Personal",
+    "title": "Dinner with Alex",
+    "text": "Event deleted · 6/2 19:00 - 21:00",
+    "timestamp": 1780365600000,
+    "collectedAt": 1780365600000,
+    "dedupeKey": "CALENDAR:DELETE:2:1780394400000:1780365600000",
+    "payload": {
+      "eventId": 2,
+      "action": "DELETE",
+      "title": "Dinner with Alex",
+      "begin": 1780394400000,
+      "end": 1780401600000,
+      "allDay": false,
+      "location": "Gangnam",
+      "calendar": "Personal"
+    },
+    "context": {
+      "battery": {
+        "level": 48,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5665,
+        "longitude": 126.978,
+        "accuracy": 12
+      }
+    }
+  },
+  "CALENDAR REMINDER": {
+    "type": "CALENDAR",
+    "source": "Personal",
+    "title": "Team meeting",
+    "text": "Event starting · 15:00 - 16:00",
+    "timestamp": 1780380000000,
+    "collectedAt": 1780380000000,
+    "dedupeKey": "CALENDAR:REMINDER:1:1780380000000",
+    "payload": {
+      "eventId": 1,
+      "action": "REMINDER",
+      "title": "Team meeting",
+      "begin": 1780380000000,
+      "end": 1780383600000,
+      "allDay": false,
+      "location": "Meeting room A",
+      "calendar": "Personal"
+    },
+    "context": {
+      "battery": {
+        "level": 29,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5665,
+        "longitude": 126.978,
+        "accuracy": 12
+      }
+    }
+  },
+  "CALENDAR UPDATE": {
+    "type": "CALENDAR",
+    "source": "Personal",
+    "title": "Team meeting",
+    "text": "Event changed · 6/2 15:00 - 16:00",
+    "timestamp": 1780362000000,
+    "collectedAt": 1780362000000,
+    "dedupeKey": "CALENDAR:UPDATE:1:1780380000000:1780362000000",
+    "payload": {
+      "eventId": 1,
+      "action": "UPDATE",
+      "title": "Team meeting",
+      "begin": 1780380000000,
+      "end": 1780383600000,
+      "allDay": false,
+      "location": "Meeting room A",
+      "calendar": "Personal",
+      "previous": {
+        "begin": 1780376400000,
+        "end": 1780380000000
+      }
+    },
+    "context": {
+      "battery": {
+        "level": 53,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5665,
+        "longitude": 126.978,
+        "accuracy": 12
+      }
+    }
+  },
+  "CLIPBOARD": {
+    "type": "CLIPBOARD",
+    "source": "clipboard",
+    "title": "Clipboard copy",
+    "text": "text/plain",
+    "timestamp": 1780354800000,
+    "collectedAt": 1780354800000,
+    "dedupeKey": "CLIPBOARD:1780354800000",
+    "payload": {
+      "mimeTypes": [
+        "text/plain"
+      ],
+      "label": "Memo",
+      "copiedAt": 1780354800000
+    },
+    "context": {
+      "battery": {
+        "level": 63,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5013,
+        "longitude": 127.0396,
+        "accuracy": 12
+      }
+    }
+  },
+  "CONNECTIVITY bluetooth": {
+    "type": "CONNECTIVITY",
+    "source": "bluetooth",
+    "title": "Bluetooth connected",
+    "text": "Galaxy Buds",
+    "timestamp": 1780351680000,
+    "collectedAt": 1780351680000,
+    "dedupeKey": "CONN:BT:BT_CONNECTED:AA:BB:CC:DD:EE:FF:1780351680000",
+    "payload": {
+      "state": "BT_CONNECTED",
+      "deviceName": "Galaxy Buds",
+      "deviceAddress": "AA:BB:CC:DD:EE:FF"
+    },
+    "context": {
+      "battery": {
+        "level": 66,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5013,
+        "longitude": 127.0396,
+        "accuracy": 12
+      }
+    }
+  },
+  "CONNECTIVITY network": {
+    "type": "CONNECTIVITY",
+    "source": "network",
+    "title": "Network connected",
+    "text": "WIFI · Office-WiFi",
+    "timestamp": 1780357200000,
+    "collectedAt": 1780357200000,
+    "dedupeKey": "CONN:NET:CONNECTED:WIFI:Office-WiFi:1780357200000",
+    "payload": {
+      "state": "CONNECTED",
+      "transport": "WIFI",
+      "validated": true,
+      "unmetered": true,
+      "ssid": "Office-WiFi",
+      "bssid": "a6:fd:df:f6:a7:0d"
+    },
+    "context": {
+      "battery": {
+        "level": 59,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5665,
+        "longitude": 126.978,
+        "accuracy": 12
+      }
+    }
+  },
+  "DATA_USAGE": {
+    "type": "DATA_USAGE",
+    "source": "com.android.chrome",
+    "title": "Chrome",
+    "text": "down 87.0MB up 7.0MB",
+    "timestamp": 1780354800000,
+    "collectedAt": 1780354800000,
+    "dedupeKey": "DATAUSAGE:10123:1780351200000",
+    "payload": {
+      "uid": 10123,
+      "packageName": "com.android.chrome",
+      "rxBytes": 87000000,
+      "txBytes": 6960000,
+      "windowStart": 1780351200000,
+      "windowEnd": 1780354800000
+    },
+    "context": {
+      "battery": {
+        "level": 63,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5013,
+        "longitude": 127.0396,
+        "accuracy": 12
+      }
+    }
+  },
+  "DEVICE_STATE POWER_CONNECTED": {
+    "type": "DEVICE_STATE",
+    "source": "system",
+    "title": "Charging started",
+    "text": "POWER_CONNECTED",
+    "timestamp": 1780353000000,
+    "collectedAt": 1780353000000,
+    "dedupeKey": "DEVICE:POWER_CONNECTED:1780353000000",
+    "payload": {
+      "state": "POWER_CONNECTED",
+      "action": "android.intent.action.ACTION_POWER_CONNECTED",
+      "batteryLevel": 59
+    },
+    "context": {
+      "battery": {
+        "level": 59,
+        "charging": true
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5013,
+        "longitude": 127.0396,
+        "accuracy": 12
+      }
+    }
+  },
+  "DEVICE_STATE POWER_DISCONNECTED": {
+    "type": "DEVICE_STATE",
+    "source": "system",
+    "title": "Charging stopped",
+    "text": "POWER_DISCONNECTED",
+    "timestamp": 1780353600000,
+    "collectedAt": 1780353600000,
+    "dedupeKey": "DEVICE:POWER_DISCONNECTED:1780353600000",
+    "payload": {
+      "state": "POWER_DISCONNECTED",
+      "action": "android.intent.action.ACTION_POWER_DISCONNECTED",
+      "batteryLevel": 69
+    },
+    "context": {
+      "battery": {
+        "level": 69,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5013,
+        "longitude": 127.0396,
+        "accuracy": 12
+      }
+    }
+  },
+  "DEVICE_STATE SCREEN_OFF": {
+    "type": "DEVICE_STATE",
+    "source": "system",
+    "title": "Screen off",
+    "text": "SCREEN_OFF",
+    "timestamp": 1780354920000,
+    "collectedAt": 1780354920000,
+    "dedupeKey": "DEVICE:SCREEN_OFF:1780354920000",
+    "payload": {
+      "state": "SCREEN_OFF",
+      "action": "android.intent.action.SCREEN_OFF"
+    },
+    "context": {
+      "battery": {
+        "level": 62,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5013,
+        "longitude": 127.0396,
+        "accuracy": 12
+      }
+    }
+  },
+  "DEVICE_STATE SCREEN_ON": {
+    "type": "DEVICE_STATE",
+    "source": "system",
+    "title": "Screen on",
+    "text": "SCREEN_ON",
+    "timestamp": 1780351260000,
+    "collectedAt": 1780351260000,
+    "dedupeKey": "DEVICE:SCREEN_ON:1780351260000",
+    "payload": {
+      "state": "SCREEN_ON",
+      "action": "android.intent.action.SCREEN_ON"
+    },
+    "context": {
+      "battery": {
+        "level": 67,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5013,
+        "longitude": 127.0396,
+        "accuracy": 12
+      }
+    }
+  },
+  "HEALTH BLOOD_GLUCOSE": {
+    "type": "HEALTH",
+    "source": "BLOOD_GLUCOSE",
+    "title": "BLOOD_GLUCOSE",
+    "text": "95 mg/dL",
+    "timestamp": 1780372980000,
+    "collectedAt": 1780372980000,
+    "dedupeKey": "HEALTH:BLOOD_GLUCOSE:1780372980000",
+    "payload": {
+      "milligramsPerDeciliter": 95,
+      "time": 1780372980000,
+      "origin": "com.sec.android.app.shealth"
+    },
+    "context": {
+      "battery": {
+        "level": 38,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5665,
+        "longitude": 126.978,
+        "accuracy": 12
+      }
+    }
+  },
+  "HEALTH BLOOD_PRESSURE": {
+    "type": "HEALTH",
+    "source": "BLOOD_PRESSURE",
+    "title": "BLOOD_PRESSURE",
+    "text": "120/80 mmHg",
+    "timestamp": 1780372920000,
+    "collectedAt": 1780372920000,
+    "dedupeKey": "HEALTH:BLOOD_PRESSURE:1780372920000",
+    "payload": {
+      "systolic": 120,
+      "diastolic": 80,
+      "time": 1780372920000,
+      "origin": "com.sec.android.app.shealth"
+    },
+    "context": {
+      "battery": {
+        "level": 38,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5665,
+        "longitude": 126.978,
+        "accuracy": 12
+      }
+    }
+  },
+  "HEALTH BODY_FAT": {
+    "type": "HEALTH",
+    "source": "BODY_FAT",
+    "title": "BODY_FAT",
+    "text": "18.4%",
+    "timestamp": 1780372860000,
+    "collectedAt": 1780372860000,
+    "dedupeKey": "HEALTH:BODY_FAT:1780372860000",
+    "payload": {
+      "percentage": 18.4,
+      "time": 1780372860000,
+      "origin": "com.sec.android.app.shealth"
+    },
+    "context": {
+      "battery": {
+        "level": 39,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5665,
+        "longitude": 126.978,
+        "accuracy": 12
+      }
+    }
+  },
+  "HEALTH BODY_TEMPERATURE": {
+    "type": "HEALTH",
+    "source": "BODY_TEMPERATURE",
+    "title": "BODY_TEMPERATURE",
+    "text": "36.6 C",
+    "timestamp": 1780373040000,
+    "collectedAt": 1780373040000,
+    "dedupeKey": "HEALTH:BODY_TEMPERATURE:1780373040000",
+    "payload": {
+      "celsius": 36.6,
+      "time": 1780373040000,
+      "origin": "com.sec.android.app.shealth"
+    },
+    "context": {
+      "battery": {
+        "level": 38,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5665,
+        "longitude": 126.978,
+        "accuracy": 12
+      }
+    }
+  },
+  "HEALTH EXERCISE": {
+    "type": "HEALTH",
+    "source": "EXERCISE",
+    "title": "EXERCISE",
+    "text": "Running • 32 min",
+    "timestamp": 1780392720000,
+    "collectedAt": 1780392720000,
+    "dedupeKey": "HEALTH:EXERCISE:1780390800000",
+    "payload": {
+      "exerciseType": 56,
+      "title": "Running",
+      "durationMinutes": 32,
+      "startTime": 1780390800000,
+      "endTime": 1780392720000,
+      "origin": "com.sec.android.app.shealth"
+    },
+    "context": {
+      "battery": {
+        "level": 12,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5045,
+        "longitude": 127.049,
+        "accuracy": 12
+      }
+    }
+  },
+  "HEALTH HOURLY": {
+    "type": "HEALTH",
+    "source": "HOURLY",
+    "title": "HOURLY",
+    "text": "0 steps · 0.0 m · 0 kcal · avg 50 bpm (45-56)",
+    "timestamp": 1780329600000,
+    "collectedAt": 1780329600000,
+    "dedupeKey": "HEALTH:HOURLY:1780326000000",
+    "payload": {
+      "steps": 0,
+      "meters": 0,
+      "kilocalories": 0,
+      "averageBpm": 49.5,
+      "minBpm": 45,
+      "maxBpm": 56,
+      "sampleCount": 60,
+      "startTime": 1780326000000,
+      "endTime": 1780329600000,
+      "origin": "com.sec.android.app.shealth"
+    },
+    "context": {
+      "battery": {
+        "level": 78,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5013,
+        "longitude": 127.0396,
+        "accuracy": 12
+      }
+    }
+  },
+  "HEALTH HYDRATION": {
+    "type": "HEALTH",
+    "source": "HYDRATION",
+    "title": "HYDRATION",
+    "text": "250 mL",
+    "timestamp": 1780373340000,
+    "collectedAt": 1780373340000,
+    "dedupeKey": "HEALTH:HYDRATION:1780373340000",
+    "payload": {
+      "milliliters": 250,
+      "origin": "com.sec.android.app.shealth",
+      "startTime": 1780373340000,
+      "endTime": 1780373340000
+    },
+    "context": {
+      "battery": {
+        "level": 38,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5665,
+        "longitude": 126.978,
+        "accuracy": 12
+      }
+    }
+  },
+  "HEALTH OXYGEN_SATURATION": {
+    "type": "HEALTH",
+    "source": "OXYGEN_SATURATION",
+    "title": "OXYGEN_SATURATION",
+    "text": "98% SpO2",
+    "timestamp": 1780373100000,
+    "collectedAt": 1780373100000,
+    "dedupeKey": "HEALTH:OXYGEN_SATURATION:1780373100000",
+    "payload": {
+      "percentage": 98,
+      "time": 1780373100000,
+      "origin": "com.sec.android.app.shealth"
+    },
+    "context": {
+      "battery": {
+        "level": 38,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5665,
+        "longitude": 126.978,
+        "accuracy": 12
+      }
+    }
+  },
+  "HEALTH RESPIRATORY_RATE": {
+    "type": "HEALTH",
+    "source": "RESPIRATORY_RATE",
+    "title": "RESPIRATORY_RATE",
+    "text": "16 rpm",
+    "timestamp": 1780373160000,
+    "collectedAt": 1780373160000,
+    "dedupeKey": "HEALTH:RESPIRATORY_RATE:1780373160000",
+    "payload": {
+      "ratePerMinute": 16,
+      "time": 1780373160000,
+      "origin": "com.sec.android.app.shealth"
+    },
+    "context": {
+      "battery": {
+        "level": 38,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5665,
+        "longitude": 126.978,
+        "accuracy": 12
+      }
+    }
+  },
+  "HEALTH RESTING_HEART_RATE": {
+    "type": "HEALTH",
+    "source": "RESTING_HEART_RATE",
+    "title": "RESTING_HEART_RATE",
+    "text": "58 bpm (resting)",
+    "timestamp": 1780373220000,
+    "collectedAt": 1780373220000,
+    "dedupeKey": "HEALTH:RESTING_HEART_RATE:1780373220000",
+    "payload": {
+      "beatsPerMinute": 58,
+      "time": 1780373220000,
+      "origin": "com.sec.android.app.shealth"
+    },
+    "context": {
+      "battery": {
+        "level": 38,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5665,
+        "longitude": 126.978,
+        "accuracy": 12
+      }
+    }
+  },
+  "HEALTH SLEEP": {
+    "type": "HEALTH",
+    "source": "SLEEP",
+    "title": "SLEEP",
+    "text": "420 min",
+    "timestamp": 1780351200000,
+    "collectedAt": 1780351200000,
+    "dedupeKey": "HEALTH:SLEEP:1780326000000",
+    "payload": {
+      "durationMinutes": 420,
+      "stageCount": 8,
+      "startTime": 1780326000000,
+      "endTime": 1780351200000,
+      "origin": "com.sec.android.app.shealth"
+    },
+    "context": {
+      "battery": {
+        "level": 67,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5013,
+        "longitude": 127.0396,
+        "accuracy": 12
+      }
+    }
+  },
+  "HEALTH VO2_MAX": {
+    "type": "HEALTH",
+    "source": "VO2_MAX",
+    "title": "VO2_MAX",
+    "text": "42.5 mL/kg/min",
+    "timestamp": 1780373280000,
+    "collectedAt": 1780373280000,
+    "dedupeKey": "HEALTH:VO2_MAX:1780373280000",
+    "payload": {
+      "vo2MillilitersPerMinuteKilogram": 42.5,
+      "measurementMethod": 1,
+      "time": 1780373280000,
+      "origin": "com.sec.android.app.shealth"
+    },
+    "context": {
+      "battery": {
+        "level": 38,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5665,
+        "longitude": 126.978,
+        "accuracy": 12
+      }
+    }
+  },
+  "HEALTH WEIGHT": {
+    "type": "HEALTH",
+    "source": "WEIGHT",
+    "title": "WEIGHT",
+    "text": "68.2 kg",
+    "timestamp": 1780372800000,
+    "collectedAt": 1780372800000,
+    "dedupeKey": "HEALTH:WEIGHT:1780372800000",
+    "payload": {
+      "kilograms": 68.2,
+      "time": 1780372800000,
+      "origin": "com.sec.android.app.shealth"
+    },
+    "context": {
+      "battery": {
+        "level": 39,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5665,
+        "longitude": 126.978,
+        "accuracy": 12
+      }
+    }
+  },
+  "MEDIA PLAYING": {
+    "type": "MEDIA",
+    "source": "com.spotify.music",
+    "title": "Song Title",
+    "text": "PLAYING • Artist Name",
+    "timestamp": 1780351740000,
+    "collectedAt": 1780351740000,
+    "dedupeKey": "MEDIA:com.spotify.music:PLAYING:Song Title:1780351740000",
+    "payload": {
+      "state": "PLAYING",
+      "packageName": "com.spotify.music",
+      "title": "Song Title",
+      "artist": "Artist Name",
+      "album": "Album Name"
+    },
+    "context": {
+      "battery": {
+        "level": 65,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5013,
+        "longitude": 127.0396,
+        "accuracy": 12
+      }
+    }
+  },
+  "MEDIA_CAPTURE Camera": {
+    "type": "MEDIA_CAPTURE",
+    "source": "Camera",
+    "title": "Photo taken",
+    "text": "IMG_20260602_120000.jpg (4000x3000)",
+    "timestamp": 1780369200000,
+    "collectedAt": 1780369200000,
+    "dedupeKey": "MEDIA_CAPTURE:100001",
+    "payload": {
+      "kind": "photo",
+      "fileName": "IMG_20260602_120000.jpg",
+      "bucket": "Camera",
+      "relativePath": "DCIM/Camera/",
+      "mimeType": "image/jpeg",
+      "width": 4000,
+      "height": 3000,
+      "sizeBytes": 2491000,
+      "camera": "SM-S928N",
+      "contentAnalyzed": false
+    },
+    "context": {
+      "battery": {
+        "level": 43,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5665,
+        "longitude": 126.978,
+        "accuracy": 12
+      }
+    }
+  },
+  "MEDIA_CAPTURE Screenshots": {
+    "type": "MEDIA_CAPTURE",
+    "source": "Screenshots",
+    "title": "Screenshot captured",
+    "text": "Meeting agenda 1. ... · Text",
+    "timestamp": 1780369260000,
+    "collectedAt": 1780369260000,
+    "dedupeKey": "MEDIA_CAPTURE:100002",
+    "payload": {
+      "kind": "screenshot",
+      "fileName": "Screenshot_20260602_120100.png",
+      "bucket": "Screenshots",
+      "relativePath": "Pictures/Screenshots/",
+      "mimeType": "image/png",
+      "width": 1080,
+      "height": 2340,
+      "sizeBytes": 855000,
+      "contentAnalyzed": true,
+      "ocrText": "Meeting agenda 1. ...",
+      "labels": [
+        {
+          "label": "Text",
+          "confidence": 0.87
+        }
+      ],
+      "location": {
+        "lat": 37.5665,
+        "lng": 126.978
+      }
+    },
+    "context": {
+      "battery": {
+        "level": 43,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5665,
+        "longitude": 126.978,
+        "accuracy": 12
+      }
+    }
+  },
+  "NOTIFICATION": {
+    "type": "NOTIFICATION",
+    "source": "com.kakao.talk",
+    "title": "Alex Kim",
+    "text": "Are you free tonight?",
+    "timestamp": 1780351380000,
+    "collectedAt": 1780351380000,
+    "dedupeKey": "NOTIF:0|com.kakao.talk|101|null|10001:1780351380000:POSTED",
+    "payload": {
+      "action": "POSTED",
+      "packageName": "com.kakao.talk",
+      "key": "0|com.kakao.talk|101|null|10001",
+      "postTime": 1780351380000,
+      "isOngoing": false,
+      "isClearable": true,
+      "category": "msg",
+      "channelId": "chat",
+      "subText": "Chat",
+      "groupKey": "com.kakao.talk"
+    },
+    "context": {
+      "battery": {
+        "level": 67,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5013,
+        "longitude": 127.0396,
+        "accuracy": 12
+      }
+    }
+  },
+  "SMARTTHINGS device": {
+    "type": "SMARTTHINGS",
+    "source": "entryway.lock",
+    "title": "Entryway lock",
+    "text": "Lock · lock: unlocked -> locked (device)",
+    "timestamp": 1780357214000,
+    "collectedAt": 1780357214000,
+    "dedupeKey": "ST:entryway.lock:lock.lock:locked:1780357214000",
+    "payload": {
+      "kind": "state",
+      "deviceId": "entryway.lock",
+      "name": "lock",
+      "label": "Entryway lock",
+      "deviceTypeName": "Lock",
+      "roomId": "entryway",
+      "capabilities": [
+        "lock"
+      ],
+      "change": {
+        "capability": "lock",
+        "attribute": "lock",
+        "value": "locked",
+        "previousValue": "unlocked"
+      },
+      "actor": {
+        "kind": "device",
+        "channel": null,
+        "command": null,
+        "args": []
+      },
+      "status": {
+        "components": {
+          "main": {
+            "lock": {
+              "lock": {
+                "value": "locked"
+              }
+            }
+          }
+        }
+      }
+    },
+    "context": {
+      "battery": {
+        "level": 59,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5013,
+        "longitude": 127.0396,
+        "accuracy": 12
+      }
+    }
+  },
+  "SMARTTHINGS event/physical": {
+    "type": "SMARTTHINGS",
+    "source": "entryway.doorbell",
+    "title": "Entryway doorbell",
+    "text": "Doorbell · button: - -> pushed (event)",
+    "timestamp": 1780383600000,
+    "collectedAt": 1780383600000,
+    "dedupeKey": "ST:entryway.doorbell:button.button:pushed:1780383600000",
+    "payload": {
+      "kind": "state",
+      "deviceId": "entryway.doorbell",
+      "name": "doorbell",
+      "label": "Entryway doorbell",
+      "deviceTypeName": "Doorbell",
+      "roomId": "entryway",
+      "capabilities": [
+        "button"
+      ],
+      "change": {
+        "capability": "button",
+        "attribute": "button",
+        "value": "pushed",
+        "previousValue": null
+      },
+      "actor": {
+        "kind": "event",
+        "channel": "physical",
+        "command": null,
+        "args": []
+      },
+      "status": {
+        "components": {
+          "main": {
+            "button": {
+              "button": {
+                "value": "pushed"
+              }
+            }
+          }
+        }
+      }
+    },
+    "context": {
+      "battery": {
+        "level": 24,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5665,
+        "longitude": 126.978,
+        "accuracy": 12
+      }
+    }
+  },
+  "SMARTTHINGS notification cycle_finished": {
+    "type": "SMARTTHINGS",
+    "source": "laundry.washer",
+    "title": "Laundry washer",
+    "text": "Notification · Washer cycle finished",
+    "timestamp": 1780385460000,
+    "collectedAt": 1780385460000,
+    "dedupeKey": "ST:NOTIFY:laundry.washer:cycle_finished:1780385460000",
+    "payload": {
+      "kind": "notification",
+      "deviceId": "laundry.washer",
+      "name": "washer",
+      "label": "Laundry washer",
+      "deviceTypeName": "Washer",
+      "roomId": "laundry",
+      "notification": {
+        "category": "cycle_finished",
+        "severity": "info",
+        "message": "Washer cycle finished"
+      },
+      "trigger": {
+        "capability": "cycleState",
+        "attribute": "cycleState",
+        "value": "finished",
+        "previousValue": "running"
+      }
+    },
+    "context": {
+      "battery": {
+        "level": 22,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5665,
+        "longitude": 126.978,
+        "accuracy": 12
+      }
+    }
+  },
+  "SMARTTHINGS notification doorbell": {
+    "type": "SMARTTHINGS",
+    "source": "entryway.doorbell",
+    "title": "Entryway doorbell",
+    "text": "Notification · Someone is at the front door",
+    "timestamp": 1780383600000,
+    "collectedAt": 1780383600000,
+    "dedupeKey": "ST:NOTIFY:entryway.doorbell:doorbell:1780383600000",
+    "payload": {
+      "kind": "notification",
+      "deviceId": "entryway.doorbell",
+      "name": "doorbell",
+      "label": "Entryway doorbell",
+      "deviceTypeName": "Doorbell",
+      "roomId": "entryway",
+      "notification": {
+        "category": "doorbell",
+        "severity": "info",
+        "message": "Someone is at the front door"
+      },
+      "trigger": {
+        "capability": "button",
+        "attribute": "button",
+        "value": "pushed",
+        "previousValue": null
+      }
+    },
+    "context": {
+      "battery": {
+        "level": 24,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5665,
+        "longitude": 126.978,
+        "accuracy": 12
+      }
+    }
+  },
+  "SMARTTHINGS sensor": {
+    "type": "SMARTTHINGS",
+    "source": "room1.temperature_sensor",
+    "title": "Room 1 temperature",
+    "text": "Temperature · temperature: - -> 22.2 C (sensor report)",
+    "timestamp": 1780326060000,
+    "collectedAt": 1780326060000,
+    "dedupeKey": "ST:room1.temperature_sensor:temperatureMeasurement.temperature:22.2:1780326060000",
+    "payload": {
+      "kind": "state",
+      "deviceId": "room1.temperature_sensor",
+      "name": "temperature_sensor",
+      "label": "Room 1 temperature",
+      "deviceTypeName": "Temperature",
+      "roomId": "room1",
+      "capabilities": [
+        "temperatureMeasurement"
+      ],
+      "change": {
+        "capability": "temperatureMeasurement",
+        "attribute": "temperature",
+        "value": 22.2,
+        "previousValue": null,
+        "unit": "C"
+      },
+      "actor": {
+        "kind": "sensor",
+        "channel": null,
+        "command": null,
+        "args": [],
+        "reason": "initial"
+      },
+      "status": {
+        "components": {
+          "main": {
+            "temperatureMeasurement": {
+              "temperature": {
+                "value": 22.2,
+                "unit": "C"
+              }
+            }
+          }
+        }
+      }
+    },
+    "context": {
+      "battery": {
+        "level": 80,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5013,
+        "longitude": 127.0396,
+        "accuracy": 12
+      }
+    }
+  },
+  "SMARTTHINGS user/mobile_app": {
+    "type": "SMARTTHINGS",
+    "source": "living_room.tv",
+    "title": "Living room tv",
+    "text": "TV · switch: off -> on (user, mobile app)",
+    "timestamp": 1780351500000,
+    "collectedAt": 1780351500000,
+    "dedupeKey": "ST:living_room.tv:switch.switch:on:1780351500000",
+    "payload": {
+      "kind": "state",
+      "deviceId": "living_room.tv",
+      "name": "tv",
+      "label": "Living room tv",
+      "deviceTypeName": "TV",
+      "roomId": "living_room",
+      "capabilities": [
+        "switch",
+        "mediaPlayback"
+      ],
+      "change": {
+        "capability": "switch",
+        "attribute": "switch",
+        "value": "on",
+        "previousValue": "off"
+      },
+      "actor": {
+        "kind": "user",
+        "channel": "mobile_app",
+        "command": "on",
+        "args": []
+      },
+      "status": {
+        "components": {
+          "main": {
+            "switch": {
+              "switch": {
+                "value": "on"
+              }
+            },
+            "mediaPlayback": {
+              "playbackStatus": {
+                "value": "stopped"
+              }
+            }
+          }
+        }
+      }
+    },
+    "context": {
+      "battery": {
+        "level": 66,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5013,
+        "longitude": 127.0396,
+        "accuracy": 12
+      }
+    }
+  },
+  "SMARTTHINGS user/physical": {
+    "type": "SMARTTHINGS",
+    "source": "living_room.light",
+    "title": "Living room light",
+    "text": "Light · switch: off -> on (user, at device)",
+    "timestamp": 1780352400000,
+    "collectedAt": 1780352400000,
+    "dedupeKey": "ST:living_room.light:switch.switch:on:1780352400000",
+    "payload": {
+      "kind": "state",
+      "deviceId": "living_room.light",
+      "name": "light",
+      "label": "Living room light",
+      "deviceTypeName": "Light",
+      "roomId": "living_room",
+      "capabilities": [
+        "switch"
+      ],
+      "change": {
+        "capability": "switch",
+        "attribute": "switch",
+        "value": "on",
+        "previousValue": "off"
+      },
+      "actor": {
+        "kind": "user",
+        "channel": "physical",
+        "command": "on",
+        "args": []
+      },
+      "status": {
+        "components": {
+          "main": {
+            "switch": {
+              "switch": {
+                "value": "on"
+              }
+            }
+          }
+        }
+      }
+    },
+    "context": {
+      "battery": {
+        "level": 62,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5013,
+        "longitude": 127.0396,
+        "accuracy": 12
+      }
+    }
+  },
+  "TELEPHONY call": {
+    "type": "TELEPHONY",
+    "source": "call",
+    "title": "Call",
+    "text": "Incoming, ringing",
+    "timestamp": 1780358400000,
+    "collectedAt": 1780358400000,
+    "dedupeKey": "TEL:CALL:RINGING:1780358400",
+    "payload": {
+      "kind": "CALL",
+      "state": "RINGING"
+    },
+    "context": {
+      "battery": {
+        "level": 58,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5665,
+        "longitude": 126.978,
+        "accuracy": 12
+      }
+    }
+  },
+  "TELEPHONY sms": {
+    "type": "TELEPHONY",
+    "source": "sms",
+    "title": "SMS received",
+    "text": "SMS arrived",
+    "timestamp": 1780351440000,
+    "collectedAt": 1780351440000,
+    "dedupeKey": "TEL:SMS:INCOMING:1780351440000",
+    "payload": {
+      "kind": "SMS",
+      "direction": "INCOMING"
+    },
+    "context": {
+      "battery": {
+        "level": 67,
+        "charging": false
+      },
+      "weather": "cloudy",
+      "location": {
+        "latitude": 37.5013,
+        "longitude": 127.0396,
+        "accuracy": 12
+      }
+    }
+  }
+}

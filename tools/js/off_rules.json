@@ -1,0 +1,30 @@
+{
+  "_about": "Checks the person makes before going to sleep, before leaving home, and after waking (only for what was left on overnight). For each device that is on, one draw with the probability for that moment; devices are checked in random order. Values agreed in the conversation (2026-10-21); they are the simulator's choice, no source.",
+  "morningWithinMinutes": 60,
+  "rules": [
+    { "deviceType": "light",                "isOn": { "capability": "switch", "attribute": "switch", "op": "==", "value": "on" },
+      "off": { "do": "home.command", "capability": "switch", "command": "off", "args": [], "channel": "physical" }, "p": { "bedtime": 0.95, "leaving": 0.98, "morning": 0.9 } },
+    { "deviceType": "lamp",                 "isOn": { "capability": "switch", "attribute": "switch", "op": "==", "value": "on" },
+      "off": { "do": "home.command", "capability": "switch", "command": "off", "args": [], "channel": "physical" }, "p": { "bedtime": 0.9, "leaving": 0.97, "morning": 0.85 } },
+    { "deviceType": "tv",                   "isOn": { "capability": "switch", "attribute": "switch", "op": "==", "value": "on" },
+      "off": { "do": "home.command", "capability": "switch", "command": "off", "args": [], "channel": "physical" }, "p": { "bedtime": 0.95, "leaving": 0.99, "morning": 0.9 } },
+    { "deviceType": "speaker",              "isOn": { "capability": "mediaPlayback", "attribute": "playbackStatus", "op": "==", "value": "playing" },
+      "off": { "do": "home.command", "capability": "mediaPlayback", "command": "stop", "args": [], "channel": "physical" }, "p": { "bedtime": 0.95, "leaving": 0.99, "morning": 0.9 } },
+    { "deviceType": "air_purifier",         "isOn": { "capability": "fanSpeedPercent", "attribute": "percent", "op": ">", "value": 0 },
+      "off": { "do": "home.command", "capability": "fanSpeedPercent", "command": "setPercent", "args": [0], "channel": "mobile_app" }, "p": { "bedtime": 0.8, "leaving": 0.9, "morning": 0.8 } },
+    { "deviceType": "heating_cooling_unit", "isOn": { "capability": "thermostatMode", "attribute": "thermostatMode", "op": "==", "value": "heat" },
+      "off": { "do": "home.command", "capability": "thermostatMode", "command": "setThermostatMode", "args": ["off"], "channel": "mobile_app" }, "p": { "bedtime": 0.8, "leaving": 0.9, "morning": 0.8 } },
+    { "deviceType": "heating_cooling_unit", "isOn": { "capability": "thermostatMode", "attribute": "thermostatMode", "op": "==", "value": "cool" },
+      "off": { "do": "home.command", "capability": "thermostatMode", "command": "setThermostatMode", "args": ["off"], "channel": "mobile_app" }, "p": { "bedtime": 0.8, "leaving": 0.92, "morning": 0.8 } },
+    { "deviceType": "humidifier",           "isOn": { "capability": "switch", "attribute": "switch", "op": "==", "value": "on" },
+      "off": { "do": "home.command", "capability": "switch", "command": "off", "args": [], "channel": "physical" }, "p": { "bedtime": 0.8, "leaving": 0.9, "morning": 0.8 } },
+    { "deviceType": "window_contact", "months": [11, 12, 1, 2, 3], "isOn": { "capability": "contactSensor", "attribute": "contact", "op": "==", "value": "open" },
+      "off": { "do": "home.record", "capability": "contactSensor", "attribute": "contact", "value": "closed" }, "p": { "bedtime": 0.98, "leaving": 0.99, "morning": 0.95 } },
+    { "deviceType": "window_contact", "months": [4, 5, 6, 7, 8, 9, 10], "isOn": { "capability": "contactSensor", "attribute": "contact", "op": "==", "value": "open" },
+      "off": { "do": "home.record", "capability": "contactSensor", "attribute": "contact", "value": "closed" }, "p": { "bedtime": 0.85, "leaving": 0.95, "morning": 0.5 } },
+    { "deviceType": "door_contact", "rooms": ["balcony"], "months": [11, 12, 1, 2, 3], "isOn": { "capability": "contactSensor", "attribute": "contact", "op": "==", "value": "open" },
+      "off": { "do": "home.record", "capability": "contactSensor", "attribute": "contact", "value": "closed" }, "p": { "bedtime": 0.98, "leaving": 0.99, "morning": 0.95 } },
+    { "deviceType": "door_contact", "rooms": ["balcony"], "months": [4, 5, 6, 7, 8, 9, 10], "isOn": { "capability": "contactSensor", "attribute": "contact", "op": "==", "value": "open" },
+      "off": { "do": "home.record", "capability": "contactSensor", "attribute": "contact", "value": "closed" }, "p": { "bedtime": 0.85, "leaving": 0.95, "morning": 0.5 } }
+  ]
+}

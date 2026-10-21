@@ -1,0 +1,2245 @@
+<title>Smart Home Floor Plan Simulator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: architectural floor plan - device chips inside room cells split by thick outer and thin inner walls; device panel on the right, log below */
+:root {
+  --paper: #f6f7f4;
+  --sheet: #ffffff;
+  --ink: #1f2a2e;
+  --ink-soft: #5b6a70;
+  --wall: #2b3a40;
+  --line: #d3dad7;
+  --accent: #1f6f8b;
+  --accent-soft: #dcecf2;
+  --on: #d98e04;
+  --on-soft: #fbefd3;
+  --alert: #b3412e;
+  --alert-soft: #f7e1dc;
+  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #141a1d; --sheet: #1b2327; --ink: #e3e9e7; --ink-soft: #97a6ab; --wall: #8fa3aa;
+    --line: #2e3a3f; --accent: #6cb6d1; --accent-soft: #1d3540; --on: #f0b13a; --on-soft: #3b2f15;
+    --alert: #e7826f; --alert-soft: #3d221d; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #141a1d; --sheet: #1b2327; --ink: #e3e9e7; --ink-soft: #97a6ab; --wall: #8fa3aa;
+  --line: #2e3a3f; --accent: #6cb6d1; --accent-soft: #1d3540; --on: #f0b13a; --on-soft: #3b2f15;
+  --alert: #e7826f; --alert-soft: #3d221d; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--paper); color: var(--ink); font-family: var(--font-body); font-size: 14px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+}
+.wrap { max-width: 1360px; margin: 0 auto; display: grid; gap: 20px; }
+h1 { font-size: 20px; margin: 0; font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; }
+h2 { font-size: 15px; margin: 0; font-weight: 600; }
+.mono { font-family: var(--font-mono); }
+.muted { color: var(--ink-soft); }
+.small { font-size: 12px; }
+
+/* Header */
+header.top { display: flex; flex-wrap: wrap; gap: 16px 28px; align-items: end; justify-content: space-between; }
+.controls { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: end; }
+.field { display: grid; gap: 4px; }
+.field > span { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); }
+input, select, button { font: inherit; color: inherit; }
+input[type="text"], input[type="number"], input[type="datetime-local"], select {
+  background: var(--sheet); border: 1px solid var(--line); border-radius: var(--r); padding: 6px 8px; min-width: 0;
+}
+input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.seg { display: inline-flex; border: 1px solid var(--wall); border-radius: var(--r); overflow: hidden; }
+.seg button { border: 0; background: var(--sheet); padding: 6px 14px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--wall); }
+.seg button[aria-pressed="true"] { background: var(--wall); color: var(--sheet); }
+.btn { border: 1px solid var(--wall); background: var(--sheet); border-radius: var(--r); padding: 6px 12px; cursor: pointer; }
+.btn:hover { background: var(--accent-soft); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--sheet); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.danger { border-color: var(--alert); color: var(--alert); }
+.btn.danger.armed { background: var(--alert); color: var(--sheet); }
+.btn.sm { padding: 3px 9px; font-size: 12px; }
+.btn.run { min-width: 76px; font-weight: 600; background: var(--accent); border-color: var(--accent); color: var(--sheet); }
+.btn.run[aria-pressed="true"] { background: var(--alert); border-color: var(--alert); }
+.clockrow { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.outdoor-now { display: flex; gap: 6px; flex-wrap: wrap; font-size: 12px; font-variant-numeric: tabular-nums; }
+.outdoor-now span { border: 1px solid var(--line); background: var(--sheet); border-radius: var(--r); padding: 5px 8px; white-space: nowrap; }
+.outdoor-now b { font-weight: 500; color: var(--ink-soft); margin-right: 4px; font-family: var(--font-body); }
+
+/* Main: floor plan + panel */
+.main { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 20px; align-items: start; }
+@media (max-width: 1000px) { .main { grid-template-columns: minmax(0, 1fr); } }
+
+.plan {
+  display: grid; border: 4px solid var(--wall); background: var(--wall); gap: 2px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.room { background: var(--sheet); padding: 10px 10px 12px; display: grid; gap: 8px; align-content: start; min-width: 0; min-height: 120px; }
+.room.outdoor { background: repeating-linear-gradient(135deg, var(--sheet) 0 9px, var(--paper) 9px 10px); }
+.room-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.room-name { font-weight: 600; }
+.room-id { font-family: var(--font-mono); font-size: 11px; color: var(--ink-soft); }
+.room-meta { font-family: var(--font-mono); font-size: 11px; color: var(--ink-soft); margin-top: -6px; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); background: var(--sheet);
+  border-radius: 999px; padding: 2px 8px 2px 6px; font-size: 12px; cursor: pointer; max-width: 100%;
+}
+.chip:hover { border-color: var(--accent); }
+.chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.chip .dot { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--ink-soft); flex: none; }
+.chip.is-on .dot { background: var(--on); border-color: var(--on); }
+.chip.is-alert .dot { background: var(--alert); border-color: var(--alert); }
+.chip .val { font-family: var(--font-mono); font-size: 11px; color: var(--ink-soft); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.chip .val.num { display: inline-block; min-width: 8.5ch; } /* fixed width: changing numbers must not move chips under the pointer */
+.chip.sensor { border-style: dashed; }
+@media (max-width: 760px) {
+  .plan { grid-template-columns: minmax(0, 1fr) !important; grid-template-areas: none !important; }
+  .room { grid-area: auto !important; min-height: 0; }
+}
+
+/* Device panel */
+.panel { background: var(--sheet); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; gap: 14px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); }
+@media (max-width: 1000px) { .panel { position: static; } }
+.panel-empty { color: var(--ink-soft); }
+.panel-head { display: grid; gap: 2px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+.cap { display: grid; gap: 8px; padding-bottom: 12px; border-bottom: 1px dashed var(--line); }
+.cap:last-child { border-bottom: 0; padding-bottom: 0; }
+.cap-name { font-family: var(--font-mono); font-size: 12px; color: var(--accent); }
+.attr-row { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.attr-val { font-family: var(--font-mono); font-size: 15px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.ctl { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.ctl input[type="number"] { width: 96px; }
+.ctl input[type="text"] { width: 140px; }
+.ctl-label { font-size: 11px; color: var(--ink-soft); width: 100%; }
+.toggle { display: inline-flex; align-items: center; gap: 8px; border: 0; background: none; padding: 0; cursor: pointer; }
+.toggle .track { width: 44px; height: 24px; border-radius: 12px; background: var(--line); position: relative; transition: background .15s; }
+.toggle .knob { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--sheet); box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: left .15s; }
+.toggle[aria-checked="true"] .track { background: var(--on); }
+.toggle[aria-checked="true"] .knob { left: 23px; }
+@media (prefers-reduced-motion: reduce) { .toggle .track, .toggle .knob { transition: none; } }
+.note { font-size: 12px; color: var(--ink-soft); }
+.toast { font-size: 12px; min-height: 18px; color: var(--accent); }
+
+/* Log */
+.logs { background: var(--sheet); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; gap: 12px; min-width: 0; }
+.logs-head { display: flex; flex-wrap: wrap; gap: 10px 16px; justify-content: space-between; align-items: center; }
+.logs-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: end; }
+.logs-actions input[type="number"] { width: 110px; }
+.table-wrap { overflow-x: auto; max-height: 360px; overflow-y: auto; border: 1px solid var(--line); border-radius: var(--r); }
+table { border-collapse: collapse; width: 100%; font-size: 12px; }
+th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { position: sticky; top: 0; background: var(--paper); font-weight: 600; font-size: 11px; letter-spacing: 0.04em; color: var(--ink-soft); }
+td.mono { font-variant-numeric: tabular-nums; }
+.tag { display: inline-block; padding: 0 6px; border-radius: 4px; font-size: 11px; }
+.tag.command { background: var(--accent-soft); color: var(--accent); }
+.tag.manual { background: var(--on-soft); color: var(--on); }
+.tag.event { background: var(--alert-soft); color: var(--alert); }
+.tag.sensor { background: var(--paper); color: var(--ink-soft); box-shadow: inset 0 0 0 1px var(--line); }
+.tag.device { background: var(--paper); color: var(--ink); box-shadow: inset 0 0 0 1px var(--wall); }
+/* Phone */
+.phone { background: var(--sheet); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; gap: 12px; min-width: 0; }
+.phone-status { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; font-variant-numeric: tabular-nums; }
+.phone-status span { border: 1px solid var(--line); border-radius: var(--r); padding: 4px 8px; white-space: nowrap; background: var(--paper); }
+.phone-status b { font-weight: 500; color: var(--ink-soft); margin-right: 4px; font-family: var(--font-body); }
+.phone-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+.pgroup { border: 1px solid var(--line); border-radius: var(--r); padding: 10px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.pgroup h3 { font-size: 12px; margin: 0; font-weight: 600; color: var(--accent); font-family: var(--font-mono); }
+.pgroup .ctl input[type="text"] { width: 120px; }
+.pgroup .ctl input[type="number"] { width: 80px; }
+.pgroup select { max-width: 100%; }
+.cal-list { display: grid; gap: 4px; font-size: 12px; }
+.cal-item { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tag.phone { background: var(--accent-soft); color: var(--accent); }
+textarea#fallback { width: 100%; min-height: 120px; font-family: var(--font-mono); font-size: 11px; background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: var(--r); padding: 8px; }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Smart Home Floor Plan Simulator</h1>
+      <div class="muted small">Click a device to control it in the panel. Every value change adds one line to the log below.</div>
+    </div>
+    <div class="controls">
+      <label class="field"><span>House ID (houseId)</span><input type="text" id="houseId" value="house001" maxlength="40"></label>
+      <div class="field"><span>House type</span>
+        <div class="clockrow"><div class="seg" role="group" aria-label="House type" id="houseTypes"></div>
+          <div class="seg" role="group" aria-label="Layout variant" id="variants"></div></div>
+        <div class="small muted" id="variantInfo"></div>
+      </div>
+      <div class="field"><span>Simulation time</span>
+        <div class="clockrow">
+          <input type="datetime-local" id="clock" step="1">
+          <button class="btn sm" data-jump="60">+1 min</button>
+          <button class="btn sm" data-jump="600">+10 min</button>
+          <button class="btn sm" data-jump="3600">+1 hour</button>
+          <button class="btn sm" data-jump="86400">+1 day</button>
+        </div>
+      </div>
+      <div class="field"><span>Outdoor now</span>
+        <div class="outdoor-now mono" id="outdoorNow" aria-live="off"></div>
+      </div>
+      <div class="field"><span>Simulation</span>
+        <div class="clockrow"><button class="btn run" id="runBtn" aria-pressed="false">Start</button><span class="small muted" id="runState">Stopped</span></div>
+      </div>
+      <div class="field"><span>Time speed</span>
+        <div class="seg" role="group" aria-label="Time speed" id="speeds"></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="main">
+    <section aria-label="Floor plan"><div class="plan" id="plan"></div></section>
+    <aside class="panel" id="panel" aria-live="polite"><div class="panel-empty">Select a device on the floor plan.</div></aside>
+  </div>
+
+  <section class="phone" aria-label="Phone">
+    <div><h2>Phone</h2>
+      <div class="note">The person's phone. Each action below adds phone events (event-formats). Travel takes simulated time (walking and waiting legs, the ride, legs after); run or step the clock to see the trip happen. Every saved home log line is also copied to the phone as a SMARTTHINGS event. Battery, weather and location go on every phone event as context. To control a home device from the phone, pick a device on the plan and set "Control from" to Phone app.</div></div>
+    <div class="phone-status mono" id="phoneStatus"></div>
+    <div class="phone-grid" id="phoneControls"></div>
+    <div class="toast" id="phoneToast"></div>
+  </section>
+
+  <section class="logs" aria-label="Log">
+    <div class="logs-head">
+      <div><h2>Log <span class="muted mono" id="logCount">0</span></h2>
+        <div class="note">Newest first. Times are simulation times. Sensors and appliances update on their own as simulation time passes (sensor = reading, device = appliance progress). Typing a time jumps there without simulating the gap; the +min/+hour/+day buttons simulate it. The log is kept temporarily in this browser; save it to use it as data. It saves as .txt because of a file-type limit; the content is one JSON object per line (JSONL).</div></div>
+      <div class="logs-actions">
+        <label class="field"><span>Background logs per day</span><input type="number" id="bgPerDay" min="0" max="100000" step="1" value="500"></label>
+        <button class="btn" id="closeDayBtn">Close day now</button>
+        <button class="btn primary" id="saveBtn">Save JSONL</button>
+        <button class="btn" id="copyBtn">Copy JSONL</button>
+        <button class="btn danger" id="clearBtn" title="Clears the home log, the phone log and sensor readings not yet written">Clear all logs</button>
+      </div>
+    </div>
+    <div class="note" id="pendingNote"></div>
+    <div class="toast" id="logToast"></div>
+    <textarea id="fallback" hidden readonly aria-label="JSONL content"></textarea>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Time</th><th>House</th><th>Weather</th><th>deviceId</th><th>capability.attribute</th><th>Previous</th><th>Value</th><th>Cause</th></tr></thead>
+        <tbody id="logBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="logs" aria-label="Phone log">
+    <div class="logs-head">
+      <div><h2>Phone log <span class="muted mono" id="phoneLogCount">0</span></h2>
+        <div class="note">Newest first. This is the combined stream: phone events plus SMARTTHINGS copies of home log lines. Copies of sensor lines arrive when the home day closes. Saves as .txt; the content is JSONL.</div></div>
+      <div class="logs-actions">
+        <label class="small"><input type="checkbox" id="showCopies" checked> Show SMARTTHINGS copies</label>
+        <button class="btn primary" id="phoneSaveBtn">Save JSONL</button>
+        <button class="btn" id="phoneCopyBtn">Copy JSONL</button>
+        <button class="btn danger" id="phoneClearBtn" title="Clears the home log, the phone log and sensor readings not yet written">Clear all logs</button>
+      </div>
+    </div>
+    <div class="toast" id="phoneLogToast"></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Time</th><th>type</th><th>source</th><th>title</th><th>text</th><th>Battery</th><th>Weather</th><th>Place</th></tr></thead>
+        <tbody id="phoneLogBody"></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<script>
+/* ===== Data: device_spec.jsonl ===== */
+const SPEC = [{"device": "temperature_sensor", "rooms": ["balcony", "bathroom", "closet", "dining_room", "entryway", "hallway", "kitchen", "laundry", "living_room", "room1", "room2", "room3", "room4"], "deviceIds": ["balcony.temperature_sensor", "bathroom.temperature_sensor", "closet.temperature_sensor", "dining_room.temperature_sensor", "entryway.temperature_sensor", "hallway.temperature_sensor", "kitchen.temperature_sensor", "laundry.temperature_sensor", "living_room.temperature_sensor", "room1.temperature_sensor", "room2.temperature_sensor", "room3.temperature_sensor", "room4.temperature_sensor"], "capabilities": [{"capability": "temperatureMeasurement", "attributes": [{"name": "temperature", "type": "number", "unit": "C"}], "commands": []}]}, {"device": "humidity_sensor", "rooms": ["balcony", "bathroom", "closet", "dining_room", "hallway", "kitchen", "laundry", "living_room", "room1", "room2", "room3", "room4"], "deviceIds": ["balcony.humidity_sensor", "bathroom.humidity_sensor", "closet.humidity_sensor", "dining_room.humidity_sensor", "hallway.humidity_sensor", "kitchen.humidity_sensor", "laundry.humidity_sensor", "living_room.humidity_sensor", "room1.humidity_sensor", "room2.humidity_sensor", "room3.humidity_sensor", "room4.humidity_sensor"], "capabilities": [{"capability": "relativeHumidityMeasurement", "attributes": [{"name": "humidity", "type": "integer", "min": 0, "max": 100, "unit": "%"}], "commands": []}]}, {"device": "light_sensor", "rooms": ["bathroom", "closet", "dining_room", "entryway", "hallway", "kitchen", "laundry", "living_room", "room1", "room2", "room3", "room4"], "deviceIds": ["bathroom.light_sensor", "closet.light_sensor", "dining_room.light_sensor", "entryway.light_sensor", "hallway.light_sensor", "kitchen.light_sensor", "laundry.light_sensor", "living_room.light_sensor", "room1.light_sensor", "room2.light_sensor", "room3.light_sensor", "room4.light_sensor"], "capabilities": [{"capability": "illuminanceMeasurement", "attributes": [{"name": "illuminance", "type": "number", "unit": "lux"}], "commands": []}]}, {"device": "occupancy_sensor", "rooms": ["balcony", "bathroom", "closet", "dining_room", "entryway", "hallway", "kitchen", "laundry", "living_room", "room1", "room2", "room3", "room4"], "deviceIds": ["balcony.occupancy_sensor", "bathroom.occupancy_sensor", "closet.occupancy_sensor", "dining_room.occupancy_sensor", "entryway.occupancy_sensor", "hallway.occupancy_sensor", "kitchen.occupancy_sensor", "laundry.occupancy_sensor", "living_room.occupancy_sensor", "room1.occupancy_sensor", "room2.occupancy_sensor", "room3.occupancy_sensor", "room4.occupancy_sensor"], "capabilities": [{"capability": "presenceSensor", "attributes": [{"name": "presence", "type": "enum", "values": ["present", "not present"]}], "commands": []}]}, {"device": "air_quality_sensor", "rooms": ["balcony", "dining_room", "entryway", "hallway", "kitchen", "laundry", "living_room", "room1", "room2", "room3", "room4"], "deviceIds": ["balcony.air_quality_sensor", "dining_room.air_quality_sensor", "entryway.air_quality_sensor", "hallway.air_quality_sensor", "kitchen.air_quality_sensor", "laundry.air_quality_sensor", "living_room.air_quality_sensor", "room1.air_quality_sensor", "room2.air_quality_sensor", "room3.air_quality_sensor", "room4.air_quality_sensor"], "capabilities": [{"capability": "fineDustSensor", "attributes": [{"name": "fineDustLevel", "type": "number", "unit": "µg/m³"}], "commands": []}, {"capability": "carbonDioxideMeasurement", "attributes": [{"name": "carbonDioxide", "type": "number", "unit": "ppm"}], "commands": []}]}, {"device": "noise_sensor", "rooms": ["balcony", "bathroom", "closet", "dining_room", "entryway", "hallway", "kitchen", "laundry", "living_room", "room1", "room2", "room3", "room4"], "deviceIds": ["balcony.noise_sensor", "bathroom.noise_sensor", "closet.noise_sensor", "dining_room.noise_sensor", "entryway.noise_sensor", "hallway.noise_sensor", "kitchen.noise_sensor", "laundry.noise_sensor", "living_room.noise_sensor", "room1.noise_sensor", "room2.noise_sensor", "room3.noise_sensor", "room4.noise_sensor"], "capabilities": [{"capability": "soundPressureLevel", "attributes": [{"name": "soundPressureLevel", "type": "number", "unit": "dB"}], "commands": []}]}, {"device": "door_contact", "rooms": ["balcony", "entryway"], "deviceIds": ["balcony.door_contact", "entryway.door_contact"], "capabilities": [{"capability": "contactSensor", "attributes": [{"name": "contact", "type": "enum", "values": ["open", "closed"]}], "commands": []}]}, {"device": "window_contact", "rooms": ["living_room", "room1", "room2", "room3", "room4"], "deviceIds": ["living_room.window_contact", "room1.window_contact", "room2.window_contact", "room3.window_contact", "room4.window_contact"], "capabilities": [{"capability": "contactSensor", "attributes": [{"name": "contact", "type": "enum", "values": ["open", "closed"]}], "commands": []}]}, {"device": "water_leak_sensor", "rooms": ["bathroom", "kitchen", "laundry"], "deviceIds": ["bathroom.water_leak_sensor", "kitchen.water_leak_sensor", "laundry.water_leak_sensor"], "capabilities": [{"capability": "waterSensor", "attributes": [{"name": "water", "type": "enum", "values": ["dry", "wet"]}], "commands": []}]}, {"device": "smoke_alarm", "rooms": ["kitchen"], "deviceIds": ["kitchen.smoke_alarm"], "capabilities": [{"capability": "smokeDetector", "attributes": [{"name": "smoke", "type": "enum", "values": ["clear", "detected"]}], "commands": []}]}, {"device": "doorbell", "rooms": ["entryway"], "deviceIds": ["entryway.doorbell"], "capabilities": [{"capability": "button", "attributes": [{"name": "button", "type": "enum", "values": ["pushed"]}], "commands": []}]}, {"device": "wifi_router", "rooms": ["living_room"], "deviceIds": ["living_room.wifi_router"], "capabilities": [{"capability": "connectedDevices", "attributes": [{"name": "connectedDevices", "type": "integer"}], "commands": []}]}, {"device": "light", "rooms": ["balcony", "bathroom", "closet", "dining_room", "entryway", "hallway", "kitchen", "laundry", "living_room", "room1", "room2", "room3", "room4"], "deviceIds": ["balcony.light", "bathroom.light", "closet.light", "dining_room.light", "entryway.light", "hallway.light", "kitchen.light", "laundry.light", "living_room.light", "room1.light", "room2.light", "room3.light", "room4.light"], "capabilities": [{"capability": "switch", "attributes": [{"name": "switch", "type": "enum", "values": ["on", "off"]}], "commands": [{"name": "on", "args": []}, {"name": "off", "args": []}]}]}, {"device": "lamp", "rooms": ["living_room", "room1", "room2", "room3", "room4"], "deviceIds": ["living_room.lamp", "room1.lamp", "room2.lamp", "room3.lamp", "room4.lamp"], "capabilities": [{"capability": "switch", "attributes": [{"name": "switch", "type": "enum", "values": ["on", "off"]}], "commands": [{"name": "on", "args": []}, {"name": "off", "args": []}]}, {"capability": "switchLevel", "attributes": [{"name": "level", "type": "integer", "min": 0, "max": 100}], "commands": [{"name": "setLevel", "args": ["level"]}]}, {"capability": "colorTemperature", "attributes": [{"name": "colorTemperature", "type": "integer", "min": 2700, "max": 6500, "unit": "K"}], "commands": [{"name": "setColorTemperature", "args": ["K"]}]}]}, {"device": "heating_cooling_unit", "rooms": ["dining_room", "hallway", "kitchen", "living_room", "room1", "room2", "room3", "room4"], "deviceIds": ["dining_room.heating_cooling_unit", "hallway.heating_cooling_unit", "kitchen.heating_cooling_unit", "living_room.heating_cooling_unit", "room1.heating_cooling_unit", "room2.heating_cooling_unit", "room3.heating_cooling_unit", "room4.heating_cooling_unit"], "capabilities": [{"capability": "thermostatMode", "attributes": [{"name": "thermostatMode", "type": "enum", "values": ["off", "cool", "heat"]}], "commands": [{"name": "setThermostatMode", "args": ["mode"]}]}, {"capability": "thermostatCoolingSetpoint", "attributes": [{"name": "coolingSetpoint", "type": "number", "unit": "C"}], "commands": [{"name": "setCoolingSetpoint", "args": ["C"]}]}, {"capability": "thermostatHeatingSetpoint", "attributes": [{"name": "heatingSetpoint", "type": "number", "unit": "C"}], "commands": [{"name": "setHeatingSetpoint", "args": ["C"]}]}]}, {"device": "humidifier", "rooms": ["room1", "room2", "room3", "room4"], "deviceIds": ["room1.humidifier", "room2.humidifier", "room3.humidifier", "room4.humidifier"], "capabilities": [{"capability": "switch", "attributes": [{"name": "switch", "type": "enum", "values": ["on", "off"]}], "commands": [{"name": "on", "args": []}, {"name": "off", "args": []}]}, {"capability": "humiditySetpoint", "attributes": [{"name": "humiditySetpoint", "type": "integer", "min": 0, "max": 100, "unit": "%"}], "commands": [{"name": "setHumiditySetpoint", "args": ["%"]}]}]}, {"device": "air_purifier", "rooms": ["living_room"], "deviceIds": ["living_room.air_purifier"], "capabilities": [{"capability": "fanSpeedPercent", "attributes": [{"name": "percent", "type": "integer", "min": 0, "max": 100}], "commands": [{"name": "setPercent", "args": ["percent"]}]}]}, {"device": "curtain", "rooms": ["living_room"], "deviceIds": ["living_room.curtain"], "capabilities": [{"capability": "windowShade", "attributes": [{"name": "windowShade", "type": "enum", "values": ["open", "closed", "opening", "closing", "partially_open", "unknown"]}], "commands": [{"name": "open", "args": []}, {"name": "close", "args": []}, {"name": "pause", "args": []}]}]}, {"device": "tv", "rooms": ["living_room"], "deviceIds": ["living_room.tv"], "capabilities": [{"capability": "switch", "attributes": [{"name": "switch", "type": "enum", "values": ["on", "off"]}], "commands": [{"name": "on", "args": []}, {"name": "off", "args": []}]}, {"capability": "mediaPlayback", "attributes": [{"name": "playbackStatus", "type": "enum", "values": ["playing", "paused", "stopped"]}], "commands": [{"name": "play", "args": []}, {"name": "pause", "args": []}, {"name": "stop", "args": []}]}]}, {"device": "speaker", "rooms": ["living_room", "room1", "room2"], "deviceIds": ["living_room.speaker", "room1.speaker", "room2.speaker"], "capabilities": [{"capability": "connection", "attributes": [{"name": "connection", "type": "enum", "values": ["connected", "disconnected"]}], "commands": []}, {"capability": "mediaPlayback", "attributes": [{"name": "playbackStatus", "type": "enum", "values": ["playing", "paused", "stopped"]}], "commands": [{"name": "play", "args": []}, {"name": "stop", "args": []}]}, {"capability": "audioVolume", "attributes": [{"name": "volume", "type": "integer", "min": 0, "max": 100}], "commands": [{"name": "setVolume", "args": ["volume"]}]}]}, {"device": "robot_vacuum", "rooms": ["living_room"], "deviceIds": ["living_room.robot_vacuum"], "capabilities": [{"capability": "robotCleanerOperatingState", "attributes": [{"name": "operatingState", "type": "enum", "values": ["docked", "running", "seekingCharger", "charging", "paused", "stopped"]}], "commands": [{"name": "start", "args": []}, {"name": "pause", "args": []}, {"name": "goHome", "args": []}]}, {"capability": "battery", "attributes": [{"name": "battery", "type": "integer", "min": 0, "max": 100, "unit": "%"}], "commands": []}]}, {"device": "dishwasher", "rooms": ["kitchen"], "deviceIds": ["kitchen.dishwasher"], "capabilities": [{"capability": "cycleState", "attributes": [{"name": "cycleState", "type": "enum", "values": ["idle", "running", "finished"]}], "commands": [{"name": "start", "args": []}, {"name": "startHeatedDry", "args": []}]}, {"capability": "remainingTime", "attributes": [{"name": "remainingTime", "type": "integer", "unit": "min"}], "commands": []}, {"capability": "contactSensor", "attributes": [{"name": "contact", "type": "enum", "values": ["open", "closed"]}], "commands": []}]}, {"device": "oven", "rooms": ["kitchen"], "deviceIds": ["kitchen.oven"], "capabilities": [{"capability": "mode", "attributes": [{"name": "mode", "type": "enum", "values": ["off", "bake", "convection"]}], "commands": [{"name": "setMode", "args": ["mode"]}]}, {"capability": "temperatureSetpoint", "attributes": [{"name": "temperatureSetpoint", "type": "number", "unit": "C"}], "commands": [{"name": "setTemperatureSetpoint", "args": ["C"]}]}, {"capability": "temperatureMeasurement", "attributes": [{"name": "temperature", "type": "number", "unit": "C"}], "commands": []}, {"capability": "contactSensor", "attributes": [{"name": "contact", "type": "enum", "values": ["open", "closed"]}], "commands": []}, {"capability": "preheat", "attributes": [{"name": "preheat", "type": "enum", "values": ["idle", "preheating", "ready"]}], "commands": []}]}, {"device": "stove", "rooms": ["kitchen"], "deviceIds": ["kitchen.stove"], "capabilities": [{"capability": "switch", "attributes": [{"name": "switch", "type": "enum", "values": ["on", "off"]}], "commands": [{"name": "on", "args": []}, {"name": "off", "args": []}]}]}, {"device": "washer", "rooms": ["laundry"], "deviceIds": ["laundry.washer"], "capabilities": [{"capability": "cycleState", "attributes": [{"name": "cycleState", "type": "enum", "values": ["idle", "running", "finished"]}], "commands": [{"name": "start", "args": ["mode"]}]}, {"capability": "mode", "attributes": [{"name": "mode", "type": "enum", "values": ["normal", "quick", "bedding"]}], "commands": []}, {"capability": "remainingTime", "attributes": [{"name": "remainingTime", "type": "integer", "unit": "min"}], "commands": []}]}, {"device": "dryer", "rooms": ["laundry"], "deviceIds": ["laundry.dryer"], "capabilities": [{"capability": "cycleState", "attributes": [{"name": "cycleState", "type": "enum", "values": ["idle", "running", "finished"]}], "commands": [{"name": "start", "args": ["mode", "minutes"]}]}, {"capability": "mode", "attributes": [{"name": "mode", "type": "enum", "values": ["normal", "delicate", "timeDry"]}], "commands": []}, {"capability": "remainingTime", "attributes": [{"name": "remainingTime", "type": "integer", "unit": "min"}], "commands": []}, {"capability": "errorCode", "attributes": [{"name": "errorCode", "type": "string", "default": "none"}], "commands": []}]}, {"device": "lock", "rooms": ["entryway"], "deviceIds": ["entryway.lock"], "capabilities": [{"capability": "lock", "attributes": [{"name": "lock", "type": "enum", "values": ["locked", "unlocked"]}], "commands": [{"name": "lock", "args": []}, {"name": "unlock", "args": []}]}]}];
+
+/* ===== House types: they differ only in which rooms exist ===== */
+const ALL_ROOMS = ["room1","room2","room3","room4","living_room","kitchen","dining_room","bathroom","laundry","closet","hallway","entryway","balcony"];
+const HOUSE_TYPES = {
+  "2room": { label: "2-room", exclude: ["room3","room4","hallway"], areas: [
+    "balcony balcony room1 room2",
+    "living_room living_room room1 room2",
+    "kitchen dining_room closet closet",
+    "laundry bathroom entryway entryway"] },
+  "3room": { label: "3-room", exclude: ["room4"], areas: [
+    "balcony balcony room1 room2",
+    "living_room living_room room1 room2",
+    "living_room living_room hallway hallway",
+    "kitchen dining_room room3 closet",
+    "laundry bathroom entryway entryway"] },
+  "4room": { label: "4-room", exclude: [], areas: [
+    "balcony balcony room1 room2",
+    "living_room living_room room1 room2",
+    "living_room living_room hallway hallway",
+    "kitchen dining_room room3 room4",
+    "laundry bathroom closet entryway"] },
+};
+const ROOM_LABEL = { room1:"Room 1", room2:"Room 2", room3:"Room 3", room4:"Room 4", living_room:"Living room", kitchen:"Kitchen", dining_room:"Dining room", bathroom:"Bathroom", laundry:"Laundry", closet:"Closet", hallway:"Hallway", entryway:"Entryway", balcony:"Balcony" };
+const DEVICE_LABEL = { temperature_sensor:"Temperature", humidity_sensor:"Humidity", light_sensor:"Light level", occupancy_sensor:"Occupancy", air_quality_sensor:"Air quality", noise_sensor:"Noise", door_contact:"Door contact", window_contact:"Window contact", water_leak_sensor:"Water leak", smoke_alarm:"Smoke alarm", doorbell:"Doorbell", wifi_router:"Wi-Fi router", light:"Light", lamp:"Lamp", heating_cooling_unit:"Heating/cooling", humidifier:"Humidifier", air_purifier:"Air purifier", curtain:"Curtain", tv:"TV", speaker:"Speaker", robot_vacuum:"Robot vacuum", dishwasher:"Dishwasher", oven:"Oven", stove:"Stove", washer:"Washer", dryer:"Dryer", lock:"Lock" };
+
+/* Initial values: chosen by the simulator (not part of the spec) */
+const DEFAULTS = {
+  "switch.switch":"off", "presenceSensor.presence":"not present", "contactSensor.contact":"closed", "waterSensor.water":"dry",
+  "smokeDetector.smoke":"clear", "button.button":null, "lock.lock":"locked", "windowShade.windowShade":"closed",
+  "mediaPlayback.playbackStatus":"stopped", "robotCleanerOperatingState.operatingState":"docked", "cycleState.cycleState":"idle",
+  "thermostatMode.thermostatMode":"off", "connection.connection":"disconnected",
+  "preheat.preheat":"idle", "errorCode.errorCode":"none",
+  "temperatureMeasurement.temperature":22, "relativeHumidityMeasurement.humidity":45, "illuminanceMeasurement.illuminance":300,
+  "fineDustSensor.fineDustLevel":15, "carbonDioxideMeasurement.carbonDioxide":600, "soundPressureLevel.soundPressureLevel":35,
+  "connectedDevices.connectedDevices":8, "switchLevel.level":100, "colorTemperature.colorTemperature":4000,
+  "thermostatCoolingSetpoint.coolingSetpoint":24, "thermostatHeatingSetpoint.heatingSetpoint":22, "humiditySetpoint.humiditySetpoint":50,
+  "fanSpeedPercent.percent":0, "audioVolume.volume":30, "battery.battery":100, "remainingTime.remainingTime":0,
+  "temperatureSetpoint.temperatureSetpoint":180,
+};
+const OUTDOOR_DEFAULTS = { "temperatureMeasurement.temperature":15, "relativeHumidityMeasurement.humidity":60, "fineDustSensor.fineDustLevel":30, "carbonDioxideMeasurement.carbonDioxide":420 };
+
+/* Command -> value (commands without arguments) */
+const CMD_VALUE = { on:"on", off:"off", lock:"locked", unlock:"unlocked", open:"open", close:"closed", play:"playing", stop:"stopped", start:"running", goHome:"seekingCharger", startHeatedDry:"running" };
+const PAUSE_VALUE = { windowShade:"partially_open", playbackStatus:"paused", operatingState:"paused" };
+
+/* ===== Physical model (simple rules, chosen by the simulator) ===== */
+const CYCLE_MINUTES = { washer: { normal: 60, quick: 30, bedding: 90 }, dishwasher: { start: 120, startHeatedDry: 150 } };
+const PHYS = {
+  stepMs: 60000,          /* the world advances in 1-minute steps of simulation time */
+  heartbeatMin: 30,       /* a sensor reports at least this often even if nothing changed */
+  maxCatchUpDays: 7,
+  leak: { closed: 0.002, open: 0.03 },   /* share of the indoor-outdoor gap closed per minute (reference values) */
+  closedByWalls: [0.0008, 0.0016, 0.0024], /* windows shut: rate by number of exterior walls (0, 1, 2) */
+  /* with windows shut and no heating/cooling, a room drifts toward:
+     day's outdoor mean + indoorGainC + indoorSwing x (outdoor now - day's mean), but not below indoorMinC */
+  indoorGainC: 2, indoorSwing: 0.25, indoorMinC: 15,
+  solarGainC: 3,          /* extra degrees a large window adds at full sun facing the window */
+  /* walls and furniture hold heat: per minute, the air moves massToAir of its gap to the mass,
+     the mass moves airToMass of its gap to the air (much slower: it stores far more heat) */
+  massToAir: 0.05, airToMass: 0.002,
+  hvacMaxRate: 0.5,       /* the most a heating/cooling unit can change the air temperature per minute (C) */
+  /* moisture is tracked as water vapour pressure (hPa); relative humidity = vapour / saturation at the room's temperature.
+     Rates below are hPa per minute. 1 hPa is about 4% relative humidity at 20 C. */
+  moistureOffset: 3,      /* everyday household moisture (cooking, plants, breathing at rest): with windows shut a room settles this many hPa above outdoor vapour */
+  moisture: { person: 0.0025, dryer: 0.035, washer: 0.007, humidifierMax: 0.04 },
+  /* cooling condenses water on the unit's cold coil: room vapour moves toward saturation at acCoilC by acDryRate per minute */
+  acCoilC: 13, acDryRate: 0.03,
+  /* a sensor reports when its reading moves by at least th (or rel x previous value) */
+  report: { temperature: { th: 0.5, dec: 1 }, humidity: { th: 2, dec: 0 }, illuminance: { th: 30, rel: 0.1, dec: 0 },
+            pm25: { th: 3, dec: 0 }, co2: { th: 50, dec: 0 }, noise: { th: 3, dec: 0 } },
+  jitter: { temperature: 0.05, humidity: 0.3, illuminance: 0.02, pm25: 0.5, co2: 4, noise: 0.8 },
+  /* by window size: share of outdoor daylight that comes in, air exchange rate when open, share of solar heat */
+  windowLight: { large: .03, medium: .02, small: .012, none: .002 },
+  windowOpen: { large: .04, medium: .03, small: .02, none: .01 },
+  windowHeat: { large: 1, medium: .6, small: .3, none: 0 },
+  lightLux: 300, lampLux: 150,   /* what a ceiling light / a lamp at 100% adds in a 10 m2 room; scaled by (10 / area)^0.4 */
+  ceilingM: 2.3,                 /* room height used for room volume (simulator's choice) */
+  /* tuned so a purifier cuts living-room PM2.5 by about 34% (low) / 51% (medium) / 68% (high) after 4 h,
+     inside the 30-74% measured in 10 homes (Public Health Research & Practice, 2024) */
+  /* air purifier: a living-room unit rated for 65 m2 has CADR ~8.4 m3/min (rated area = CADR x 7.7);
+     only part of the cleaned air reaches the whole room (mixingEff); the fan percent is the share of full CADR (0 = off),
+     so 25 / 50 / 100 % give the low / medium / high figures above */
+  purifier: { cadrM3min: 8.4, mixingEff: 0.4 },
+  pmInfiltration: 0.01,          /* windows shut: share of the indoor-outdoor PM2.5 gap closed per minute, per exterior wall */
+  /* air moves between rooms: open-plan spaces mix quickly, rooms behind doors slowly (share of the gap to the house average per minute) */
+  mixing: { open: 0.04, closed: 0.005 },
+  curtain: { closed: .15, partially_open: .6, opening: .6, closing: .6, open: 1, unknown: .6 },
+};
+/* ===== Log saving policy =====
+   Always saved: person actions (command / manual / event), appliance progress (device),
+   sensor reports inside an action's window in the same room, and big changes.
+   Background: exactly N sensor lines per simulated day, spread evenly over each sensor. */
+const DAY_MS = 86400000;
+const DEFAULT_BACKGROUND_PER_DAY = 500;
+/* minutes [before, after] an action whose room's sensor reports are all kept */
+const ACTION_WINDOWS = {
+  light: [5, 10], lamp: [5, 10], curtain: [5, 10],
+  tv: [5, 30], speaker: [5, 30], air_purifier: [5, 30],
+  heating_cooling_unit: [10, 60], humidifier: [10, 60], window_contact: [10, 60], door_contact: [10, 60],
+  stove: [10, 60], oven: [10, 60], occupancy_sensor: [10, 60],
+  washer: [5, 30], dryer: [5, 30], dishwasher: [5, 30], robot_vacuum: [5, 30],
+};
+const DEFAULT_WINDOW = [5, 10];
+const MAX_AFTER_MIN = 60;
+/* a "big change" versus the last saved value: (A) crossing a boundary, or (B) moving by delta / rel */
+/* hys: a boundary counts as crossed only when the value is at least this far past it (stops flicker around the line) */
+const BIG_CHANGE = {
+  pm25: { bounds: [15, 35, 75], hys: 2 },                     /* PM2.5 forecast grades: good / moderate / bad / very bad */
+  co2: { bounds: [1000], hys: 50, delta: 300 },               /* 1,000 ppm indoor air quality standard */
+  humidity: { bounds: [40, 60], hys: 2, delta: 10 },          /* 40-60% recommended range */
+  noise: { delta: 10 },                                       /* +10 dB sounds twice as loud */
+  temperature: { bounds: [18, 26], hys: 0.5, delta: 2 },      /* simulator's choice, no source */
+  illuminance: { bounds: [50], hys: 10, rel: 0.5, relFloor: 50 }, /* 50% given by the user; 50 lux is the simulator's choice */
+};
+function bigChange(ek, last, v) {
+  if (last == null) return "initial";
+  const c = BIG_CHANGE[ek];
+  if (c.bounds && c.bounds.some(b => (last <= b && v > b + c.hys) || (last > b && v < b - c.hys))) return "big_change";
+  if (c.delta != null && Math.abs(v - last) >= c.delta) return "big_change";
+  if (c.rel != null && Math.abs(v - last) >= c.rel * Math.max(Math.abs(last), c.relFloor || 1)) return "big_change";
+  return null;
+}
+function startOfDay(ms) { const d = new Date(ms); d.setHours(0, 0, 0, 0); return d.getTime(); }
+
+/* sensor device type -> [capability, attribute, environment variable] */
+const SENSOR_ATTRS = {
+  temperature_sensor: [["temperatureMeasurement", "temperature", "temperature"]],
+  humidity_sensor: [["relativeHumidityMeasurement", "humidity", "humidity"]],
+  light_sensor: [["illuminanceMeasurement", "illuminance", "illuminance"]],
+  air_quality_sensor: [["fineDustSensor", "fineDustLevel", "pm25"], ["carbonDioxideMeasurement", "carbonDioxide", "co2"]],
+  noise_sensor: [["soundPressureLevel", "soundPressureLevel", "noise"]],
+};
+/* Seoul monthly climate normals 1991-2020 (Wikipedia "Seoul" climate table):
+   [mean daily max C, mean daily min C, mean relative humidity %] for Jan..Dec */
+const SEOUL_NORMALS = [
+  [2.1, -5.5, 56.2], [5.1, -3.2, 54.6], [11.0, 1.9, 54.6], [17.9, 8.0, 54.8], [23.6, 13.5, 59.7], [27.6, 18.7, 65.7],
+  [29.0, 22.3, 76.2], [30.0, 22.9, 73.5], [26.2, 17.7, 66.4], [20.2, 10.6, 61.8], [11.9, 3.5, 60.4], [4.2, -3.4, 57.8],
+];
+/* Seoul outdoor PM2.5 (µg/m³), city average by month, mean of 2022-2025
+   (Seoul Air Quality Information, cleanair.seoul.go.kr, monthly statistics downloads) */
+const SEOUL_PM25_MONTHLY = [26.75, 25.0, 25.75, 21.75, 17.5, 16.25, 14.5, 13.0, 10.0, 12.75, 19.25, 19.5];
+/* Seoul urban CO2 (ppm): mean of the 2023 annual averages at Gwanaksan 438.1, Namsan 445.0, Guro 457.5,
+   Olympic Park 463.1 (Seoul Research Institute of Public Health and Environment). No monthly data found. */
+const SEOUL_CO2_PPM = 450.9;
+/* Day-to-day PM2.5: the monthly mean is multiplied by a daily factor. The factor is log-normal with mean 1
+   (so months keep their average), smoothed over neighbouring days (bad air tends to last 2-3 days), and fixed
+   per calendar date (the same date always gives the same value). PM25_DAILY_SIGMA is the simulator's choice. */
+const PM25_DAILY_SIGMA = 0.55;
+function hash01(n) { n = (n ^ 61) ^ (n >>> 16); n = (n + (n << 3)) | 0; n ^= n >>> 4; n = Math.imul(n, 0x27d4eb2d); n ^= n >>> 15; return (n >>> 0) / 4294967296; }
+function dayGauss(d) { const u1 = hash01(d * 2 + 1) || 1e-9, u2 = hash01(d * 2 + 2); return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2); }
+function rawDayFactor(d) { const z = (dayGauss(d - 1) + 2 * dayGauss(d) + dayGauss(d + 1)) / Math.sqrt(6); return Math.exp(PM25_DAILY_SIGMA * z - PM25_DAILY_SIGMA ** 2 / 2); }
+/* rescale within each calendar month so the month's average factor is exactly 1 (month mean = the Seoul monthly mean) */
+const monthNorm = new Map();
+function dayFactor(d) {
+  const dt = new Date(d * 86400000), y = dt.getUTCFullYear(), m = dt.getUTCMonth(), key = y * 12 + m;
+  if (!monthNorm.has(key)) {
+    const first = Date.UTC(y, m, 1) / 86400000, n = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+    let sum = 0; for (let i = 0; i < n; i++) sum += rawDayFactor(first + i);
+    monthNorm.set(key, sum / n);
+  }
+  return rawDayFactor(d) / monthNorm.get(key);
+}
+/* factor at any moment: blend between the factors of neighbouring days (each centred at noon) */
+function pmFactorAt(date) {
+  const x = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000 + (date.getHours() + date.getMinutes() / 60) / 24 - 0.5;
+  const i = Math.floor(x), f = x - i;
+  return dayFactor(i) * (1 - f) + dayFactor(i + 1) * f;
+}
+function pmGrade(v) { return v <= 15 ? "good" : v <= 35 ? "moderate" : v <= 75 ? "bad" : "very bad"; } /* Korean PM2.5 forecast grades */
+const SEOUL_LAT = 37.57, SEOUL_LON = 126.98;
+/* Layout variants: per room area, window facing, window size, exterior walls (room_profiles.csv). All values chosen by the simulator. */
+const ROOM_PROFILES = {"2room-A":{"houseType":"2room","areaM2":59,"facing":"S","plan":"flat","rooms":{"living_room":{"areaM2":17.7,"window":"S","windowSize":"large","exteriorWalls":1},"room1":{"areaM2":11.8,"window":"S","windowSize":"medium","exteriorWalls":1},"room2":{"areaM2":8.8,"window":"N","windowSize":"medium","exteriorWalls":1},"kitchen":{"areaM2":5.9,"window":"N","windowSize":"small","exteriorWalls":1},"dining_room":{"areaM2":4.1,"window":null,"windowSize":"none","exteriorWalls":0},"bathroom":{"areaM2":4.1,"window":null,"windowSize":"none","exteriorWalls":0},"laundry":{"areaM2":2.4,"window":"N","windowSize":"small","exteriorWalls":1},"closet":{"areaM2":2.4,"window":null,"windowSize":"none","exteriorWalls":0},"entryway":{"areaM2":1.8,"window":null,"windowSize":"none","exteriorWalls":0}}},"2room-B":{"houseType":"2room","areaM2":49,"facing":"E","plan":"flat","rooms":{"living_room":{"areaM2":14.7,"window":"E","windowSize":"large","exteriorWalls":1},"room1":{"areaM2":9.8,"window":"E","windowSize":"medium","exteriorWalls":1},"room2":{"areaM2":7.3,"window":"W","windowSize":"medium","exteriorWalls":1},"kitchen":{"areaM2":4.9,"window":"W","windowSize":"small","exteriorWalls":1},"dining_room":{"areaM2":3.4,"window":null,"windowSize":"none","exteriorWalls":0},"bathroom":{"areaM2":3.4,"window":null,"windowSize":"none","exteriorWalls":0},"laundry":{"areaM2":2.0,"window":"W","windowSize":"small","exteriorWalls":1},"closet":{"areaM2":2.0,"window":null,"windowSize":"none","exteriorWalls":0},"entryway":{"areaM2":1.5,"window":null,"windowSize":"none","exteriorWalls":0}}},"2room-C":{"houseType":"2room","areaM2":59,"facing":"SW","plan":"tower","rooms":{"living_room":{"areaM2":17.7,"window":"SW","windowSize":"large","exteriorWalls":2},"room1":{"areaM2":11.8,"window":"W","windowSize":"medium","exteriorWalls":2},"room2":{"areaM2":8.8,"window":"SW","windowSize":"medium","exteriorWalls":1},"kitchen":{"areaM2":5.9,"window":"W","windowSize":"small","exteriorWalls":1},"dining_room":{"areaM2":4.1,"window":null,"windowSize":"none","exteriorWalls":0},"bathroom":{"areaM2":4.1,"window":null,"windowSize":"none","exteriorWalls":0},"laundry":{"areaM2":2.4,"window":"NE","windowSize":"small","exteriorWalls":1},"closet":{"areaM2":2.4,"window":null,"windowSize":"none","exteriorWalls":0},"entryway":{"areaM2":1.8,"window":null,"windowSize":"none","exteriorWalls":0}}},"3room-A":{"houseType":"3room","areaM2":84,"facing":"S","plan":"flat","rooms":{"living_room":{"areaM2":21.8,"window":"S","windowSize":"large","exteriorWalls":1},"room1":{"areaM2":13.4,"window":"S","windowSize":"medium","exteriorWalls":1},"room2":{"areaM2":9.2,"window":"S","windowSize":"medium","exteriorWalls":1},"room3":{"areaM2":8.4,"window":"N","windowSize":"small","exteriorWalls":1},"kitchen":{"areaM2":7.6,"window":"N","windowSize":"small","exteriorWalls":1},"dining_room":{"areaM2":5.9,"window":null,"windowSize":"none","exteriorWalls":0},"bathroom":{"areaM2":5.9,"window":null,"windowSize":"none","exteriorWalls":0},"laundry":{"areaM2":3.4,"window":"N","windowSize":"small","exteriorWalls":1},"closet":{"areaM2":3.4,"window":null,"windowSize":"none","exteriorWalls":0},"hallway":{"areaM2":2.5,"window":null,"windowSize":"none","exteriorWalls":0},"entryway":{"areaM2":2.5,"window":null,"windowSize":"none","exteriorWalls":0}}},"3room-B":{"houseType":"3room","areaM2":84,"facing":"SE","plan":"tower","rooms":{"living_room":{"areaM2":21.8,"window":"SE","windowSize":"large","exteriorWalls":2},"room1":{"areaM2":13.4,"window":"E","windowSize":"medium","exteriorWalls":2},"room2":{"areaM2":9.2,"window":"SE","windowSize":"medium","exteriorWalls":1},"room3":{"areaM2":8.4,"window":"E","windowSize":"small","exteriorWalls":1},"kitchen":{"areaM2":7.6,"window":"NW","windowSize":"small","exteriorWalls":1},"dining_room":{"areaM2":5.9,"window":null,"windowSize":"none","exteriorWalls":0},"bathroom":{"areaM2":5.9,"window":null,"windowSize":"none","exteriorWalls":0},"laundry":{"areaM2":3.4,"window":"NW","windowSize":"small","exteriorWalls":1},"closet":{"areaM2":3.4,"window":null,"windowSize":"none","exteriorWalls":0},"hallway":{"areaM2":2.5,"window":null,"windowSize":"none","exteriorWalls":0},"entryway":{"areaM2":2.5,"window":null,"windowSize":"none","exteriorWalls":0}}},"3room-C":{"houseType":"3room","areaM2":74,"facing":"W","plan":"flat","rooms":{"living_room":{"areaM2":19.2,"window":"W","windowSize":"large","exteriorWalls":1},"room1":{"areaM2":11.8,"window":"W","windowSize":"medium","exteriorWalls":1},"room2":{"areaM2":8.1,"window":"W","windowSize":"medium","exteriorWalls":1},"room3":{"areaM2":7.4,"window":"E","windowSize":"small","exteriorWalls":1},"kitchen":{"areaM2":6.7,"window":"E","windowSize":"small","exteriorWalls":1},"dining_room":{"areaM2":5.2,"window":null,"windowSize":"none","exteriorWalls":0},"bathroom":{"areaM2":5.2,"window":null,"windowSize":"none","exteriorWalls":0},"laundry":{"areaM2":3.0,"window":"E","windowSize":"small","exteriorWalls":1},"closet":{"areaM2":3.0,"window":null,"windowSize":"none","exteriorWalls":0},"hallway":{"areaM2":2.2,"window":null,"windowSize":"none","exteriorWalls":0},"entryway":{"areaM2":2.2,"window":null,"windowSize":"none","exteriorWalls":0}}},"4room-A":{"houseType":"4room","areaM2":114,"facing":"S","plan":"flat","rooms":{"living_room":{"areaM2":27.4,"window":"S","windowSize":"large","exteriorWalls":1},"room1":{"areaM2":17.1,"window":"S","windowSize":"medium","exteriorWalls":1},"room2":{"areaM2":11.4,"window":"S","windowSize":"medium","exteriorWalls":1},"room3":{"areaM2":10.3,"window":"S","windowSize":"medium","exteriorWalls":1},"room4":{"areaM2":9.1,"window":"N","windowSize":"small","exteriorWalls":1},"kitchen":{"areaM2":9.1,"window":"N","windowSize":"small","exteriorWalls":1},"dining_room":{"areaM2":8.0,"window":null,"windowSize":"none","exteriorWalls":0},"bathroom":{"areaM2":6.8,"window":null,"windowSize":"none","exteriorWalls":0},"laundry":{"areaM2":4.6,"window":"N","windowSize":"small","exteriorWalls":1},"closet":{"areaM2":4.6,"window":null,"windowSize":"none","exteriorWalls":0},"hallway":{"areaM2":3.4,"window":null,"windowSize":"none","exteriorWalls":0},"entryway":{"areaM2":2.3,"window":null,"windowSize":"none","exteriorWalls":0}}},"4room-B":{"houseType":"4room","areaM2":101,"facing":"SE","plan":"tower","rooms":{"living_room":{"areaM2":24.2,"window":"SE","windowSize":"large","exteriorWalls":2},"room1":{"areaM2":15.1,"window":"E","windowSize":"medium","exteriorWalls":2},"room2":{"areaM2":10.1,"window":"SE","windowSize":"medium","exteriorWalls":1},"room3":{"areaM2":9.1,"window":"E","windowSize":"medium","exteriorWalls":1},"room4":{"areaM2":8.1,"window":"NW","windowSize":"small","exteriorWalls":2},"kitchen":{"areaM2":8.1,"window":"NW","windowSize":"small","exteriorWalls":1},"dining_room":{"areaM2":7.1,"window":null,"windowSize":"none","exteriorWalls":0},"bathroom":{"areaM2":6.1,"window":null,"windowSize":"none","exteriorWalls":0},"laundry":{"areaM2":4.0,"window":"NW","windowSize":"small","exteriorWalls":1},"closet":{"areaM2":4.0,"window":null,"windowSize":"none","exteriorWalls":0},"hallway":{"areaM2":3.0,"window":null,"windowSize":"none","exteriorWalls":0},"entryway":{"areaM2":2.0,"window":null,"windowSize":"none","exteriorWalls":0}}},"4room-C":{"houseType":"4room","areaM2":114,"facing":"E","plan":"flat","rooms":{"living_room":{"areaM2":27.4,"window":"E","windowSize":"large","exteriorWalls":1},"room1":{"areaM2":17.1,"window":"E","windowSize":"medium","exteriorWalls":1},"room2":{"areaM2":11.4,"window":"E","windowSize":"medium","exteriorWalls":1},"room3":{"areaM2":10.3,"window":"E","windowSize":"medium","exteriorWalls":1},"room4":{"areaM2":9.1,"window":"W","windowSize":"small","exteriorWalls":1},"kitchen":{"areaM2":9.1,"window":"W","windowSize":"small","exteriorWalls":1},"dining_room":{"areaM2":8.0,"window":null,"windowSize":"none","exteriorWalls":0},"bathroom":{"areaM2":6.8,"window":null,"windowSize":"none","exteriorWalls":0},"laundry":{"areaM2":4.6,"window":"W","windowSize":"small","exteriorWalls":1},"closet":{"areaM2":4.6,"window":null,"windowSize":"none","exteriorWalls":0},"hallway":{"areaM2":3.4,"window":null,"windowSize":"none","exteriorWalls":0},"entryway":{"areaM2":2.3,"window":null,"windowSize":"none","exteriorWalls":0}}}};
+const DEFAULT_VARIANT = "3room-A";
+const AZIMUTH = { N: 0, NE: 45, E: 90, SE: 135, S: 180, SW: 225, W: 270, NW: 315 };
+const DIR_LABEL = { N: "north", NE: "northeast", E: "east", SE: "southeast", S: "south", SW: "southwest", W: "west", NW: "northwest" };
+const NO_PROFILE = { areaM2: 10, window: null, windowSize: "none", exteriorWalls: 0 };
+const OPEN_PLAN = ["living_room", "kitchen", "dining_room", "hallway", "entryway"]; /* spaces without doors between them */
+/* how much direct sun a window gets: 35% diffuse light always, plus up to 65% when the sun stands in front of it */
+function windowSun(profile, out) {
+  if (!profile.window || out.sunAz == null) return 1;
+  return 0.35 + 0.65 * Math.max(0, Math.cos((out.sunAz - AZIMUTH[profile.window]) * Math.PI / 180));
+}
+/* month normals, blended between neighbouring months so seasons change smoothly (each value centred mid-month) */
+function seasonAt(date) {
+  const daysIn = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  const pos = date.getMonth() + (date.getDate() - 0.5) / daysIn - 0.5; /* 0 = mid-January */
+  const i = Math.floor(pos), f = pos - i, ia = (i + 12) % 12, ib = (i + 13) % 12;
+  const a = [...SEOUL_NORMALS[ia], SEOUL_PM25_MONTHLY[ia]], b = [...SEOUL_NORMALS[ib], SEOUL_PM25_MONTHLY[ib]];
+  return a.map((v, k) => v + (b[k] - v) * f); /* [tmax, tmin, humidity, pm25] */
+}
+/* sunrise, sunset and noon sun height for Seoul (simple astronomical approximation, KST) */
+function sunAt(date) {
+  const start = new Date(date.getFullYear(), 0, 0), n = Math.floor((date - start) / 86400000);
+  const decl = 23.44 * Math.sin(2 * Math.PI * (284 + n) / 365) * Math.PI / 180, lat = SEOUL_LAT * Math.PI / 180;
+  const dayLen = 2 * Math.acos(-Math.tan(lat) * Math.tan(decl)) * 180 / Math.PI / 15;
+  const noon = 12 + (135 - SEOUL_LON) / 15;
+  return { rise: noon - dayLen / 2, set: noon + dayLen / 2, dayLen, noonHeight: Math.sin(Math.PI / 2 - lat + decl) };
+}
+/* ===== Weather =====
+   Seoul 1991-2020 monthly normals (Wikipedia "Climate of Seoul", from KMA): days with precipitation of 1 mm or more,
+   days with snow, percent of possible sunshine (KMA 1981-2010). */
+const SEOUL_PRECIP_DAYS = [3.3, 3.4, 4.7, 6.5, 6.8, 7.6, 13.3, 11.8, 6.5, 4.8, 6.4, 4.2];
+const SEOUL_SNOW_DAYS = [7.1, 5.1, 2.8, 0.2, 0, 0, 0, 0, 0, 0, 2.3, 6.4];
+const SEOUL_SUNSHINE_PCT = [52.3, 53.6, 51.0, 51.9, 48.4, 41.2, 26.8, 36.2, 47.2, 57.1, 50.2, 51.1];
+const SEOUL_PRECIP_MM = [16.8, 28.2, 36.9, 72.9, 103.6, 129.5, 414.4, 348.2, 141.5, 52.2, 51.1, 22.6]; /* monthly precipitation, same table */
+/* Rain washing PM out of the air. Seoul 1999-2008, Seosomun urban site (Kim et al., koreascience JAKO201403460493377):
+   PM10 during precipitation was about 63% of dry conditions (24.5 µg/m³ lower, so dry ≈ 66 µg/m³), and the drop grew with the
+   event's rainfall as 4.83 ln(mm) + 3.385 µg/m³. Here that drop is taken as a share of 66 µg/m³ and applied to PM2.5
+   (the study measured PM10 only; using the same share for PM2.5 is the simulator's choice), as rain accumulates during a spell. */
+const WASHOUT = { a: 4.83, b: 3.385, dryPM10: 66, maxShare: 0.6, recoverHours: 6 /* simulator's choice: PM2.5 returns over ~6 h after the rain */ };
+/* Rain noise outdoors (Kobe University study, 2015, ground-level gravel lot at night, Table 5): about 53 dB at 40 mm/h and 61 dB at
+   160 mm/h with 41 dB of other sound removed, i.e. about 12.8 dB more per 10-fold rain rate. Below 40 mm/h the line is extended. */
+const RAIN_NOISE = { at40: 53.1, perDecade: 12.8 };
+/* Outdoor sound reaching a room through its window (simulator's choice): about 15 dB quieter through an open window, 30 dB through a shut one. */
+const FACADE_DB = { open: 15, closed: 30 };
+/* Wind (m/s): KMA gives an annual mean of 2.3, the calmest month September 1.9, the windiest March and April 2.7.
+   The other months follow a cosine through those values (simulator's choice). */
+const WIND = { mean: 2.3, amp: 0.4, peakPos: 2.5, daySigma: 0.35, diurnal: 0.3 };
+/* Everything below is the simulator's choice (no source), except that the cloudy share is fitted to the sunshine normals. */
+const WEATHER = {
+  sun: { clear: 1, cloudy: 0.4, rain: 0.15, snow: 0.2 },    /* share of clear-sky daylight that gets through */
+  swing: { clear: 1, cloudy: 0.6, rain: 0.35, snow: 0.35 }, /* share of the day-night temperature swing (rescaled so each month keeps its normal swing) */
+  sunshine: { clear: 0.9, cloudy: 0.15 },                   /* share of daylight hours counted as sunshine, used only to fit the cloudy share */
+  wetRH: 92,              /* outdoor relative humidity approached during rain or snow */
+  snowMaxC: 2,            /* on a snow day, precipitation falls as rain when the air is warmer than this.
+                             Kept on purpose: snow days come out below normal (about 20 vs 23.9 a year, short in Mar, Nov, Dec)
+                             because temperatures follow the normal curve and have no colder-than-usual days. */
+  episodeHours: [2, 8],   /* each rain / snow spell lasts between these many hours (cut at midnight); a wet day has 1 or 2 spells, starting at any hour */
+  blockHours: 6,          /* on dry days the sky can change between clear and cloudy every 6 hours */
+  blendMin: 15,           /* light, swing and humidity change over +-15 minutes around a change of weather */
+  windOpen: [0.5, 0.5],   /* an open window exchanges air at rate x (a + b x wind / mean wind) */
+  rainSigma: 0.8,         /* spread of rain rate between spells (log-normal); the mean is set so months get their normal precipitation */
+};
+/* a value from a month table, blended between neighbouring months (each centred mid-month) */
+function monthBlend(date, table) {
+  const daysIn = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  const pos = date.getMonth() + (date.getDate() - 0.5) / daysIn - 0.5, i = Math.floor(pos), f = pos - i;
+  return table[(i + 12) % 12] * (1 - f) + table[(i + 13) % 12] * f;
+}
+function monthDays(date) { return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate(); }
+function localDayIndex(date) { return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000; }
+function dayNoon(d) { const u = new Date(d * 86400000); return new Date(u.getUTCFullYear(), u.getUTCMonth(), u.getUTCDate(), 12); }
+const wHash = (d, k) => hash01(5000000 + d * 16 + k);
+/* the average of two uniform numbers, mapped back to a uniform number (lets the 6-hour blocks of one day resemble each other) */
+function pairUniform(a, b) { const x = (a + b) / 2; return x <= 0.5 ? 2 * x * x : 1 - 2 * (1 - x) ** 2; }
+/* share of dry-day blocks that are cloudy, chosen so the month's sunshine matches the normal */
+function cloudyShare(date) {
+  const n = monthDays(date), wet = Math.min(1, Math.max(monthBlend(date, SEOUL_PRECIP_DAYS), monthBlend(date, SEOUL_SNOW_DAYS)) / n);
+  const meanSpell = 1.5 * (WEATHER.episodeHours[0] + WEATHER.episodeHours[1]) / 2;
+  const wetSun = WEATHER.sunshine.cloudy * (1 - meanSpell / 24);
+  const S = monthBlend(date, SEOUL_SUNSHINE_PCT) / 100, dry = (S - wet * wetSun) / (1 - wet);
+  return Math.min(1, Math.max(0, (WEATHER.sunshine.clear - dry) / (WEATHER.sunshine.clear - WEATHER.sunshine.cloudy)));
+}
+/* average spell length after cutting at midnight (hours): start uniform over the day, length uniform over episodeHours */
+const MEAN_SPELL_H = (() => { let s = 0, n = 0; const [a, b] = WEATHER.episodeHours;
+  for (let i = 0; i < 240; i++) for (let j = 0; j <= 60; j++) { s += Math.min(24 - (i + 0.5) / 10, a + (b - a) * j / 60); n++; } return s / n; })();
+/* chance that a given day is wet: the month's wet days (blended between months), over the days in the month */
+function wetChance(date) { return Math.min(1, Math.max(monthBlend(date, SEOUL_PRECIP_DAYS), monthBlend(date, SEOUL_SNOW_DAYS)) / monthDays(date)); }
+/* expected wet days in this calendar month, so the month's rain adds up to its normal precipitation */
+const wetDaysCache = new Map();
+function expectedWetDays(date) {
+  const y = date.getFullYear(), m = date.getMonth(), key = y * 12 + m;
+  if (!wetDaysCache.has(key)) { let s = 0; for (let d = 1, n = monthDays(date); d <= n; d++) s += wetChance(new Date(y, m, d, 12)); wetDaysCache.set(key, s); }
+  return wetDaysCache.get(key);
+}
+/* one calendar day's weather, fixed per date (the same date always gives the same weather) */
+const dayWeatherCache = new Map();
+function dayWeather(d) {
+  if (dayWeatherCache.has(d)) return dayWeatherCache.get(d);
+  const noon = dayNoon(d), n = monthDays(noon);
+  const precip = monthBlend(noon, SEOUL_PRECIP_DAYS), snow = monthBlend(noon, SEOUL_SNOW_DAYS), events = Math.max(precip, snow);
+  const wet = wHash(d, 0) < wetChance(noon);
+  const kind = wet && wHash(d, 1) < (events ? snow / events : 0) ? "snow" : "rain";
+  const spells = [];
+  if (wet) for (let i = 0, c = wHash(d, 2) < 0.5 ? 1 : 2; i < c; i++) {
+    const start = 24 * wHash(d, 3 + 2 * i), len = WEATHER.episodeHours[0] + (WEATHER.episodeHours[1] - WEATHER.episodeHours[0]) * wHash(d, 4 + 2 * i);
+    /* rain rate (mm/h): the month's precipitation spread over its expected wet hours, varied log-normally per spell */
+    const u1 = wHash(d, 20 + 2 * i) || 1e-9, z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * wHash(d, 21 + 2 * i));
+    const meanRate = SEOUL_PRECIP_MM[noon.getMonth()] / (expectedWetDays(noon) * 1.5 * MEAN_SPELL_H);
+    spells.push([start, Math.min(24, start + len), meanRate * Math.exp(WEATHER.rainSigma * z - WEATHER.rainSigma ** 2 / 2)]); /* a spell ends by midnight, so wet days match the normal count of wet days */
+  }
+  const pc = cloudyShare(noon), uDay = wHash(d, 8), blocks = [];
+  for (let b = 0; b < 24 / WEATHER.blockHours; b++) blocks.push(wet || pairUniform(uDay, wHash(d, 9 + b)) < pc);
+  const u1 = wHash(d, 14) || 1e-9, z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * wHash(d, 15));
+  const w = { wet, kind, spells, blocks, wind: Math.exp(WIND.daySigma * z - WIND.daySigma ** 2 / 2) };
+  if (dayWeatherCache.size > 4000) dayWeatherCache.clear();
+  dayWeatherCache.set(d, w); return w;
+}
+/* the outdoor model without weather: the month's normal range, warmest and driest at 15:00 */
+function baseOutdoor(date) {
+  const h = date.getHours() + date.getMinutes() / 60, c = Math.cos(2 * Math.PI * (h - 15) / 24);
+  const [tmax, tmin, rh, pm25] = seasonAt(date);
+  return { h, c, tmax, tmin, rh, pm25, mean: (tmax + tmin) / 2, half: (tmax - tmin) / 2,
+    temperature: (tmax + tmin) / 2 + (tmax - tmin) / 2 * c, humidity: rh - 12 * c };
+}
+/* clear / cloudy / rain / snow at one moment */
+function weatherStateAt(ms) {
+  const date = new Date(ms), d = localDayIndex(date), h = date.getHours() + date.getMinutes() / 60;
+  const w = dayWeather(d);
+  if (w.spells.some(([a, b]) => h >= a && h < b))
+    return w.kind === "snow" && baseOutdoor(date).temperature > WEATHER.snowMaxC ? "rain" : w.kind;
+  return dayWeather(d).blocks[Math.floor(h / WEATHER.blockHours)] ? "cloudy" : "clear";
+}
+/* precipitation rate (mm/h) at one moment, 0 outside a spell */
+function precipAt(ms) {
+  const date = new Date(ms), h = date.getHours() + date.getMinutes() / 60, sp = dayWeather(localDayIndex(date)).spells.find(([a, b]) => h >= a && h < b);
+  return sp ? sp[2] : 0;
+}
+/* share of outdoor PM2.5 removed by rain or snow: grows with the spell's accumulated amount, fades after it ends */
+function washoutAt(ms) {
+  const date = new Date(ms), d = localDayIndex(date), h = date.getHours() + date.getMinutes() / 60; let best = 0;
+  for (const [dd, hh] of [[d, h], [d - 1, h + 24]]) for (const [a, b, rate] of dayWeather(dd).spells) {
+    if (hh < a) continue;
+    const mm = rate * (Math.min(hh, b) - a); if (mm < 1e-3) continue;
+    let share = Math.min(WASHOUT.maxShare, Math.max(0, (WASHOUT.a * Math.log(mm) + WASHOUT.b) / WASHOUT.dryPM10));
+    if (hh > b) share *= Math.exp(-(hh - b) / WASHOUT.recoverHours);
+    best = Math.max(best, share);
+  }
+  return best;
+}
+/* light, swing and wetness, averaged over +-blendMin so changes are gradual */
+const weatherFxCache = new Map();
+function weatherFx(ms) {
+  const key = Math.floor(ms / 60000); if (weatherFxCache.has(key)) return weatherFxCache.get(key);
+  const fx = { sun: 0, swing: 0, wet: 0 }, steps = [-3, -2, -1, 0, 1, 2, 3];
+  for (const k of steps) {
+    const st = weatherStateAt(key * 60000 + k * WEATHER.blendMin / 3 * 60000);
+    fx.sun += WEATHER.sun[st]; fx.swing += WEATHER.swing[st]; fx.wet += st === "rain" || st === "snow" ? 1 : 0;
+  }
+  for (const k of Object.keys(fx)) fx[k] /= steps.length;
+  if (weatherFxCache.size > 20000) weatherFxCache.clear();
+  weatherFxCache.set(key, fx); return fx;
+}
+/* per calendar month: rescale so the month keeps its normal temperature swing, mean temperature, mean humidity and mean PM2.5 */
+const weatherNorm = new Map();
+function weatherNormFor(date) {
+  const y = date.getFullYear(), m = date.getMonth(), key = y * 12 + m;
+  if (weatherNorm.has(key)) return weatherNorm.get(key);
+  let swing = 0, n = 0, pmKeep = 0; const samples = [];
+  for (let t = new Date(y, m, 1).getTime(), end = new Date(y, m + 1, 1).getTime(); t < end; t += 30 * 60000) {
+    const fx = weatherFx(t); swing += fx.swing; n++; samples.push([baseOutdoor(new Date(t)), fx]); pmKeep += 1 - washoutAt(t);
+  }
+  const sw = 1 / (swing / n);
+  let tBase = 0, tW = 0, hBase = 0, hW = 0, dry = 0;
+  for (const [b, fx] of samples) {
+    tBase += b.temperature; tW += b.mean + b.half * b.c * fx.swing * sw;
+    hBase += b.humidity; hW += b.humidity + (WEATHER.wetRH - b.humidity) * fx.wet; dry += 1 - fx.wet;
+  }
+  /* pmScale: dry hours get slightly more PM2.5 so the month keeps the Seoul monthly mean despite the washout */
+  const norm = { swing: sw, tShift: (tBase - tW) / n, hDryShift: dry ? (hBase - hW) / dry : 0, pmScale: n / pmKeep };
+  weatherNorm.set(key, norm); return norm;
+}
+/* outdoor conditions at one moment: normals shaped by the weather; daylight between sunrise and sunset */
+function outdoorAt(date) {
+  const b = baseOutdoor(date), h = b.h, sun = sunAt(date), ms = date.getTime();
+  const fx = weatherFx(ms), nm = weatherNormFor(date), state = weatherStateAt(ms), dw = dayWeather(localDayIndex(date));
+  const temperature = b.mean + b.half * b.c * fx.swing * nm.swing + nm.tShift;
+  const humidity = Math.min(100, Math.max(10, b.humidity + (WEATHER.wetRH - b.humidity) * fx.wet + nm.hDryShift * (1 - fx.wet)));
+  const windSpeed = Math.max(0, (WIND.mean + WIND.amp * Math.cos(2 * Math.PI * (monthPos(date) - WIND.peakPos) / 12)) * dw.wind * (1 + WIND.diurnal * b.c));
+  const precip = precipAt(ms), rainDb = state === "rain" && precip > 0 ? RAIN_NOISE.at40 + RAIN_NOISE.perDecade * Math.log10(precip / 40) : null;
+  const baseNoise = h >= 7 && h < 22 ? 50 : 38;
+  return { temperature, humidity, pm25: b.pm25 * pmFactorAt(date) * nm.pmScale * (1 - washoutAt(ms)), co2: SEOUL_CO2_PPM,
+    daylight: h > sun.rise && h < sun.set ? 25000 * sun.noonHeight * Math.sin(Math.PI * (h - sun.rise) / sun.dayLen) * fx.sun : 0,
+    noise: rainDb == null ? baseNoise : dbSum([baseNoise, rainDb]), meanTemperature: b.mean + nm.tShift,
+    weather: state, windSpeed: Math.round(windSpeed * 10) / 10, precipitation: Math.round(precip * 10) / 10,
+    /* sun direction: east at sunrise, south at noon, west at sunset (approximation) */
+    sunAz: h > sun.rise && h < sun.set ? 90 + 180 * (h - sun.rise) / sun.dayLen : null };
+}
+/* months since mid-January (0 = 15 Jan, 1 = 15 Feb, ...) */
+function monthPos(date) { return date.getMonth() + (date.getDate() - 0.5) / monthDays(date) - 0.5; }
+/* where a closed, unheated room settles at this moment */
+function freeIndoorTemp(out, profile = NO_PROFILE) {
+  const solar = PHYS.solarGainC * PHYS.windowHeat[profile.windowSize] * windowSun(profile, out) * out.daylight / 20000;
+  /* the winter floor applies to the building itself; sun through the window comes on top of it */
+  return Math.max(PHYS.indoorMinC, out.meanTemperature + PHYS.indoorGainC + PHYS.indoorSwing * (out.temperature - out.meanTemperature)) + solar;
+}
+/* saturation water vapour pressure over water (hPa), Magnus formula */
+function satVapor(tC) { return 6.112 * Math.exp(17.62 * tC / (243.12 + tC)); }
+function vaporFromRH(rh, tC) { return rh / 100 * satVapor(tC); }
+function rhFromVapor(e, tC) { return Math.min(100, Math.max(1, 100 * e / satVapor(tC))); }
+function gauss() { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+function dbSum(levels) { return 10 * Math.log10(levels.reduce((s, L) => s + 10 ** (L / 10), 0)); }
+function roundTo(v, dec) { const p = 10 ** dec; return Math.round(v * p) / p; }
+
+const key = (cap, attr) => `${cap}.${attr}`;
+
+/* ===== Classes ===== */
+class Device {
+  constructor(id, type, roomId, capabilities) {
+    this.id = id; this.type = type; this.roomId = roomId; this.capabilities = capabilities;
+    this.state = {}; this.aux = {}; /* aux: simulator bookkeeping, not part of the spec */
+    for (const c of capabilities) for (const a of c.attributes) {
+      const k = key(c.capability, a.name);
+      let v = (roomId === "balcony" && k in OUTDOOR_DEFAULTS) ? OUTDOOR_DEFAULTS[k] : DEFAULTS[k];
+      if (v === undefined) v = a.type === "enum" ? a.values[0] : null;
+      if (type === "oven" && k === "temperatureMeasurement.temperature") v = 22;
+      this.state[k] = v;
+    }
+  }
+  cap(name) { return this.capabilities.find(c => c.capability === name); }
+  attrSpec(capName, attrName) { return this.cap(capName).attributes.find(a => a.name === attrName); }
+  get(capName, attrName) { return this.state[key(capName, attrName)]; }
+  /* Change one value and return what changed */
+  set(capName, attrName, value) {
+    const k = key(capName, attrName), prev = this.state[k];
+    this.state[k] = value;
+    return { capability: capName, attribute: attrName, previousValue: prev, value, changed: prev !== value };
+  }
+  /* Work out the values a command changes: [capability, attribute, value] */
+  effects(capName, cmdName, args) {
+    const c = this.cap(capName), attr = c.attributes[0].name;
+    if ((this.type === "washer" || this.type === "dryer") && cmdName === "start") {
+      const out = [[capName, attr, "running"], ["mode", "mode", args[0]]];
+      out.push(["remainingTime", "remainingTime", this.type === "dryer" ? args[1] : (CYCLE_MINUTES.washer[args[0]] ?? 60)]);
+      return out;
+    }
+    if (this.type === "dishwasher" && (cmdName === "start" || cmdName === "startHeatedDry"))
+      return [[capName, attr, "running"], ["remainingTime", "remainingTime", CYCLE_MINUTES.dishwasher[cmdName]]];
+    if (cmdName.startsWith("set")) return [[capName, attr, args[0]]];
+    if (cmdName === "pause") return [[capName, attr, PAUSE_VALUE[attr]]];
+    if (cmdName in CMD_VALUE) return [[capName, attr, CMD_VALUE[cmdName]]];
+    throw new Error(`Unknown command: ${cmdName}`);
+  }
+}
+
+class Room {
+  constructor(id) { this.id = id; this.devices = []; }
+  get label() { return ROOM_LABEL[this.id] || this.id; }
+}
+
+class House {
+  constructor(variant, spec, date = new Date()) {
+    this.variant = variant; this.profile = ROOM_PROFILES[variant];
+    const type = this.profile.houseType, t = HOUSE_TYPES[type];
+    this.type = type;
+    this.rooms = ALL_ROOMS.filter(r => !t.exclude.includes(r)).map(r => new Room(r));
+    const byId = Object.fromEntries(this.rooms.map(r => [r.id, r]));
+    for (const d of spec) d.rooms.forEach((r, i) => {
+      if (byId[r]) byId[r].devices.push(new Device(d.deviceIds[i], d.device, r, d.capabilities));
+    });
+    this.devices = Object.fromEntries(this.rooms.flatMap(r => r.devices).map(d => [d.id, d]));
+    this.byRoom = Object.fromEntries(this.rooms.map(r => [r.id, Object.fromEntries(r.devices.map(d => [d.type, d]))]));
+    this.env = new Environment(this, date);
+    this.syncSensors();
+  }
+  /* make every sensor show the room's current value (no log line); used when a house is created or the time jumps */
+  syncSensors() {
+    for (const d of Object.values(this.devices)) for (const [cap, attr, ek] of SENSOR_ATTRS[d.type] || []) {
+      const cfg = PHYS.report[ek], v = this.env.rooms[d.roomId][ek];
+      d.set(cap, attr, roundTo(Math.max(0, ek === "humidity" ? Math.min(100, v) : v), cfg.dec));
+    }
+  }
+  device(id) { return this.devices[id]; }
+  roomProfile(roomId) { return this.profile.rooms[roomId] || NO_PROFILE; }
+  at(roomId, type) { return this.byRoom[roomId]?.[type]; }
+  exportState() { return { devices: Object.fromEntries(Object.values(this.devices).map(d => [d.id, d.state])), env: this.env.rooms }; }
+  importState(s) {
+    const devs = s && s.devices ? s.devices : s;
+    for (const [id, st] of Object.entries(devs || {})) if (this.devices[id]) Object.assign(this.devices[id].state, st);
+    for (const [r, e] of Object.entries((s && s.env) || {})) if (this.env.rooms[r]) Object.assign(this.env.rooms[r], e);
+  }
+}
+
+/* Each room's true conditions. Sensors read these; devices push them around. */
+class Environment {
+  constructor(house, date) {
+    this.house = house; this.rooms = {};
+    const out = outdoorAt(date);
+    for (const r of house.rooms) this.rooms[r.id] = r.id === "balcony"
+      ? { temperature: out.temperature, humidity: out.humidity, pm25: out.pm25, co2: out.co2, illuminance: out.daylight, noise: out.noise }
+      : { temperature: 22, mass: 22, humidity: 45, pm25: 15, co2: 600, illuminance: 0, noise: 30 };
+    this.settle(date);
+  }
+  /* put every indoor room at the season's settled temperature, wall temperature, humidity, PM2.5 and CO2 */
+  settle(date) {
+    const out = outdoorAt(date);
+    for (const [id, e] of Object.entries(this.rooms)) if (id !== "balcony") {
+      const p = this.house.roomProfile(id), t = freeIndoorTemp(out, p);
+      const vapor = Math.min(satVapor(t), vaporFromRH(out.humidity, out.temperature) + PHYS.moistureOffset);
+      Object.assign(e, { temperature: t, mass: t, vapor, humidity: rhFromVapor(vapor, t), pm25: out.pm25, co2: out.co2 });
+    }
+  }
+  /* advance every room by dt minutes */
+  step(date, dt) {
+    const out = outdoorAt(date), H = this.house;
+    /* house-wide average of the things air carries between rooms, weighted by room size */
+    const mean = { pm25: 0, co2: 0, vapor: 0 }; let vol = 0;
+    for (const room of H.rooms) if (room.id !== "balcony") {
+      const e = this.rooms[room.id], a = H.roomProfile(room.id).areaM2; vol += a;
+      mean.pm25 += e.pm25 * a; mean.co2 += e.co2 * a; mean.vapor += (e.vapor ?? vaporFromRH(e.humidity, e.temperature)) * a;
+    }
+    for (const k of Object.keys(mean)) mean[k] /= vol || 1;
+    for (const room of H.rooms) {
+      const r = room.id, e = this.rooms[r], dev = t => H.at(r, t);
+      const p = H.roomProfile(r), sf = 10 / p.areaM2; /* sf: effects of people and appliances are stronger in smaller rooms */
+      const is = (t, cap, attr, v) => { const d = dev(t); return !!d && d.get(cap, attr) === v; };
+      const occ = is("occupancy_sensor", "presenceSensor", "presence", "present");
+      const lightOn = is("light", "switch", "switch", "on");
+
+      if (r === "balcony") { /* the balcony is outdoors */
+        Object.assign(e, { temperature: out.temperature, humidity: out.humidity, pm25: out.pm25, co2: out.co2,
+          illuminance: out.daylight + (lightOn ? 200 : 0), noise: dbSum(occ ? [out.noise, 45] : [out.noise]) });
+        continue;
+      }
+
+      /* air exchange with outdoors; an open window (or the balcony door, for the living room) speeds it up */
+      const winOpen = is("window_contact", "contactSensor", "contact", "open");
+      const doorOpen = r === "living_room" && H.at("balcony", "door_contact")?.get("contactSensor", "contact") === "open";
+      const open = winOpen || doorOpen;
+      const windK = WEATHER.windOpen[0] + WEATHER.windOpen[1] * out.windSpeed / WIND.mean; /* stronger wind, faster exchange through an open window */
+      const kOpen = Math.max(winOpen ? PHYS.windowOpen[p.windowSize] : 0, doorOpen ? PHYS.windowOpen.large : 0) * windK;
+      const kClosed = PHYS.closedByWalls[p.exteriorWalls], wallShare = (0.5 + p.exteriorWalls) / 1.5;
+      const k = open ? kOpen : kClosed;
+      /* windows shut: the walls damp the outdoor swing, sun and household heat add indoorGainC,
+         and neighbouring flats keep the room from falling below indoorMinC in winter */
+      const tempTarget = open ? out.temperature : freeIndoorTemp(out, p);
+      if (e.mass == null) e.mass = e.temperature;
+      const fromMass = PHYS.massToAir * (e.mass - e.temperature) * dt;
+      e.mass += PHYS.airToMass * (e.temperature - e.mass) * dt;
+      e.temperature += (tempTarget - e.temperature) * k * dt + fromMass;
+      /* moisture: outdoor air brings its own vapour; heating that air lowers its relative humidity */
+      if (e.vapor == null) e.vapor = vaporFromRH(e.humidity, e.temperature);
+      e.vapor += (vaporFromRH(out.humidity, out.temperature) + (open ? 0 : PHYS.moistureOffset) - e.vapor) * k * dt;
+      e.pm25 += (out.pm25 - e.pm25) * (open ? kOpen : PHYS.pmInfiltration * wallShare) * dt;
+      /* air exchange with the rest of the home */
+      const kMix = OPEN_PLAN.includes(r) ? PHYS.mixing.open : PHYS.mixing.closed;
+      e.pm25 += (mean.pm25 - e.pm25) * kMix * dt; e.co2 += (mean.co2 - e.co2) * kMix * dt; e.vapor += (mean.vapor - e.vapor) * kMix * dt;
+      e.co2 += (out.co2 - e.co2) * (open ? 0.05 : 0.003) * dt;
+
+      /* a person in the room breathes out CO2, heat and moisture */
+      if (occ) { e.co2 += 10 * sf * dt; e.temperature += 0.003 * sf * dt; e.vapor += PHYS.moisture.person * sf * dt; }
+
+      /* heating/cooling pushes the air toward its setpoint, up to hvacMaxRate per minute; cold or warm walls slow it down */
+      const hvac = dev("heating_cooling_unit"), mode = hvac?.get("thermostatMode", "thermostatMode");
+      if (mode === "cool") {
+        const target = hvac.get("thermostatCoolingSetpoint", "coolingSetpoint"), coil = satVapor(PHYS.acCoilC);
+        if (e.temperature > target) e.temperature -= Math.min(PHYS.hvacMaxRate * dt, e.temperature - target);
+        if (e.vapor > coil) e.vapor -= (e.vapor - coil) * PHYS.acDryRate * dt;
+      } else if (mode === "heat") {
+        const target = hvac.get("thermostatHeatingSetpoint", "heatingSetpoint");
+        if (e.temperature < target) e.temperature += Math.min(PHYS.hvacMaxRate * dt, target - e.temperature);
+      }
+
+      const hum = dev("humidifier"), humOn = !!hum && hum.get("switch", "switch") === "on";
+      if (humOn) { /* adds vapour until the room reaches the target relative humidity at its current temperature */
+        const target = vaporFromRH(hum.get("humiditySetpoint", "humiditySetpoint"), e.temperature);
+        if (e.vapor < target) e.vapor += Math.min(PHYS.moisture.humidifierMax * sf * dt, target - e.vapor);
+      }
+
+      const apShare = (dev("air_purifier")?.get("fanSpeedPercent", "percent") || 0) / 100; /* fan percent = share of full airflow */
+      if (apShare > 0) {
+        const P = PHYS.purifier, share = apShare;
+        e.pm25 -= e.pm25 * Math.min(0.5, P.mixingEff * P.cadrM3min * share / (p.areaM2 * PHYS.ceilingM)) * dt;
+      }
+
+      const running = t => is(t, "cycleState", "cycleState", "running");
+      const stoveOn = is("stove", "switch", "switch", "on");
+      const ovenOn = !!dev("oven") && dev("oven").get("mode", "mode") !== "off";
+      const robotOn = is("robot_vacuum", "robotCleanerOperatingState", "operatingState", "running");
+      if (stoveOn) { e.temperature += 0.03 * sf * dt; e.pm25 += 0.6 * sf * dt; e.co2 += 5 * sf * dt; }
+      if (ovenOn) e.temperature += 0.02 * sf * dt;
+      if (running("dryer")) { e.temperature += 0.02 * sf * dt; e.vapor += PHYS.moisture.dryer * sf * dt; }
+      if (running("washer")) e.vapor += PHYS.moisture.washer * sf * dt;
+      if (robotOn) e.pm25 += 0.1 * sf * dt;
+      /* vapour beyond saturation condenses; relative humidity is read from vapour and the final temperature */
+      e.vapor = Math.max(0.5, Math.min(satVapor(e.temperature), e.vapor));
+      e.humidity = rhFromVapor(e.vapor, e.temperature);
+      e.pm25 = Math.max(0, e.pm25); e.co2 = Math.max(400, e.co2);
+
+      /* light level follows lights and daylight immediately */
+      let lux = out.daylight * PHYS.windowLight[p.windowSize] * windowSun(p, out);
+      const curtain = dev("curtain"); if (curtain) lux *= PHYS.curtain[curtain.get("windowShade", "windowShade")] ?? 0.6;
+      const fixture = (10 / p.areaM2) ** 0.4;
+      if (lightOn) lux += PHYS.lightLux * fixture;
+      const lamp = dev("lamp"); if (lamp && lamp.get("switch", "switch") === "on") lux += PHYS.lampLux * fixture * lamp.get("switchLevel", "level") / 100;
+      e.illuminance = lux;
+
+      /* noise is the combined level of every running source, in dB */
+      const L = [28];
+      if (p.windowSize !== "none") L.push(out.noise - (open ? FACADE_DB.open : FACADE_DB.closed)); /* outdoor sound (traffic, rain) through the window */
+      if (occ) L.push(40);
+      const tv = dev("tv"); if (tv && tv.get("switch", "switch") === "on") L.push(tv.get("mediaPlayback", "playbackStatus") === "playing" ? 55 : 45);
+      const spk = dev("speaker"); if (spk && spk.get("mediaPlayback", "playbackStatus") === "playing") L.push(40 + 0.4 * spk.get("audioVolume", "volume"));
+      if (robotOn) L.push(65);
+      if (running("washer")) L.push(60);
+      if (running("dryer")) L.push(58);
+      if (running("dishwasher")) L.push(50);
+      if (stoveOn) L.push(42);
+      if (ovenOn) L.push(40);
+      if (apShare > 0) L.push(31 + 17 * apShare); /* 35 dB at 25 %, 39.5 at 50 %, 48 at 100 % (the earlier low / medium / high levels) */
+      if (mode && mode !== "off") L.push(38);
+      if (humOn) L.push(33);
+      e.noise = dbSum(L);
+    }
+  }
+}
+
+class EventLog {
+  constructor() { this.entries = []; }
+  add(e) { /* kept in time order (a front-door line can be a few seconds ahead of the next one) */
+    const E = this.entries, t = Date.parse(e.time);
+    if (!E.length || Date.parse(E[E.length - 1].time) <= t) { E.push(e); return; }
+    let i = E.length; while (i > 0 && Date.parse(E[i - 1].time) > t) i--; E.splice(i, 0, e);
+  }
+  clear() { this.entries = []; }
+  toJSONL() { return this.entries.map(e => JSON.stringify(e)).join("\n") + (this.entries.length ? "\n" : ""); }
+}
+
+/* Simulation time = base time + real elapsed time x speed, but only while running */
+class SimClock {
+  constructor() { this.base = Date.now(); this.realBase = Date.now(); this.speed = 1; this.running = false; }
+  get rate() { return this.running ? this.speed : 0; }
+  now() { return new Date(this.base + (Date.now() - this.realBase) * this.rate); }
+  setTo(ms) { this.base = ms; this.realBase = Date.now(); }
+  setSpeed(s) { this.setTo(this.now().getTime()); this.speed = s; }
+  setRunning(on) { this.setTo(this.now().getTime()); this.running = on; }
+  jump(sec) { this.setTo(this.now().getTime() + sec * 1000); }
+}
+const SPEEDS = [[1, "1x"], [60, "1 s = 1 min"], [600, "1 s = 10 min"], [3600, "1 s = 1 hour"]];
+
+const HAND_RECORDED = ["window_contact", "door_contact"]; /* recorded states that only a person's hands change */
+/* The front door when the person goes out or comes in: entryway door lock and door contact sensor.
+   Unlock (from inside when going out, keypad from outside when coming in), open, close, and the lock locks itself
+   when the door closes (autoLock, as digital door locks commonly do). Seconds after the start are the simulator's choice. */
+const FRONT_DOOR = { autoLock: true, openSec: 5, closeSec: 10, lockSec: 12 };
+/* appliances that switch themselves off after running this many minutes without a break (logged as the device's own report, reason "auto_off").
+   stove: "4시간 연속 사용 시 ... 강제로 꺼집니다" (Rinnai gas cooktop RBR-P2500 manual);
+   oven: "automatically turn off the oven after 12 hours during baking functions" (GE range manual, 12-hour shut-off). */
+const AUTO_OFF_MIN = { stove: 240, oven: 720 };
+class Simulator {
+  constructor(spec) {
+    this.spec = spec; this.houses = {}; this.log = new EventLog(); this.clock = new SimClock();
+    this.houseId = "house001"; this.variant = DEFAULT_VARIANT; this.lastStep = null;
+    this.policy = { backgroundPerDay: DEFAULT_BACKGROUND_PER_DAY };
+    /* sensor reports wait here until their day is closed */
+    this.pending = { raw: [], actions: [], openDay: null, rangeStart: null };
+    this.lastSaved = {}; this.lastRaw = {}; /* per sensor key: last saved value / last reported value */
+    this.phone = new Phone(this); /* the person's phone: gets a SMARTTHINGS copy of every saved home log line */
+  }
+  get type() { return ROOM_PROFILES[this.variant].houseType; }
+  get house() {
+    if (!this.houses[this.variant]) { this.houses[this.variant] = new House(this.variant, this.spec, this.clock.now()); this.syncRouter(true); }
+    return this.houses[this.variant];
+  }
+  /* Wi-Fi router: every smart device of the home stays connected all the time, plus the person's phone while it is on Home-WiFi.
+     A change is logged as the router's own report (source "device"); silent = set without a log line (new house, restored state). */
+  syncRouter(silent = false, time) {
+    const h = this.houses[this.variant]; if (!h) return 0;
+    const router = Object.values(h.devices).find(d => d.type === "wifi_router"); if (!router) return 0;
+    const smart = Object.values(h.devices).filter(d => d !== router).length;
+    const ch = router.set("connectedDevices", "connectedDevices", smart + (this.phone?.s.wifi === PLACES.home.wifi ? 1 : 0));
+    if (!ch.changed || silent) return 0;
+    this.record(router, ch, "device", null, [], time); return 1;
+  }
+  build(device, change, source, command, args, time, reason, channel) {
+    const wx = outdoorAt(time || this.clock.now()); /* the weather at that moment goes on every log line */
+    return {
+      time: isoLocal(time || this.clock.now()), houseId: this.houseId, houseType: this.type, houseVariant: this.variant,
+      weather: wx.weather,
+      deviceId: device.id, roomId: device.roomId, device: device.type,
+      capability: change.capability, attribute: change.attribute,
+      value: change.value, previousValue: change.previousValue,
+      source, command: command ?? null, args: args ?? [],
+      channel: source === "command" ? (channel || "physical") : null, /* a person's command: at the device ("physical") or from the phone ("mobile_app") */
+      reason: reason ?? null,
+    };
+  }
+  record(device, change, source, command, args, time, channel) {
+    const e = this.build(device, change, source, command, args, time, null, channel);
+    this.log.add(e); this.phone.copyHome([e]);
+    if (source === "command" || source === "manual" || source === "event") this.noteAction(device, time);
+    return e;
+  }
+  /* remember a person's action so the room's sensor reports around it are kept */
+  noteAction(device, time) {
+    const t = (time || this.clock.now()).getTime(), [before, after] = ACTION_WINDOWS[device.type] || DEFAULT_WINDOW;
+    const rooms = [device.roomId];
+    if (device.roomId === "balcony" && device.type === "door_contact") rooms.push("living_room");
+    this.pending.actions.push({ t, from: t - before * 60000, to: t + after * 60000, rooms });
+  }
+  /* The person's room (null = not at home): that room's occupancy sensor reports present, every other room not present.
+     Logged at once as sensor reports (reason "presence"), and the room's sensor readings around it are kept like an action's. */
+  setPresence(roomId, time) {
+    const t = time || this.clock.now(), sensors = Object.values(this.house.devices).filter(d => d.type === "occupancy_sensor");
+    const order = sensors.slice().sort((a, b) => (a.roomId === roomId) - (b.roomId === roomId)); /* "not present" lines first, then "present" */
+    let n = 0;
+    for (const d of order) {
+      const ch = d.set("presenceSensor", "presence", d.roomId === roomId ? "present" : "not present"); if (!ch.changed) continue;
+      const e = this.build(d, ch, "sensor", null, [], t, "presence");
+      this.log.add(e); this.phone.copyHome([e]); this.noteAction(d, t); n++;
+    }
+    return n;
+  }
+  /* A person's own hands (a command "at device", opening a window or door) need the person at home and in the device's room.
+     Returns why not, or null. The balcony door can be used from the living room too. From the phone app there is no such limit. */
+  whereRefusal(d) {
+    const s = this.phone.s, roomName = r => ROOM_LABEL[r] || r;
+    if (s.asleep) return "The person is asleep: wake them first (Phone panel, Wake up)";
+    if (s.place !== "home") return `The person is ${s.trip ? "on the way (" + PLACES[s.place].label + ")" : "at " + PLACES[s.place].label}, not at home: use Control from "Phone app", or travel home first`;
+    const ok = s.room === d.roomId || (d.id === "balcony.door_contact" && s.room === "living_room");
+    if (!ok) return `The person is ${s.room ? "in " + roomName(s.room) : "at home, room unknown"}, not in ${roomName(d.roomId)}: move them there first (Phone panel, Go to room), or use the phone app`;
+    return null;
+  }
+  /* going out or coming in through the front door, starting at t0 (ms); returns the number of home log lines */
+  useFrontDoor(t0) {
+    const h = this.house, lock = h.device("entryway.lock"), door = h.device("entryway.door_contact");
+    let n = 0; const at = sec => new Date(t0 + sec * 1000);
+    const put = (d, cap, attr, v, source, cmd, sec) => {
+      if (!d) return; const ch = d.set(cap, attr, v); if (!ch.changed) return;
+      this.record(d, ch, source, cmd, [], at(sec), source === "command" ? "physical" : undefined); n++;
+    };
+    put(lock, "lock", "lock", "unlocked", "command", "unlock", 0);
+    put(door, "contactSensor", "contact", "open", "manual", null, FRONT_DOOR.openSec);
+    put(door, "contactSensor", "contact", "closed", "manual", null, FRONT_DOOR.closeSec);
+    if (FRONT_DOOR.autoLock) put(lock, "lock", "lock", "locked", "device", null, FRONT_DOOR.lockSec);
+    return n;
+  }
+  /* Run a command: one log line per changed value. A refused command logs nothing and leaves the reason in lastRefusal. */
+  run(deviceId, capName, cmdName, args = [], channel = "physical") {
+    const d = this.house.device(deviceId);
+    this.lastRefusal = null;
+    if (channel === "physical") { const why = this.whereRefusal(d); if (why) { this.lastRefusal = why; return 0; } }
+    const changes = d.effects(capName, cmdName, args).map(([c, a, v]) => d.set(c, a, v)).filter(ch => ch.changed);
+    changes.forEach(ch => this.record(d, ch, "command", cmdName, args, undefined, channel));
+    if (d.type === "robot_vacuum" && cmdName === "start") d.aux.run = 0;
+    return changes.length;
+  }
+  /* Record a value directly (sensor readings, states the device reports) */
+  setValue(deviceId, capName, attrName, value) {
+    const d = this.house.device(deviceId);
+    this.lastRefusal = null;
+    /* occupancy follows the person: marking a room present moves the person there (and home, if away);
+       marking the person's room not present leaves them at home with no room known */
+    if (d.type === "occupancy_sensor" && attrName === "presence") {
+      const ph = this.phone;
+      if (value === "present") {
+        if (ph.s.place !== "home") { this.lastRefusal = `The person is at ${PLACES[ph.s.place].label}: they have to travel home first (Phone panel)`; return 0; }
+        return ph.moveRoom(d.roomId);
+      }
+      if (d.roomId === ph.s.room) {
+        if (ph.s.asleep) { this.lastRefusal = "The person is asleep in this room: wake them first"; return 0; }
+        ph.s.room = null; return this.setPresence(null);
+      }
+      return 0;
+    }
+    /* opening or closing a window or door is done by hand */
+    this.lastRefusal = null;
+    if (HAND_RECORDED.includes(d.type)) { const why = this.whereRefusal(d); if (why) { this.lastRefusal = why; return 0; } }
+    const sensed = (SENSOR_ATTRS[d.type] || []).find(([c, a]) => c === capName && a === attrName);
+    if (sensed) { /* a manual sensor reading also sets the room's true value, e.g. humidity after a shower */
+      const room = this.house.env.rooms[d.roomId];
+      room[sensed[2]] = value;
+      if (sensed[2] === "humidity") room.vapor = vaporFromRH(value, room.temperature);
+      (d.aux.lastReport ||= {})[sensed[2]] = this.clock.now().getTime();
+      const k = `${d.id}|${capName}.${attrName}`; this.lastRaw[k] = value; this.lastSaved[k] = value;
+    }
+    const ch = d.set(capName, attrName, value);
+    if (d.type === "doorbell") { this.record(d, ch, "event"); return 1; }
+    if (!ch.changed) return 0;
+    this.record(d, ch, "manual"); return 1;
+  }
+
+  /* ----- time passing ----- */
+  resetSteps() { this.lastStep = this.clock.now().getTime(); }
+  /* advance the world in 1-minute steps up to the current simulation time; returns the number of steps */
+  tick() {
+    const now = this.clock.now().getTime();
+    if (this.lastStep == null || now < this.lastStep - PHYS.stepMs) { this.lastStep = now; return 0; }
+    const maxSteps = PHYS.maxCatchUpDays * 1440;
+    if ((now - this.lastStep) / PHYS.stepMs > maxSteps) this.lastStep = now - maxSteps * PHYS.stepMs;
+    let n = 0;
+    while (this.lastStep + PHYS.stepMs <= now) {
+      const from = this.lastStep;
+      this.lastStep += PHYS.stepMs;
+      const p = this.pending;
+      if (p.openDay == null) { p.openDay = startOfDay(from); p.rangeStart = from; }
+      this.stepOnce(new Date(this.lastStep));
+      /* a day is closed once the longest after-window past midnight has also been simulated */
+      while (this.lastStep >= p.openDay + DAY_MS + MAX_AFTER_MIN * 60000) this.closeDay(p.openDay + DAY_MS);
+      n++;
+    }
+    return n;
+  }
+  /* jump to a time without simulating the gap: close the open day first */
+  /* a jump of more than 6 hours also resets indoor rooms to that season's settled values */
+  jumpTo(ms) {
+    const gap = Math.abs(ms - this.clock.now().getTime());
+    this.flush(); this.clock.setTo(ms); this.resetSteps();
+    if (gap > 6 * 3600000) { this.house.env.settle(new Date(ms)); this.house.syncSensors(); }
+  }
+  /* close the open day now, at the last simulated minute */
+  flush() { if (this.pending.openDay != null && this.lastStep != null) this.closeDay(Math.min(this.lastStep, this.pending.openDay + DAY_MS), true); }
+
+  /* choose which of the day's sensor reports to save, add exactly N background lines, and write them to the log */
+  closeDay(endMs, partial = false) {
+    const p = this.pending, dayStart = p.openDay, rangeStart = Math.max(p.rangeStart ?? dayStart, dayStart);
+    const today = p.raw.filter(r => r.t < endMs), later = p.raw.filter(r => r.t >= endMs);
+    const inWindow = r => p.actions.some(a => a.rooms.includes(r.entry.roomId) && r.t >= a.from && r.t <= a.to);
+
+    /* every sensor attribute in the house, in a fixed order */
+    const keys = [];
+    for (const d of Object.values(this.house.devices)) for (const [cap, attr, ek] of SENSOR_ATTRS[d.type] || [])
+      keys.push({ key: `${d.id}|${cap}.${attr}`, d, cap, attr, ek });
+    keys.sort((a, b) => a.key.localeCompare(b.key));
+
+    /* background slots: N spread over the sensors, each sensor's share evenly spaced over the simulated part of the day */
+    const N = Math.max(0, Math.floor(Number(this.policy.backgroundPerDay) || 0)), A = keys.length, span = endMs - rangeStart;
+    const events = today.map(r => ({ t: r.t, kind: 0, r }));
+    if (A && span > 0) keys.forEach((k, i) => {
+      const count = Math.floor(N / A) + (i < N % A ? 1 : 0);
+      for (let j = 0; j < count; j++) events.push({ t: rangeStart + Math.floor(((j + 0.5) / count) * span / 60000) * 60000, kind: 1, k });
+    });
+    events.sort((a, b) => a.t - b.t || a.kind - b.kind);
+
+    const saved = [];
+    for (const ev of events) {
+      if (ev.kind === 0) {
+        const { entry, key, ek } = ev.r, v = entry.value;
+        this.lastRaw[key] = v;
+        const reason = inWindow(ev.r) ? "action_window" : bigChange(ek, this.lastSaved[key], v);
+        if (reason) { saved.push({ ...entry, previousValue: this.lastSaved[key] ?? null, reason }); this.lastSaved[key] = v; }
+      } else {
+        const { k } = ev, v = this.lastRaw[k.key] ?? k.d.get(k.cap, k.attr);
+        saved.push(this.build(k.d, { capability: k.cap, attribute: k.attr, value: v, previousValue: this.lastSaved[k.key] ?? null },
+          "sensor", null, [], new Date(ev.t), "background"));
+        this.lastSaved[k.key] = v;
+      }
+    }
+
+    /* write in time order */
+    const firstIdx = this.log.entries.findIndex(e => Date.parse(e.time) >= dayStart);
+    const tail = (firstIdx < 0 ? [] : this.log.entries.splice(firstIdx)).concat(saved);
+    tail.sort((a, b) => Date.parse(a.time) - Date.parse(b.time));
+    this.log.entries.push(...tail);
+    this.phone.copyHome(saved);
+
+    p.raw = later;
+    p.actions = p.actions.filter(a => a.to >= endMs);
+    if (partial) { p.openDay = null; p.rangeStart = null; }
+    else { p.openDay = dayStart + DAY_MS; p.rangeStart = p.openDay; }
+    this.phone.prune(p.openDay ?? this.lastStep);
+    return saved.length;
+  }
+  stepOnce(t) { this.stepDevices(t); this.house.env.step(t, 1); this.reportSensors(t); this.phone.step(t); }
+
+  /* appliances that progress on their own */
+  stepDevices(t) {
+    for (const d of Object.values(this.house.devices)) {
+      const logIf = (c, a, v, loud) => { const ch = d.set(c, a, v); if (ch.changed && loud) this.record(d, ch, "device", null, [], t); };
+      if (d.type in AUTO_OFF_MIN) {
+        const [c, at, offV] = d.type === "stove" ? ["switch", "switch", "off"] : ["mode", "mode", "off"];
+        const on = d.get(c, at) !== offV;
+        d.aux.onMin = on ? (d.aux.onMin || 0) + 1 : 0;
+        if (on && d.aux.onMin >= AUTO_OFF_MIN[d.type]) {
+          const e = this.build(d, d.set(c, at, offV), "device", null, [], t, "auto_off");
+          this.log.add(e); this.phone.copyHome([e]); d.aux.onMin = 0;
+        }
+      }
+      if (d.cap("cycleState") && d.get("cycleState", "cycleState") === "running") {
+        const rem = Math.max(0, (d.get("remainingTime", "remainingTime") ?? 0) - 1);
+        logIf("remainingTime", "remainingTime", rem, rem % 5 === 0);
+        if (rem === 0) logIf("cycleState", "cycleState", "finished", true);
+      }
+      if (d.type === "robot_vacuum") {
+        const st = d.get("robotCleanerOperatingState", "operatingState"), bat = d.get("battery", "battery");
+        let nb = bat;
+        if (st === "running") {
+          d.aux.run = (d.aux.run || 0) + 1; nb = Math.max(0, bat - 1);
+          if (d.aux.run >= 45 || nb <= 15) { logIf("robotCleanerOperatingState", "operatingState", "seekingCharger", true); d.aux.seek = 0; }
+        } else if (st === "seekingCharger") {
+          d.aux.seek = (d.aux.seek || 0) + 1;
+          if (d.aux.seek >= 2) logIf("robotCleanerOperatingState", "operatingState", "docked", true);
+        } else if (st === "docked" && bat < 100) nb = Math.min(100, bat + 2);
+        logIf("battery", "battery", nb, Math.floor(nb / 5) !== Math.floor(bat / 5) || nb === 100);
+      }
+      if (d.type === "oven") {
+        const target = d.get("temperatureSetpoint", "temperatureSetpoint"), cur = d.get("temperatureMeasurement", "temperature");
+        const roomT = Math.round(this.house.env.rooms[d.roomId].temperature);
+        let next, pre;
+        if (d.get("mode", "mode") !== "off") { next = Math.min(target, cur + 8); pre = next >= target - 5 ? "ready" : "preheating"; }
+        else { next = Math.max(roomT, cur - 3); pre = "idle"; }
+        /* the oven's own temperature updates silently: for user patterns only the preheat state (preheating / ready / idle) is logged */
+        logIf("temperatureMeasurement", "temperature", next, false);
+        logIf("preheat", "preheat", pre, true);
+      }
+    }
+  }
+
+  /* sensors report when the reading moves past a threshold, or every heartbeatMin minutes */
+  reportSensors(t) {
+    const ms = t.getTime();
+    for (const d of Object.values(this.house.devices)) {
+      const attrs = SENSOR_ATTRS[d.type]; if (!attrs) continue;
+      const e = this.house.env.rooms[d.roomId]; d.aux.lastReport ||= {};
+      for (const [cap, attr, ek] of attrs) {
+        const cfg = PHYS.report[ek], j = PHYS.jitter[ek];
+        let v = e[ek] + (ek === "illuminance" ? e[ek] * j : j) * gauss();
+        v = roundTo(Math.max(0, ek === "humidity" ? Math.min(100, v) : v), cfg.dec);
+        const prev = d.get(cap, attr), last = d.aux.lastReport[ek];
+        const th = cfg.rel ? Math.max(cfg.th, Math.abs(prev || 0) * cfg.rel) : cfg.th;
+        if (prev == null || last == null || Math.abs(v - prev) >= th || ms - last >= PHYS.heartbeatMin * 60000) {
+          /* the report updates the sensor now; whether it is saved is decided when the day closes */
+          const entry = this.build(d, d.set(cap, attr, v), "sensor", null, [], t);
+          this.pending.raw.push({ t: ms, entry, key: `${d.id}|${cap}.${attr}`, ek });
+          d.aux.lastReport[ek] = ms;
+        }
+      }
+    }
+  }
+}
+
+/* ===== Helpers ===== */
+function pad(n) { return String(n).padStart(2, "0"); }
+function isoLocal(dt) {
+  const off = -dt.getTimezoneOffset(), s = off >= 0 ? "+" : "-", a = Math.abs(off);
+  return `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}:${pad(dt.getSeconds())}${s}${pad(Math.floor(a/60))}:${pad(a%60)}`;
+}
+function toInputValue(dt) { return isoLocal(dt).slice(0, 19); }
+function fmt(v, spec) {
+  if (v === null || v === undefined) return "—";
+  return spec && spec.unit ? `${v} ${spec.unit}` : String(v);
+}
+function el(tag, attrs = {}, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") n.className = v; else if (k === "text") n.textContent = v;
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v); else if (v !== false && v != null) n.setAttribute(k, v);
+  }
+  for (const c of kids.flat()) if (c != null) n.append(c);
+  return n;
+}
+function coerce(raw, spec) {
+  if (!spec) return raw;
+  if (spec.type === "integer") { const n = Math.round(Number(raw)); if (!Number.isFinite(n)) throw new Error("Enter a number"); if (spec.min != null && (n < spec.min || n > spec.max)) throw new Error(`Enter a value from ${spec.min} to ${spec.max}`); return n; }
+  if (spec.type === "number") { const n = Number(raw); if (raw === "" || !Number.isFinite(n)) throw new Error("Enter a number"); return n; }
+  return String(raw);
+}
+function inputFor(spec, value, id) {
+  if (spec.type === "enum") return el("select", { id }, spec.values.map(v => el("option", { value: v, selected: v === value ? "" : false, text: v })));
+  if (spec.type === "integer" || spec.type === "number") return el("input", { type: "number", id, value: value ?? "", min: spec.min, max: spec.max, step: spec.type === "integer" ? 1 : 0.1 });
+  return el("input", { type: "text", id, value: value ?? "" });
+}
+
+/* ===== Phone =====
+   One person's phone. Every event follows event-formats (type, source, title, text, timestamp, collectedAt, dedupeKey, payload)
+   plus "context": battery, weather and location at that moment. collectedAt = timestamp (no collection delay).
+   Events come from the person's actions (the methods below), plus a few records the phone writes as time passes:
+   one hourly HEALTH line (steps, distance, calories, heart rate) and hourly DATA_USAGE, a SLEEP record on waking, a CALENDAR REMINDER when an event starts,
+   and a SMARTTHINGS copy of every line saved to the home log. All rates and numbers below are the simulator's choice. */
+/* Places the person can be. Coordinates are approximate points in Seoul chosen by the simulator (not checked against a map);
+   wifi is the network the phone joins there (null = mobile data only). "category" groups places in the panel and is not logged. */
+const PLACE_CATEGORIES = ["Home", "Work and study", "Transport", "Food and drink", "Shopping", "Leisure and sport", "Health and services", "People and stays", "On the move"];
+const PLACES = {
+  home:              { label: "Home",              category: "Home",                lat: 37.5013, lng: 127.0396, wifi: "Home-WiFi" },
+  office:            { label: "Office",            category: "Work and study",      lat: 37.5665, lng: 126.9780, wifi: "Office-WiFi" },
+  coworking:         { label: "Coworking space",   category: "Work and study",      lat: 37.4986, lng: 127.0284, wifi: "Cowork-Guest" },
+  campus:            { label: "Campus",            category: "Work and study",      lat: 37.5596, lng: 126.9370, wifi: "eduroam" },
+  library:           { label: "Library",           category: "Work and study",      lat: 37.5050, lng: 127.0050, wifi: "Library-Free" },
+  station:           { label: "Train station",     category: "Transport",           lat: 37.5547, lng: 126.9707, wifi: null },
+  subway_station:    { label: "Subway station",    category: "Transport",           lat: 37.4979, lng: 127.0276, wifi: null },
+  bus_stop:          { label: "Bus stop",          category: "Transport",           lat: 37.5030, lng: 127.0410, wifi: null },
+  airport:           { label: "Airport",           category: "Transport",           lat: 37.4602, lng: 126.4407, wifi: "Airport_Free_WiFi" },
+  gas_station:       { label: "Gas station",       category: "Transport",           lat: 37.5080, lng: 127.0450, wifi: null },
+  parking_lot:       { label: "Parking lot",       category: "Transport",           lat: 37.5070, lng: 127.0560, wifi: null },
+  cafe:              { label: "Cafe",              category: "Food and drink",      lat: 37.5005, lng: 127.0365, wifi: "Cafe-Guest" },
+  restaurant:        { label: "Restaurant",        category: "Food and drink",      lat: 37.5100, lng: 127.0600, wifi: null },
+  bakery:            { label: "Bakery",            category: "Food and drink",      lat: 37.5019, lng: 127.0412, wifi: null },
+  bar:               { label: "Bar",               category: "Food and drink",      lat: 37.5340, lng: 126.9940, wifi: null },
+  market:            { label: "Market",            category: "Shopping",            lat: 37.5700, lng: 127.0090, wifi: null },
+  grocery_store:     { label: "Grocery store",     category: "Shopping",            lat: 37.5025, lng: 127.0420, wifi: null },
+  convenience_store: { label: "Convenience store", category: "Shopping",            lat: 37.5016, lng: 127.0401, wifi: null },
+  mall:              { label: "Shopping mall",     category: "Shopping",            lat: 37.5126, lng: 127.1025, wifi: "Mall-Free-WiFi" },
+  department_store:  { label: "Department store",  category: "Shopping",            lat: 37.5085, lng: 127.0595, wifi: "Store-Guest" },
+  electronics_store: { label: "Electronics store", category: "Shopping",            lat: 37.5290, lng: 126.9640, wifi: null },
+  gym:               { label: "Gym",               category: "Leisure and sport",   lat: 37.5045, lng: 127.0490, wifi: null },
+  swimming_pool:     { label: "Swimming pool",     category: "Leisure and sport",   lat: 37.5060, lng: 127.0300, wifi: null },
+  park:              { label: "Park",              category: "Leisure and sport",   lat: 37.5196, lng: 127.0410, wifi: null },
+  river_park:        { label: "Riverside park",    category: "Leisure and sport",   lat: 37.5172, lng: 126.9955, wifi: null },
+  hiking_trail:      { label: "Hiking trail",      category: "Leisure and sport",   lat: 37.4450, lng: 126.9640, wifi: null },
+  cinema:            { label: "Cinema",            category: "Leisure and sport",   lat: 37.5113, lng: 127.0590, wifi: null },
+  museum:            { label: "Museum",            category: "Leisure and sport",   lat: 37.5240, lng: 126.9800, wifi: "Museum-Free" },
+  stadium:           { label: "Stadium",           category: "Leisure and sport",   lat: 37.5155, lng: 127.0730, wifi: null },
+  place_of_worship:  { label: "Place of worship",  category: "Leisure and sport",   lat: 37.5030, lng: 127.0250, wifi: null },
+  hospital:          { label: "Hospital",          category: "Health and services", lat: 37.4881, lng: 127.0857, wifi: "Hospital-Guest" },
+  clinic:            { label: "Clinic",            category: "Health and services", lat: 37.5010, lng: 127.0380, wifi: null },
+  dentist:           { label: "Dentist",           category: "Health and services", lat: 37.5008, lng: 127.0372, wifi: null },
+  pharmacy:          { label: "Pharmacy",          category: "Health and services", lat: 37.5012, lng: 127.0388, wifi: null },
+  bank:              { label: "Bank",              category: "Health and services", lat: 37.5020, lng: 127.0360, wifi: null },
+  post_office:       { label: "Post office",       category: "Health and services", lat: 37.5000, lng: 127.0330, wifi: null },
+  hair_salon:        { label: "Hair salon",        category: "Health and services", lat: 37.5040, lng: 127.0370, wifi: null },
+  government_office: { label: "Government office", category: "Health and services", lat: 37.5172, lng: 127.0473, wifi: null },
+  friend_home:       { label: "Friend's home",     category: "People and stays",    lat: 37.5500, lng: 127.0700, wifi: "Friend-WiFi" },
+  parents_home:      { label: "Parents' home",     category: "People and stays",    lat: 37.6500, lng: 127.0600, wifi: "Parents-WiFi" },
+  hotel:             { label: "Hotel",             category: "People and stays",    lat: 37.5100, lng: 127.0590, wifi: "Hotel-Guest" },
+  /* while travelling the person is "in" the means of transport; the position is worked out along the way */
+  on_foot:           { label: "On foot",           category: "On the move", lat: null, lng: null, wifi: null },
+  bicycle:           { label: "Bicycle",           category: "On the move", lat: null, lng: null, wifi: null },
+  scooter:           { label: "E-scooter",         category: "On the move", lat: null, lng: null, wifi: null },
+  motorcycle:        { label: "Motorcycle",        category: "On the move", lat: null, lng: null, wifi: null },
+  car:               { label: "Car (driving)",     category: "On the move", lat: null, lng: null, wifi: null },
+  car_passenger:     { label: "Car (passenger)",   category: "On the move", lat: null, lng: null, wifi: null },
+  taxi:              { label: "Taxi",              category: "On the move", lat: null, lng: null, wifi: null },
+  bus:               { label: "Bus",               category: "On the move", lat: null, lng: null, wifi: null },
+  subway:            { label: "Subway",            category: "On the move", lat: null, lng: null, wifi: null },
+  train:             { label: "Train",             category: "On the move", lat: null, lng: null, wifi: null },
+  airport_rail:      { label: "Airport railroad",  category: "On the move", lat: null, lng: null, wifi: null },
+};
+/* Ways to travel, chosen by the person (agent). A trip = walking or waiting legs before, the ride, legs after.
+   Ride time = straight-line distance x ROAD_FACTOR / kmh. activity: what activity recognition reports during the ride.
+   drives: the person is driving (no phone use). bt: Bluetooth device joined during the ride. All numbers are the simulator's choice. */
+const ROAD_FACTOR = 1.3;
+const TRAVEL_MODES = {
+  walk:          { place: "on_foot",       activity: "WALKING",    kmh: 4.8, before: [],                         after: [] },
+  bicycle:       { place: "bicycle",       activity: "ON_BICYCLE", kmh: 15,  before: [["walk", 2]],              after: [["walk", 2]] },
+  scooter:       { place: "scooter",       activity: "IN_VEHICLE", kmh: 15,  before: [["walk", 3]],              after: [["walk", 1]] },
+  motorcycle:    { place: "motorcycle",    activity: "IN_VEHICLE", kmh: 30,  before: [["walk", 2]],              after: [["walk", 2]], drives: true },
+  car:           { place: "car",           activity: "IN_VEHICLE", kmh: 25,  before: [["walk", 3]],              after: [["walk", 3]], drives: true, bt: "Car Audio" },
+  car_passenger: { place: "car_passenger", activity: "IN_VEHICLE", kmh: 25,  before: [["walk", 3]],              after: [["walk", 3]] },
+  taxi:          { place: "taxi",          activity: "IN_VEHICLE", kmh: 25,  before: [["wait", 5]],              after: [["walk", 1]] },
+  bus:           { place: "bus",           activity: "IN_VEHICLE", kmh: 18,  before: [["walk", 5], ["wait", 6]], after: [["walk", 5]] },
+  subway:        { place: "subway",        activity: "IN_VEHICLE", kmh: 30,  before: [["walk", 7], ["wait", 4]], after: [["walk", 7]] },
+  train:         { place: "train",         activity: "IN_VEHICLE", kmh: 80,  before: [["walk", 10], ["wait", 10]], after: [["walk", 10]] },
+  airport_rail:  { place: "airport_rail",  activity: "IN_VEHICLE", kmh: 60,  before: [["walk", 8], ["wait", 6]], after: [["walk", 8]] },
+};
+function kmBetween(a, b) {
+  const r = x => x * Math.PI / 180, dLa = r(b.lat - a.lat), dLo = r(b.lng - a.lng);
+  const h = Math.sin(dLa / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(dLo / 2) ** 2;
+  return 6371 * 2 * Math.asin(Math.sqrt(h));
+}
+const APPS = {
+  "com.kakao.talk":                 { label: "KakaoTalk",  uid: 10101, mbPerMin: 0.3 },
+  "com.android.chrome":             { label: "Chrome",     uid: 10123, mbPerMin: 1.5 },
+  "com.google.android.youtube":     { label: "YouTube",    uid: 10131, mbPerMin: 12 },
+  "com.spotify.music":              { label: "Spotify",    uid: 10142, mbPerMin: 1 },
+  "com.instagram.android":          { label: "Instagram",  uid: 10155, mbPerMin: 6 },
+  "com.nhn.android.nmap":           { label: "Naver Map",  uid: 10163, mbPerMin: 1 },
+  "com.samsung.android.oneconnect": { label: "SmartThings", uid: 10177, mbPerMin: 0.2 },
+};
+const BT_DEVICES = { "Galaxy Buds": "AA:BB:CC:DD:EE:FF", "Car Audio": "11:AA:22:BB:33:CC" };
+/* Android activity recognition codes (DetectedActivity) and transitions (ENTER 0, EXIT 1) */
+const ACTIVITIES = { IN_VEHICLE: 0, ON_BICYCLE: 1, STILL: 3, WALKING: 7, RUNNING: 8 };
+/* Heart rate, minute by minute. Sources: adult resting rate 60-100 bpm (American Heart Association, via the Sleep Foundation);
+   during sleep it drops by 20-30%, lowest in deep sleep, near waking level in REM (Sleep Foundation, "Sleeping heart rate");
+   maximum = 220 - age, moderate activity 50-60% and vigorous 70-85% of maximum (MSD Manual, "Estimating target heart rate").
+   The person's age and resting rate, the factor for each activity inside those ranges, the sleep-cycle shape,
+   the day rhythm and the noise are the simulator's choice. */
+const HEART = {
+  person: { age: 35, restingBpm: 66 },
+  awake: { STILL: 1.05, IN_VEHICLE: 1.08, DRIVING: 1.14 },          /* x resting rate */
+  active: { WALKING: 0.55, ON_BICYCLE: 0.63, RUNNING: 0.78 },        /* x maximum rate */
+  sleep: { light: 0.80, deep: 0.71, deepLate: 0.75, rem: 0.92, cycleMin: 90, lightMin: 15 }, /* x resting rate */
+  dayRhythm: 0.03,              /* awake: +-3% over the day, highest mid-afternoon */
+  follow: { up: 0.45, down: 0.25 }, /* share of the gap to the target closed per minute (rises faster than it recovers) */
+  noise: { asleep: 1.5, awake: 2.5, active: 4 },  /* bpm, slowly wandering */
+};
+function heartTarget(s, t) {
+  const P = HEART.person, maxBpm = 220 - P.age;
+  if (s.asleep) {
+    const m = Math.max(0, (t - s.sleepStart) / 60000), cycle = Math.floor(m / HEART.sleep.cycleMin), pos = m % HEART.sleep.cycleMin;
+    const rem = Math.min(10 + 5 * cycle, 30); /* REM gets longer through the night */
+    const f = pos < HEART.sleep.lightMin ? HEART.sleep.light : pos >= HEART.sleep.cycleMin - rem ? HEART.sleep.rem : cycle < 2 ? HEART.sleep.deep : HEART.sleep.deepLate;
+    return P.restingBpm * f;
+  }
+  if (HEART.active[s.activity]) return maxBpm * HEART.active[s.activity];
+  const h = new Date(t).getHours() + new Date(t).getMinutes() / 60;
+  const driving = s.trip && s.trip.legs[s.trip.i]?.drives;
+  return P.restingBpm * (driving ? HEART.awake.DRIVING : HEART.awake[s.activity] || HEART.awake.STILL) * (1 + HEART.dayRhythm * Math.cos(2 * Math.PI * (h - 15) / 24));
+}
+/* per minute of each activity: steps, metres, active kcal (heart rate comes from HEART above).
+   Walking and running cadence wanders a little from minute to minute (CADENCE_SD); metres and kcal follow the steps.
+   Moving between rooms at home adds ROOM_STEPS. All simulator's choice. */
+const CADENCE_SD = 0.08;          /* share of the cadence */
+const ROOM_STEPS = [10, 30];      /* steps for one move between rooms */
+const BODY = { /* hr column below is no longer used */
+  STILL:      { steps: 0,   m: 0,   kcal: 0.3, hr: 72 },  /* no steps while still; a little active energy while awake */
+  WALKING:    { steps: 100, m: 75,  kcal: 4,   hr: 98 },
+  RUNNING:    { steps: 160, m: 175, kcal: 11,  hr: 150 },
+  ON_BICYCLE: { steps: 0,   m: 250, kcal: 7,   hr: 120 },
+  IN_VEHICLE: { steps: 0,   m: 0,   kcal: 0.2, hr: 76 },
+  ASLEEP:     { steps: 0,   m: 0,   kcal: 0,   hr: 58 },
+};
+/* Health Connect exercise type codes (56 running as in the format example; walking 79 and biking 8 not checked against the docs) */
+const EXERCISES = { Running: { code: 56, activity: "RUNNING" }, Walking: { code: 79, activity: "WALKING" }, Cycling: { code: 8, activity: "ON_BICYCLE" } };
+const MEASURES = {
+  WEIGHT:             { unit: "kg",        text: v => `${v} kg`,          payload: v => ({ kilograms: v }) },
+  BODY_FAT:           { unit: "%",         text: v => `${v}%`,            payload: v => ({ percentage: v }) },
+  BLOOD_PRESSURE:     { unit: "mmHg",      text: v => `${v} mmHg`,        payload: v => { const [s, d] = String(v).split("/").map(Number); return { systolic: s, diastolic: d }; } },
+  BLOOD_GLUCOSE:      { unit: "mg/dL",     text: v => `${v} mg/dL`,       payload: v => ({ milligramsPerDeciliter: v }) },
+  BODY_TEMPERATURE:   { unit: "C",         text: v => `${v} C`,           payload: v => ({ celsius: v }) },
+  OXYGEN_SATURATION:  { unit: "%",         text: v => `${v}% SpO2`,       payload: v => ({ percentage: v }) },
+  RESPIRATORY_RATE:   { unit: "rpm",       text: v => `${v} rpm`,         payload: v => ({ ratePerMinute: v }) },
+  RESTING_HEART_RATE: { unit: "bpm",       text: v => `${v} bpm (resting)`, payload: v => ({ beatsPerMinute: v }) },
+  VO2_MAX:            { unit: "mL/kg/min", text: v => `${v} mL/kg/min`,   payload: v => ({ vo2MillilitersPerMinuteKilogram: v, measurementMethod: 1 }) },
+  HYDRATION:          { unit: "mL",        text: v => `${v} mL`,          payload: v => ({ milliliters: v }) },
+};
+const BATTERY = { chargePerMin: 1.0, screenOnPerMin: 0.25, idlePerMin: 0.03, mediaPerMin: 0.05 }; /* % per minute */
+const SHEALTH = "com.sec.android.app.shealth";
+/* Alerts the SmartThings app shows, from what a device reports. Each becomes its own SMARTTHINGS event (payload.kind "notification"),
+   next to the state copy (payload.kind "state"). Messages and severities are the simulator's choice. */
+const ST_ALERTS = [
+  { device: "doorbell",          attr: "button",         when: v => v === "pushed",   category: "doorbell",          severity: "info",     msg: e => "Someone is at the front door" },
+  { device: "smoke_alarm",       attr: "smoke",          when: v => v === "detected", category: "smoke",             severity: "critical", msg: e => `Smoke detected in ${roomName(e.roomId)}` },
+  { device: "water_leak_sensor", attr: "water",          when: v => v === "wet",      category: "water_leak",        severity: "critical", msg: e => `Water leak detected in ${roomName(e.roomId)}` },
+  { device: null,                attr: "cycleState",     when: v => v === "finished", category: "cycle_finished",    severity: "info",     msg: e => `${DEVICE_LABEL[e.device] || e.device} cycle finished` },
+  { device: "robot_vacuum",      attr: "operatingState", when: (v, p) => v === "docked" && p === "seekingCharger", category: "cleaning_finished", severity: "info", msg: e => "Cleaning finished, back on the charger" },
+  { device: "oven",              attr: "preheat",        when: v => v === "ready",    category: "preheat_done",      severity: "info",     msg: (e, d) => `Oven preheated to ${d?.get("temperatureSetpoint", "temperatureSetpoint") ?? "?"} C` },
+  { device: null,                attr: "errorCode",      when: v => v != null && v !== "none" && v !== "", category: "device_error", severity: "warning", msg: e => `${DEVICE_LABEL[e.device] || e.device} error: ${e.value}` },
+];
+function roomName(r) { return (ROOM_LABEL[r] || r).toLowerCase().replace(/^room (\d)/, "room $1"); }
+
+class Phone {
+  constructor(sim) {
+    this.sim = sim; this.events = [];
+    this.s = { battery: 80, charging: false, screenOn: false, place: "home", room: null, wifi: "Home-WiFi", bt: [], activity: "STILL",
+      asleep: false, sleepStart: null, exercise: null, foreground: null, media: null, call: "IDLE",
+      installed: Object.keys(APPS), calendar: {}, nextEventId: 1, notifSeq: 100, captureSeq: 100000 };
+    this.acc = null;          /* this hour's health and app-usage totals */
+    this.lastStepT = null;
+    this.timeline = [];       /* battery / place changes, so copies of past home lines get the context of their own time */
+  }
+  now() { return Math.floor(this.sim.clock.now().getTime() / 1000) * 1000; } /* whole seconds, like home log times */
+
+  /* ----- context and event building ----- */
+  /* where the phone is now: a fixed place, or a point between start and destination while travelling */
+  position(t) {
+    const s = this.s, tr = s.trip;
+    if (!tr) { const p = PLACES[s.place]; return { lat: p.lat, lng: p.lng }; }
+    const f = Math.min(1, Math.max(0, (t - tr.start) / (tr.end - tr.start || 1)));
+    return { lat: Math.round((tr.a.lat + (tr.b.lat - tr.a.lat) * f) * 1e5) / 1e5, lng: Math.round((tr.a.lng + (tr.b.lng - tr.a.lng) * f) * 1e5) / 1e5 };
+  }
+  mark(t) {
+    const last = this.timeline[this.timeline.length - 1], lv = Math.round(this.s.battery), pos = this.position(t);
+    if (!last || last.level !== lv || last.charging !== this.s.charging || last.place !== this.s.place || last.lat !== pos.lat || last.lng !== pos.lng)
+      this.timeline.push({ t, level: lv, charging: this.s.charging, place: this.s.place, lat: pos.lat, lng: pos.lng });
+  }
+  contextAt(t) {
+    const pos = this.position(t);
+    let st = { level: Math.round(this.s.battery), charging: this.s.charging, place: this.s.place, lat: pos.lat, lng: pos.lng };
+    if (this.timeline.length && t < this.timeline[this.timeline.length - 1].t) {
+      let lo = 0, hi = this.timeline.length - 1, best = this.timeline[0];
+      while (lo <= hi) { const mid = (lo + hi) >> 1; if (this.timeline[mid].t <= t) { best = this.timeline[mid]; lo = mid + 1; } else hi = mid - 1; }
+      st = best;
+    }
+    const lat = st.lat ?? PLACES[st.place]?.lat, lng = st.lng ?? PLACES[st.place]?.lng, moving = PLACES[st.place]?.lat == null;
+    return { battery: { level: st.level, charging: st.charging }, weather: outdoorAt(new Date(t)).weather,
+             location: { latitude: lat, longitude: lng, accuracy: moving ? 25.0 : 12.0 } };
+  }
+  emit(type, source, title, text, payload, dedupeKey, t = this.now()) {
+    const e = { type, source, title, text, timestamp: t, collectedAt: t, dedupeKey, payload, context: this.contextAt(t) }, ev = this.events;
+    if (!ev.length || ev[ev.length - 1].timestamp <= t) ev.push(e);
+    else { let i = ev.length; while (i > 0 && ev[i - 1].timestamp > t) i--; ev.splice(i, 0, e); }
+    return e;
+  }
+
+  /* ----- time passing (called once per simulated minute) ----- */
+  step(date) {
+    const t = date.getTime(), s = this.s;
+    if (this.lastStepT == null || t - this.lastStepT > 60000) this.acc = null; /* a jump: start counting afresh */
+    this.lastStepT = t;
+    /* battery */
+    if (s.charging) s.battery = Math.min(100, s.battery + BATTERY.chargePerMin);
+    else s.battery = Math.max(1, s.battery - (s.screenOn ? BATTERY.screenOnPerMin : BATTERY.idlePerMin) - (s.media?.state === "PLAYING" ? BATTERY.mediaPerMin : 0));
+    this.mark(t);
+    /* this minute [t - 1 min, t) is added to its hour; at the top of the hour that hour's totals are written */
+    const mh = Math.floor((t - 60000) / 3600000) * 3600000;
+    if (this.acc && this.acc.start !== mh) { this.flushHour(); this.acc = null; }
+    if (!this.acc) this.acc = { start: mh, steps: 0, m: 0, kcal: 0, hr: 0, n: 0, apps: {} };
+    const b = BODY[s.asleep ? "ASLEEP" : s.activity], A = this.acc;
+    /* heart rate: moves toward the target for the current state, plus a slowly wandering noise */
+    const target = heartTarget(s, t), base = s.heart ?? target;
+    s.heart = base + (target - base) * (target > base ? HEART.follow.up : HEART.follow.down);
+    const sd = s.asleep ? HEART.noise.asleep : HEART.active[s.activity] ? HEART.noise.active : HEART.noise.awake;
+    s.heartNoise = 0.8 * (s.heartNoise || 0) + 0.6 * sd * gauss();
+    const bpm = Math.max(35, Math.round((s.heart + s.heartNoise) * 10) / 10); s.bpm = bpm;
+    let k = 1; /* cadence factor */
+    if (!s.asleep && (s.activity === "WALKING" || s.activity === "RUNNING")) {
+      s.cadenceNoise = 0.7 * (s.cadenceNoise || 0) + 0.7 * CADENCE_SD * gauss();
+      k = Math.min(1.25, Math.max(0.75, 1 + s.cadenceNoise));
+    }
+    A.steps += b.steps * k; A.m += b.m * k; A.kcal += b.kcal * k; A.hr += bpm; A.n++;
+    A.hrMin = Math.min(A.hrMin ?? bpm, bpm); A.hrMax = Math.max(A.hrMax ?? bpm, bpm);
+    if (s.screenOn && s.foreground) A.apps[s.foreground] = (A.apps[s.foreground] || 0) + 1;
+    if (s.media?.state === "PLAYING") A.apps["com.spotify.music"] = (A.apps["com.spotify.music"] || 0) + 1;
+    if (t % 3600000 === 0) { this.flushHour(); this.acc = null; }
+    /* a trip moves on to its next leg when the current one ends (after the minute that just passed was counted) */
+    while (s.trip && t >= s.trip.legs[s.trip.i].end) this.nextLeg(t);
+    /* calendar reminders at the event's start time */
+    for (const ev of Object.values(s.calendar)) if (!ev.reminded && ev.begin <= t && ev.begin > t - 60000) {
+      ev.reminded = true;
+      this.emit("CALENDAR", ev.calendar, ev.title, `Event starting · ${hm(ev.begin)} - ${hm(ev.end)}`,
+        { eventId: ev.eventId, action: "REMINDER", title: ev.title, begin: ev.begin, end: ev.end, allDay: false, location: ev.location, calendar: ev.calendar },
+        `CALENDAR:REMINDER:${ev.eventId}:${ev.begin}`, t);
+    }
+  }
+  flushHour() {
+    const a = this.acc;
+    if (!a || !a.n) return;
+    const s0 = a.start, e0 = s0 + 3600000;
+    /* one HEALTH line per hour with the hour's steps, distance, active calories and average heart rate */
+    const steps = Math.round(a.steps), m = Math.round(a.m * 10) / 10, kcal = Math.round(a.kcal * 10) / 10, bpm = Math.round(a.hr / a.n * 10) / 10;
+    this.emit("HEALTH", "HOURLY", "HOURLY", `${steps} steps · ${m.toFixed(1)} m · ${Math.round(kcal)} kcal · avg ${Math.round(bpm)} bpm (${Math.round(a.hrMin)}-${Math.round(a.hrMax)})`,
+      { steps, meters: m, kilocalories: kcal, averageBpm: bpm, minBpm: Math.round(a.hrMin), maxBpm: Math.round(a.hrMax), sampleCount: a.n, startTime: s0, endTime: e0, origin: SHEALTH }, `HEALTH:HOURLY:${s0}`, e0);
+    for (const [pkg, min] of Object.entries(a.apps)) {
+      const app = APPS[pkg] || { label: pkg, uid: 10999, mbPerMin: 1 }, rx = Math.round(min * app.mbPerMin * 1e6), tx = Math.round(rx * 0.08);
+      this.emit("DATA_USAGE", pkg, app.label, `down ${(rx / 1e6).toFixed(1)}MB up ${(tx / 1e6).toFixed(1)}MB`,
+        { uid: app.uid, packageName: pkg, rxBytes: rx, txBytes: tx, windowStart: s0, windowEnd: e0 }, `DATAUSAGE:${app.uid}:${s0}`, e0);
+    }
+  }
+
+  /* ----- the person's actions ----- */
+  /* Travel to a place by the chosen means. The trip takes simulated time: walking / waiting legs, the ride, legs after.
+     On leaving: Wi-Fi off, router count, home occupancy empty. Activities and the car's Bluetooth follow the legs. On arrival: STILL, Wi-Fi, occupancy. */
+  travel(dest, mode) {
+    const s = this.s, M = TRAVEL_MODES[mode], to = PLACES[dest], from = PLACES[s.place];
+    if (s.trip) { this.sim.lastRefusal = `Already travelling to ${PLACES[s.trip.to].label}`; return 0; }
+    if (!M || !to || to.lat == null || dest === s.place) return 0;
+    const t = this.now(), km = kmBetween(from, to) * ROAD_FACTOR, legs = []; let at = t;
+    const leg = (kind, min, extra = {}) => legs.push({ kind, activity: kind === "walk" ? "WALKING" : kind === "wait" ? "STILL" : M.activity,
+      place: kind === "ride" ? M.place : "on_foot", end: at += Math.max(1, Math.round(min)) * 60000, ...extra });
+    M.before.forEach(([k, m]) => leg(k, m));
+    leg("ride", km / M.kmh * 60, { bt: M.bt || null, drives: !!M.drives });
+    M.after.forEach(([k, m]) => leg(k, m));
+    s.trip = { mode, from: s.place, to: dest, start: t, end: at, km: Math.round(km * 10) / 10, legs, i: -1, a: { lat: from.lat, lng: from.lng }, b: { lat: to.lat, lng: to.lng } };
+    let n = this.leave(t);
+    return n + this.nextLeg(t);
+  }
+  leave(t) {
+    const s = this.s; let n = 0, tw = t;
+    if (s.place === "home") { /* walk to the entryway, out through the front door, then no one is home */
+      if (s.room !== "entryway") { s.room = "entryway"; this.addSteps(ROOM_STEPS[0] + Math.round(Math.random() * (ROOM_STEPS[1] - ROOM_STEPS[0]))); n += this.sim.setPresence("entryway", new Date(t)); }
+      n += this.sim.useFrontDoor(t + 2000);
+      s.room = null; n += this.sim.setPresence(null, new Date(t + (FRONT_DOOR.lockSec + 3) * 1000));
+      tw = t + (FRONT_DOOR.lockSec + 8) * 1000; /* the phone drops Home-WiFi a few seconds later, outside */
+    }
+    if (s.wifi) { this.net("DISCONNECTED", s.wifi, tw); s.wifi = null; n++; }
+    n += this.sim.syncRouter(false, new Date(tw)); /* leaving Home-WiFi lowers the router's count */
+    return n;
+  }
+  nextLeg(t) {
+    const s = this.s, tr = s.trip, prev = tr.legs[tr.i]; let n = 0;
+    if (prev?.bt) { s.bt = s.bt.filter(x => x !== prev.bt); this.bt("BT_DISCONNECTED", prev.bt, t); n++; }
+    if (prev?.kind === "ride" && s.asleep) n += this.doWake(t); /* a sleeping passenger wakes at the stop */
+    tr.i++;
+    if (tr.i >= tr.legs.length) return n + this.arrive(t);
+    const L = tr.legs[tr.i];
+    s.place = L.place; n += this.activity(L.activity, t);
+    if (L.bt && !s.bt.includes(L.bt)) { s.bt.push(L.bt); this.bt("BT_CONNECTED", L.bt, t); n++; }
+    this.mark(t); return n;
+  }
+  arrive(t) {
+    const s = this.s, dest = s.trip.to; let n = 0;
+    s.trip = null; s.place = dest; this.mark(t);
+    n += this.activity("STILL", t);
+    const w = PLACES[dest].wifi; if (w) { s.wifi = w; this.net("CONNECTED", w, t); n++; }
+    n += this.sim.syncRouter(false, new Date(t));
+    if (dest === "home") { /* in through the front door: unlock from outside, open, step into the entryway, close, auto-lock */
+      n += this.sim.useFrontDoor(t);
+      s.room = "entryway"; n += this.sim.setPresence("entryway", new Date(t + (FRONT_DOOR.openSec + 1) * 1000));
+    }
+    return n;
+  }
+  /* setup and tests only: put the person somewhere at once, without a trip */
+  teleport(place) {
+    const s = this.s; if (!PLACES[place] || PLACES[place].lat == null || place === s.place || s.trip) return 0;
+    const t = this.now(); let n = this.leave(t);
+    s.trip = { to: place, legs: [], i: 0 }; return n + this.arrive(t);
+  }
+  get driving() { const tr = this.s.trip; return !!(tr && tr.legs[tr.i]?.drives); }
+  /* move between rooms at home (no phone event of its own; the home occupancy sensors log it) */
+  moveRoom(roomId) {
+    const s = this.s; if (s.place !== "home" || s.room === roomId) return 0;
+    if (!this.sim.house.at(roomId, "occupancy_sensor")) return 0;
+    s.room = roomId; this.addSteps(ROOM_STEPS[0] + Math.round(Math.random() * (ROOM_STEPS[1] - ROOM_STEPS[0])));
+    return this.sim.setPresence(roomId);
+  }
+  /* a few steps outside the minute-by-minute count (walking to another room); counted in the current hour */
+  addSteps(n) {
+    const t = this.now(), mh = Math.floor((t - 60000) / 3600000) * 3600000;
+    if (!this.acc) this.acc = { start: mh, steps: 0, m: 0, kcal: 0, hr: 0, n: 0, apps: {} };
+    const w = BODY.WALKING; this.acc.steps += n; this.acc.m += n * w.m / w.steps; this.acc.kcal += n * w.kcal / w.steps;
+  }
+  net(state, ssid, t = this.now()) {
+    return this.emit("CONNECTIVITY", "network", state === "CONNECTED" ? "Network connected" : "Network disconnected", `WIFI · ${ssid}`,
+      { state, transport: "WIFI", validated: state === "CONNECTED", unmetered: true, ssid, bssid: bssidFor(ssid) }, `CONN:NET:${state}:WIFI:${ssid}:${t}`, t);
+  }
+  setActivity(activity) {
+    if (this.s.trip) { this.sim.lastRefusal = "The activity follows the trip while travelling"; return 0; }
+    if (activity === "IN_VEHICLE" && this.s.place === "home") { this.sim.lastRefusal = "IN_VEHICLE is not possible at home: riding happens on a trip (Travel)"; return 0; }
+    return this.activity(activity, this.now());
+  }
+  activity(activity, t) {
+    const s = this.s; if (!(activity in ACTIVITIES) || activity === s.activity) return 0;
+    const boot = monthStart(t), nanos = (ms) => (ms - boot) * 1e6;
+    const tr = (a, enter) => this.emit("ACTIVITY", a, titleCase(a), enter ? "Start" : "End",
+      { activity: a, transition: enter ? "ENTER" : "EXIT", activityType: ACTIVITIES[a], transitionType: enter ? 0 : 1, elapsedRealtimeNanos: nanos(t) },
+      `ACTIVITY:${a}:${enter ? "ENTER" : "EXIT"}:${nanos(t)}`, t);
+    tr(s.activity, false); s.activity = activity; tr(activity, true); return 2;
+  }
+  btConnect(name) {
+    const s = this.s; if (!BT_DEVICES[name] || s.bt.includes(name)) return 0;
+    s.bt.push(name); return this.bt("BT_CONNECTED", name) && 1;
+  }
+  btDisconnect(name) {
+    const s = this.s; if (!s.bt.includes(name)) return 0;
+    s.bt = s.bt.filter(x => x !== name); return this.bt("BT_DISCONNECTED", name) && 1;
+  }
+  bt(state, name, t = this.now()) {
+    return this.emit("CONNECTIVITY", "bluetooth", state === "BT_CONNECTED" ? "Bluetooth connected" : "Bluetooth disconnected", name,
+      { state, deviceName: name, deviceAddress: BT_DEVICES[name] }, `CONN:BT:${state}:${BT_DEVICES[name]}:${t}`, t);
+  }
+  screen(on) {
+    const s = this.s; if (s.screenOn === on) return 0;
+    s.screenOn = on; if (!on) s.foreground = null;
+    const st = on ? "SCREEN_ON" : "SCREEN_OFF", t = this.now();
+    this.emit("DEVICE_STATE", "system", on ? "Screen on" : "Screen off", st, { state: st, action: `android.intent.action.${st}` }, `DEVICE:${st}:${t}`, t);
+    return 1;
+  }
+  power(connected) {
+    const s = this.s; if (s.charging === connected) return 0;
+    s.charging = connected; const t = this.now(); this.mark(t);
+    const st = connected ? "POWER_CONNECTED" : "POWER_DISCONNECTED";
+    this.emit("DEVICE_STATE", "system", connected ? "Charging started" : "Charging stopped", st,
+      { state: st, action: `android.intent.action.ACTION_${st}`, batteryLevel: Math.round(s.battery) }, `DEVICE:${st}:${t}`, t);
+    return 1;
+  }
+  openApp(pkg) {
+    const s = this.s; if (!s.installed.includes(pkg) || s.foreground === pkg) return 0;
+    let n = this.screen(true); const t = this.now();
+    if (s.foreground) n += this.usage(s.foreground, "BACKGROUND", t);
+    s.foreground = pkg; return n + this.usage(pkg, "FOREGROUND", t);
+  }
+  closeApp() { const s = this.s; if (!s.foreground) return 0; const p = s.foreground; s.foreground = null; return this.usage(p, "BACKGROUND", this.now()); }
+  usage(pkg, action, t) {
+    const label = APPS[pkg]?.label || pkg;
+    this.emit("APP_USAGE", pkg, label, action, { packageName: pkg, action, eventType: action === "FOREGROUND" ? 1 : 2, timestamp: t, className: `${pkg}.MainActivity` },
+      `USAGE:${pkg}:${t}:${action === "FOREGROUND" ? 1 : 2}`, t);
+    return 1;
+  }
+  install(pkg, label) {
+    const s = this.s; if (s.installed.includes(pkg)) return 0;
+    s.installed.push(pkg); if (!APPS[pkg]) APPS[pkg] = { label: label || pkg, uid: 10200 + s.installed.length, mbPerMin: 1 };
+    return this.lifecycle("INSTALLED", pkg);
+  }
+  uninstall(pkg) {
+    const s = this.s; if (!s.installed.includes(pkg)) return 0;
+    s.installed = s.installed.filter(p => p !== pkg); if (s.foreground === pkg) s.foreground = null;
+    return this.lifecycle("REMOVED", pkg);
+  }
+  lifecycle(action, pkg, t = this.now()) {
+    const label = APPS[pkg]?.label || pkg;
+    this.emit("APP_LIFECYCLE", pkg, label, action === "INSTALLED" ? "Installed" : "Removed", { action, packageName: pkg, label }, `APP:${action}:${pkg}:${t}`, t);
+    return 1;
+  }
+  notify(pkg, title, text, category = "msg") {
+    const t = this.now(), id = ++this.s.notifSeq, key = `0|${pkg}|${id}|null|10001`;
+    this.emit("NOTIFICATION", pkg, title, text, { action: "POSTED", packageName: pkg, key, postTime: t, isOngoing: false, isClearable: true,
+      category, channelId: category === "msg" ? "chat" : "default", subText: category === "msg" ? "Chat" : "", groupKey: pkg }, `NOTIF:${key}:${t}:POSTED`, t);
+    return 1;
+  }
+  call(state) { /* RINGING (incoming), OFFHOOK (answered or dialling), IDLE (ended) */
+    const t = this.now(), text = { RINGING: "Incoming, ringing", OFFHOOK: "In call", IDLE: "Call ended" }[state]; this.s.call = state;
+    this.emit("TELEPHONY", "call", "Call", text, { kind: "CALL", state }, `TEL:CALL:${state}:${Math.floor(t / 1000)}`, t); return 1;
+  }
+  sms(direction = "INCOMING") {
+    const t = this.now(), inc = direction === "INCOMING";
+    this.emit("TELEPHONY", "sms", inc ? "SMS received" : "SMS sent", inc ? "SMS arrived" : "SMS sent", { kind: "SMS", direction }, `TEL:SMS:${direction}:${t}`, t); return 1;
+  }
+  media(state, title = "Song Title", artist = "Artist Name", album = "Album Name") { /* PLAYING, PAUSED, STOPPED */
+    const s = this.s, m = s.media || { title, artist, album };
+    if (state === "PLAYING") Object.assign(m, { title, artist, album });
+    if (s.media?.state === state && state !== "PLAYING") return 0;
+    m.state = state; s.media = state === "STOPPED" ? null : m; const t = this.now();
+    this.emit("MEDIA", "com.spotify.music", m.title, `${state} • ${m.artist}`, { state, packageName: "com.spotify.music", title: m.title, artist: m.artist, album: m.album },
+      `MEDIA:com.spotify.music:${state}:${m.title}:${t}`, t);
+    return 1;
+  }
+  calendarAdd(title, begin, end, location = "", calendar = "Personal") {
+    const s = this.s, id = s.nextEventId++, ev = { eventId: id, title, begin, end, location, calendar, reminded: begin <= this.now() };
+    s.calendar[id] = ev; return this.cal("ADD", ev);
+  }
+  calendarUpdate(id, changes) {
+    const ev = this.s.calendar[id]; if (!ev) return 0;
+    const previous = { begin: ev.begin, end: ev.end }; Object.assign(ev, changes);
+    if (changes.begin != null) ev.reminded = ev.begin <= this.now();
+    return this.cal("UPDATE", ev, { previous });
+  }
+  calendarDelete(id) { const ev = this.s.calendar[id]; if (!ev) return 0; delete this.s.calendar[id]; return this.cal("DELETE", ev); }
+  cal(action, ev, extra = {}, t = this.now()) {
+    const verb = { ADD: "Event added", UPDATE: "Event changed", DELETE: "Event deleted" }[action];
+    this.emit("CALENDAR", ev.calendar, ev.title, `${verb} · ${md(ev.begin)} ${hm(ev.begin)} - ${hm(ev.end)}`,
+      { eventId: ev.eventId, action, title: ev.title, begin: ev.begin, end: ev.end, allDay: false, location: ev.location, calendar: ev.calendar, ...extra },
+      `CALENDAR:${action}:${ev.eventId}:${ev.begin}:${t}`, t);
+    return 1;
+  }
+  /* falling asleep is not possible while exercising, walking, running, cycling or on a call (asleep in a moving car is) */
+  sleep() {
+    const s = this.s; if (s.asleep) return 0;
+    const leg = s.trip && s.trip.legs[s.trip.i];
+    const why = s.exercise ? "exercising" : this.driving ? "driving" : leg && leg.kind !== "ride" ? "walking or waiting on the way" : ["WALKING", "RUNNING", "ON_BICYCLE"].includes(s.activity) ? `the activity is ${s.activity}` : s.call === "OFFHOOK" ? "on a call" : null;
+    if (why) { this.sim.lastRefusal = `The person cannot fall asleep while ${why}`; return 0; }
+    let n = this.screen(false); s.asleep = true; s.sleepStart = this.now(); return n;
+  }
+  wake() { return this.doWake(this.now()); }
+  doWake(t) {
+    const s = this.s; if (!s.asleep) return 0;
+    const dur = Math.round((t - s.sleepStart) / 60000); s.asleep = false;
+    this.emit("HEALTH", "SLEEP", "SLEEP", `${dur} min`, { durationMinutes: dur, stageCount: Math.max(1, Math.round(dur / 52)), startTime: s.sleepStart, endTime: t, origin: SHEALTH },
+      `HEALTH:SLEEP:${s.sleepStart}`, t);
+    s.sleepStart = null; return 1;
+  }
+  exerciseStart(kind) {
+    const s = this.s, x = EXERCISES[kind]; if (!x || s.exercise) return 0;
+    if (s.trip) { this.sim.lastRefusal = "Not while travelling"; return 0; }
+    s.exercise = { kind, start: this.now() }; return this.activity(x.activity, this.now());
+  }
+  exerciseEnd() {
+    const s = this.s; if (!s.exercise) return 0;
+    const t = this.now(), x = EXERCISES[s.exercise.kind], dur = Math.round((t - s.exercise.start) / 60000);
+    this.emit("HEALTH", "EXERCISE", "EXERCISE", `${s.exercise.kind} • ${dur} min`,
+      { exerciseType: x.code, title: s.exercise.kind, durationMinutes: dur, startTime: s.exercise.start, endTime: t, origin: SHEALTH }, `HEALTH:EXERCISE:${s.exercise.start}`, t);
+    s.exercise = null; return 1 + this.activity("STILL", t);
+  }
+  measure(source, value) {
+    const m = MEASURES[source]; if (!m) return 0; const t = this.now();
+    const pl = { ...m.payload(value), time: t, origin: SHEALTH };
+    if (source === "HYDRATION") { delete pl.time; pl.startTime = t; pl.endTime = t; }
+    this.emit("HEALTH", source, source, m.text(value), pl, `HEALTH:${source}:${t}`, t); return 1;
+  }
+  photo() {
+    const t = this.now(), id = ++this.s.captureSeq, name = `IMG_${stamp(t)}.jpg`;
+    this.emit("MEDIA_CAPTURE", "Camera", "Photo taken", `${name} (4000x3000)`, { kind: "photo", fileName: name, bucket: "Camera", relativePath: "DCIM/Camera/",
+      mimeType: "image/jpeg", width: 4000, height: 3000, sizeBytes: 2400000 + (id % 97) * 1000, camera: "SM-S928N", contentAnalyzed: false }, `MEDIA_CAPTURE:${id}`, t);
+    return 1;
+  }
+  screenshot(ocrText = "") {
+    const t = this.now(), id = ++this.s.captureSeq, name = `Screenshot_${stamp(t)}.png`, p = PLACES[this.s.place];
+    this.emit("MEDIA_CAPTURE", "Screenshots", "Screenshot captured", `${ocrText || name} · Text`, { kind: "screenshot", fileName: name, bucket: "Screenshots",
+      relativePath: "Pictures/Screenshots/", mimeType: "image/png", width: 1080, height: 2340, sizeBytes: 800000 + (id % 89) * 1000, contentAnalyzed: !!ocrText,
+      ocrText, labels: ocrText ? [{ label: "Text", confidence: 0.87 }] : [], location: { lat: p.lat, lng: p.lng } }, `MEDIA_CAPTURE:${id}`, t);
+    return 1;
+  }
+  copyClipboard(label = "Memo") {
+    const t = this.now();
+    this.emit("CLIPBOARD", "clipboard", "Clipboard copy", "text/plain", { mimeTypes: ["text/plain"], label, copiedAt: t }, `CLIPBOARD:${t}`, t); return 1;
+  }
+  /* control a home device from the phone app: the home log line says channel "mobile_app"; its copy arrives through copyHome */
+  controlHome(deviceId, capName, cmdName, args = []) { return this.sim.run(deviceId, capName, cmdName, args, "mobile_app"); }
+
+  /* ----- SMARTTHINGS copies of saved home log lines ----- */
+  copyHome(entries) {
+    if (!entries.length) return;
+    const copies = [];
+    for (const e of entries) {
+      copies.push(this.toSmartThings(e));
+      for (const a of ST_ALERTS) if ((!a.device || a.device === e.device) && a.attr === e.attribute && a.when(e.value, e.previousValue)) copies.push(this.toAlert(e, a));
+    }
+    const first = Math.min(...copies.map(c => c.timestamp));
+    const idx = this.events.findIndex(ev => ev.timestamp > first);
+    if (idx < 0) { this.events.push(...copies); return; }
+    const tail = this.events.splice(idx).concat(copies); tail.sort((a, b) => a.timestamp - b.timestamp); this.events.push(...tail);
+  }
+  toSmartThings(e) {
+    const t = Date.parse(e.time), d = this.sim.houses[e.houseVariant]?.device(e.deviceId);
+    const spec = d?.attrSpec(e.capability, e.attribute), unit = spec?.unit;
+    const actor = e.source === "command" ? { kind: "user", channel: e.channel || "physical", command: e.command, args: e.args }
+      : e.source === "manual" ? { kind: "user", channel: "physical", command: null, args: [] }
+      : e.source === "event" ? { kind: "event", channel: "physical", command: null, args: [] }
+      : e.source === "sensor" ? { kind: "sensor", channel: null, command: null, args: [], reason: e.reason }
+      : { kind: "device", channel: null, command: null, args: [], ...(e.reason ? { reason: e.reason } : {}) }; /* e.g. reason "auto_off" */
+    /* status: the whole device for actions and appliance progress; for sensor reports (written at day close) only the reported value */
+    const main = {}, put = (cap, attr, value, u) => { (main[cap] ||= {})[attr] = u ? { value, unit: u } : { value }; };
+    if (d && e.source !== "sensor") for (const c of d.capabilities) for (const a of c.attributes) put(c.capability, a.name, d.get(c.capability, a.name), a.unit);
+    else put(e.capability, e.attribute, e.value, unit);
+    const label = `${ROOM_LABEL[e.roomId] || e.roomId} ${(DEVICE_LABEL[e.device] || e.device).toLowerCase()}`;
+    const who = actor.kind === "user" ? `user, ${actor.channel === "mobile_app" ? "mobile app" : "at device"}` : actor.kind === "sensor" ? "sensor report" : actor.kind;
+    const prev = e.previousValue == null ? "-" : e.previousValue;
+    return { type: "SMARTTHINGS", source: e.deviceId, title: label,
+      text: `${DEVICE_LABEL[e.device] || e.device} · ${e.attribute}: ${prev} -> ${e.value}${unit ? " " + unit : ""} (${who})`,
+      timestamp: t, collectedAt: t, dedupeKey: `ST:${e.deviceId}:${e.capability}.${e.attribute}:${e.value}:${t}`,
+      payload: { kind: "state", deviceId: e.deviceId, name: e.device, label, deviceTypeName: DEVICE_LABEL[e.device] || e.device, roomId: e.roomId,
+        capabilities: d ? d.capabilities.map(c => c.capability) : [e.capability],
+        change: { capability: e.capability, attribute: e.attribute, value: e.value, previousValue: e.previousValue ?? null, ...(unit ? { unit } : {}) },
+        actor, status: { components: { main } } },
+      context: this.contextAt(t) };
+  }
+  /* a SmartThings app notification raised by a home log line */
+  toAlert(e, a) {
+    const t = Date.parse(e.time), d = this.sim.houses[e.houseVariant]?.device(e.deviceId);
+    const label = `${ROOM_LABEL[e.roomId] || e.roomId} ${(DEVICE_LABEL[e.device] || e.device).toLowerCase()}`, message = a.msg(e, d);
+    return { type: "SMARTTHINGS", source: e.deviceId, title: label, text: `Notification · ${message}`,
+      timestamp: t, collectedAt: t, dedupeKey: `ST:NOTIFY:${e.deviceId}:${a.category}:${t}`,
+      payload: { kind: "notification", deviceId: e.deviceId, name: e.device, label, deviceTypeName: DEVICE_LABEL[e.device] || e.device, roomId: e.roomId,
+        notification: { category: a.category, severity: a.severity, message },
+        trigger: { capability: e.capability, attribute: e.attribute, value: e.value, previousValue: e.previousValue ?? null } },
+      context: this.contextAt(t) };
+  }
+  /* drop battery/place history older than the open day (copies of older lines are never made) */
+  prune(keepFrom) {
+    let i = 0; while (i + 1 < this.timeline.length && this.timeline[i + 1].t <= keepFrom) i++;
+    if (i) this.timeline.splice(0, i);
+  }
+  toJSONL() { return this.events.map(e => JSON.stringify(e)).join("\n") + (this.events.length ? "\n" : ""); }
+  exportState() { return { s: this.s, events: this.events, timeline: this.timeline, apps: APPS }; }
+  importState(o) {
+    if (!o) return;
+    if (o.s) Object.assign(this.s, o.s);
+    if (!PLACES[this.s.place]) { this.s.place = "home"; this.s.room = null; } /* a place from an older version */
+    if (Array.isArray(o.events)) this.events = o.events;
+    if (Array.isArray(o.timeline)) this.timeline = o.timeline;
+    if (o.apps) for (const [k, v] of Object.entries(o.apps)) APPS[k] ||= v;
+  }
+}
+/* While the person is asleep, or driving, only things that happen TO the phone can happen: incoming notifications, calls ringing or missed,
+   incoming SMS, calendar reminders, hourly health, and waking up. Everything the person does needs them awake.
+   rule: 1 = always needs the person awake, 0 = never, a function = depends on the arguments. Every action also clears lastRefusal. */
+const NEEDS_AWAKE = {
+  travel: 1, moveRoom: 1, setActivity: 1, btConnect: 1, btDisconnect: 1, power: 1, openApp: 1, closeApp: 1, install: 1, uninstall: 1,
+  media: 1, calendarAdd: 1, calendarUpdate: 1, calendarDelete: 1, exerciseStart: 1, exerciseEnd: 1, measure: 1,
+  photo: 1, screenshot: 1, copyClipboard: 1, controlHome: 1,
+  screen: on => on === true, call: state => state === "OFFHOOK", sms: dir => dir === "OUTGOING",
+  notify: 0, sleep: 0, wake: 0,
+};
+for (const [name, rule] of Object.entries(NEEDS_AWAKE)) {
+  const f = Phone.prototype[name];
+  Phone.prototype[name] = function (...args) {
+    this.sim.lastRefusal = null;
+    if (rule === 1 || (typeof rule === "function" && rule(...args))) {
+      if (this.s.asleep) { this.sim.lastRefusal = `The person is asleep: ${name} needs them awake (Wake up first)`; return 0; }
+      if (this.driving && name !== "travel") { this.sim.lastRefusal = `The person is driving: no phone use until the drive ends`; return 0; }
+    }
+    return f.apply(this, args);
+  };
+}
+function hm(ms) { const d = new Date(ms); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+function md(ms) { const d = new Date(ms); return `${d.getMonth() + 1}/${d.getDate()}`; }
+function stamp(ms) { const d = new Date(ms); return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`; }
+function monthStart(ms) { const d = new Date(ms); return new Date(d.getFullYear(), d.getMonth(), 1).getTime(); } /* the phone "reboots" monthly, so elapsedRealtimeNanos stays exact */
+function titleCase(a) { return a.toLowerCase().split("_").map(w => w[0].toUpperCase() + w.slice(1)).join(" "); }
+function bssidFor(ssid) { let h = 0; for (const c of ssid) h = (h * 31 + c.charCodeAt(0)) >>> 0; return Array.from({ length: 6 }, (_, i) => ((h >>> (i * 5)) & 255).toString(16).padStart(2, "0")).join(":"); }
+
+/* ===== Storage (temporary, in this browser) ===== */
+const STORE = "smarthome-sim-v1";
+function persist() {
+  try {
+    localStorage.setItem(STORE, JSON.stringify({ houseId: sim.houseId, variant: sim.variant,
+      clock: { now: sim.clock.now().getTime(), speed: sim.clock.speed, lastStep: sim.lastStep },
+      policy: sim.policy, pending: sim.pending, lastSaved: sim.lastSaved, lastRaw: sim.lastRaw,
+      states: Object.fromEntries(Object.entries(sim.houses).map(([t, h]) => [t, h.exportState()])), logs: sim.log.entries,
+      phone: sim.phone.exportState() }));
+  } catch (e) {}
+}
+function restore() {
+  try {
+    const s = JSON.parse(localStorage.getItem(STORE) || "null"); if (!s) return;
+    if (s.houseId) sim.houseId = s.houseId;
+    if (ROOM_PROFILES[s.variant]) sim.variant = s.variant; else if (HOUSE_TYPES[s.type]) sim.variant = `${s.type}-A`;
+    for (const [v, st] of Object.entries(s.states || {})) if (ROOM_PROFILES[v]) { sim.houses[v] = new House(v, SPEC); sim.houses[v].importState(st); }
+    if (Array.isArray(s.logs)) sim.log.entries = s.logs;
+    /* the simulation always opens stopped, at the time it was left */
+    if (s.clock && Number.isFinite(s.clock.now)) { sim.clock.setTo(s.clock.now); sim.clock.speed = Number(s.clock.speed || s.clock.rate) || 1; }
+    if (s.policy) Object.assign(sim.policy, s.policy);
+    if (s.pending && Array.isArray(s.pending.raw)) sim.pending = s.pending;
+    if (s.lastSaved) sim.lastSaved = s.lastSaved;
+    if (s.lastRaw) sim.lastRaw = s.lastRaw;
+    if (s.phone) sim.phone.importState(s.phone);
+    sim.syncRouter(true); /* states saved by older versions had a fixed count */
+  } catch (e) {}
+}
+
+/* ===== UI ===== */
+const sim = new Simulator(SPEC);
+let selected = null;
+restore();
+
+const $ = id => document.getElementById(id);
+
+function chipSummary(d) {
+  const first = d.capabilities[0], a = first.attributes[0], v = d.get(first.capability, a.name);
+  const isSensor = d.capabilities.every(c => c.commands.length === 0);
+  let on = false, alert = false;
+  if (d.cap("switch")) on = d.get("switch", "switch") === "on";
+  if (d.type === "lock") on = d.get("lock", "lock") === "unlocked";
+  if (d.cap("cycleState")) on = d.get("cycleState", "cycleState") === "running";
+  if (d.type === "robot_vacuum") on = d.get("robotCleanerOperatingState", "operatingState") === "running";
+  if (d.type === "heating_cooling_unit") on = d.get("thermostatMode", "thermostatMode") !== "off";
+  if (d.type === "air_purifier") on = (d.get("fanSpeedPercent", "percent") || 0) > 0;
+  if (d.type === "curtain") on = d.get("windowShade", "windowShade") !== "closed";
+  if (d.type === "occupancy_sensor") on = v === "present";
+  if (["door_contact","window_contact"].includes(d.type)) on = v === "open";
+  if (d.type === "water_leak_sensor") alert = v === "wet";
+  if (d.type === "smoke_alarm") alert = v === "detected";
+  let text = fmt(v, a);
+  if (d.type === "doorbell") text = "";
+  return { isSensor, on, alert, text };
+}
+
+/* The plan and panel are built once (house / device change) and then only updated in place while time runs,
+   so a click is never lost to a redraw between mouse-down and mouse-up. */
+let chipRefs = {}, panelRefs = { vals: [], toggles: [] };
+let controlChannel = "physical"; /* where the person runs device commands from: at the device, or the phone app */
+const runCmd = (id, cap, cmd, args = []) => sim.run(id, cap, cmd, args, controlChannel);
+function chipClass(s) { return `chip${s.isSensor ? " sensor" : ""}${s.on ? " is-on" : ""}${s.alert ? " is-alert" : ""}`; }
+function renderPlan() {
+  const plan = $("plan"), t = HOUSE_TYPES[sim.type];
+  chipRefs = {};
+  plan.style.gridTemplateAreas = t.areas.map(r => `"${r}"`).join(" ");
+  plan.replaceChildren(...sim.house.rooms.map(room => {
+    const chips = room.devices
+      .slice().sort((a, b) => (chipSummary(a).isSensor - chipSummary(b).isSensor) || a.type.localeCompare(b.type))
+      .map(d => {
+        const a0 = d.capabilities[0].attributes[0], numeric = a0.type === "number" || a0.type === "integer";
+        const s = chipSummary(d), val = el("span", { class: numeric ? "val num" : "val", text: s.text });
+        const btn = el("button", { class: chipClass(s), "aria-pressed": selected === d.id ? "true" : "false", title: d.id, onclick: () => select(d.id) },
+          el("span", { class: "dot", "aria-hidden": "true" }), el("span", { text: DEVICE_LABEL[d.type] || d.type }), val);
+        chipRefs[d.id] = { btn, val };
+        return btn;
+      });
+    return el("div", { class: `room${room.id === "balcony" ? " outdoor" : ""}`, style: `grid-area:${room.id}` },
+      el("div", { class: "room-head" }, el("span", { class: "room-name", text: room.label }), el("span", { class: "room-id", text: room.id })),
+      room.id === "balcony" ? el("div", { class: "room-meta", text: "outdoors" }) : (() => { const p = sim.house.roomProfile(room.id);
+        return el("div", { class: "room-meta", text: `${p.areaM2} m² · ${p.window ? `window ${DIR_LABEL[p.window]} (${p.windowSize})` : "no window"} · ${p.exteriorWalls} ext. wall${p.exteriorWalls === 1 ? "" : "s"}` }); })(),
+      el("div", { class: "chips" }, chips));
+  }));
+}
+
+function toast(msg, target = "panelToast") { const n = $(target); if (n) { n.textContent = msg; clearTimeout(n._t); n._t = setTimeout(() => n.textContent = "", 2600); } }
+
+function afterChange(count, what) {
+  persist(); renderPlan(); renderPanel(); renderLogs(); renderPhoneLog(); renderPhoneStatus();
+  if ($("phRoom") && sim.phone.s.room) $("phRoom").value = sim.phone.s.room; /* a home edit can move the person between rooms */
+  toast(count ? `${what} -> logged ${count} line${count > 1 ? "s" : ""}` : (sim.lastRefusal || "Value unchanged, nothing logged"));
+}
+
+function renderPanel() {
+  const panel = $("panel"), d = selected && sim.house.device(selected);
+  if (!d) { panel.replaceChildren(el("div", { class: "panel-empty", text: "Select a device on the floor plan." })); return; }
+  panelRefs = { vals: [], toggles: [] };
+  const parts = [el("div", { class: "panel-head" },
+    el("h2", { text: `${ROOM_LABEL[d.roomId]} · ${DEVICE_LABEL[d.type]}` }),
+    el("div", { class: "mono small muted", text: d.id }),
+    el("div", { class: "ctl" }, el("span", { class: "small muted", text: "Control from" }),
+      el("div", { class: "seg", role: "group", "aria-label": "Control from" }, ...[["physical", "At device"], ["mobile_app", "Phone app"]].map(([v, label]) =>
+        el("button", { "aria-pressed": controlChannel === v ? "true" : "false", text: label, onclick: () => { controlChannel = v; renderPanel(); } })))))];
+
+  d.capabilities.forEach((c, ci) => {
+    const block = el("div", { class: "cap" }, el("div", { class: "cap-name", text: c.capability }));
+    for (const a of c.attributes) {
+      const valEl = el("span", { class: "attr-val", text: fmt(d.get(c.capability, a.name), a) });
+      panelRefs.vals.push({ el: valEl, d, cap: c.capability, attr: a.name, spec: a });
+      block.append(el("div", { class: "attr-row" }, el("span", { class: "muted small", text: a.name }), valEl));
+    }
+    const a0 = c.attributes[0];
+    const onOff = c.commands.find(m => m.name === "on") && c.commands.find(m => m.name === "off");
+    const lockUnlock = c.commands.find(m => m.name === "lock") && c.commands.find(m => m.name === "unlock");
+
+    if (onOff || lockUnlock) {
+      const isChecked = () => onOff ? d.get(c.capability, a0.name) === "on" : d.get(c.capability, a0.name) === "unlocked";
+      const label = el("span", { class: "mono small" });
+      const tg = el("button", { class: "toggle", role: "switch", "aria-label": `Toggle ${c.capability}`, onclick: () => {
+        const cmd = onOff ? (isChecked() ? "off" : "on") : (isChecked() ? "lock" : "unlock"); /* decided at click time */
+        afterChange(runCmd(d.id, c.capability, cmd), `${cmd}()`);
+      } }, el("span", { class: "track" }, el("span", { class: "knob" })), label);
+      const sync = () => { const ck = isChecked(); tg.setAttribute("aria-checked", ck ? "true" : "false"); label.textContent = onOff ? (ck ? "on" : "off") : (ck ? "unlocked" : "locked"); };
+      sync(); panelRefs.toggles.push(sync);
+      block.append(el("div", { class: "ctl" }, tg));
+    } else {
+      c.commands.forEach((m, mi) => {
+        if (m.args.length === 0) {
+          block.append(el("div", { class: "ctl" }, el("button", { class: "btn sm", text: `${m.name}()`,
+            onclick: () => afterChange(runCmd(d.id, c.capability, m.name, []), `${m.name}()`) })));
+          return;
+        }
+        /* Argument inputs: set* uses its own attribute spec; start(mode[, minutes]) uses the mode spec and a minutes range */
+        const argSpecs = m.args.map((arg, i) => {
+          if (m.name.startsWith("set")) return a0;
+          if (arg === "mode") return d.attrSpec("mode", "mode");
+          if (arg === "minutes") return { type: "integer", min: 1, max: 300, unit: "min" };
+          return { type: "string" };
+        });
+        const inputs = argSpecs.map((s, i) => inputFor(s, m.name.startsWith("set") ? d.get(c.capability, a0.name) : (s.type === "integer" ? 60 : undefined), `in-${ci}-${mi}-${i}`));
+        const ctl = el("div", { class: "ctl" },
+          el("span", { class: "ctl-label", text: `${m.name}(${m.args.join(", ")})${argSpecs[0].unit ? " · " + argSpecs.map(s => s.unit || "").filter(Boolean).join(", ") : ""}` }),
+          inputs,
+          el("button", { class: "btn sm primary", text: "Run", onclick: () => {
+            try { const args = inputs.map((inp, i) => coerce(inp.value, argSpecs[i])); afterChange(runCmd(d.id, c.capability, m.name, args), `${m.name}(${args.join(", ")})`); }
+            catch (e) { toast(e.message); }
+          } }));
+        block.append(ctl);
+      });
+    }
+
+    /* Direct recording: attributes with no set command and no on/off or lock toggle (sensor readings, reported states) */
+    const hasSet = c.commands.some(m => m.name.startsWith("set"));
+    if (!hasSet && !onOff && !lockUnlock) {
+      for (const [ai, a] of c.attributes.entries()) {
+        if (d.type === "doorbell") {
+          block.append(el("div", { class: "ctl" }, el("button", { class: "btn sm primary", text: "Press (pushed)",
+            onclick: () => afterChange(sim.setValue(d.id, c.capability, a.name, "pushed"), "pushed") })));
+          continue;
+        }
+        if (d.type === "washer" && c.capability === "mode") continue; /* the cycle is chosen through start(mode) */
+        if (d.type === "dryer" && c.capability === "mode") continue;
+        const inp = inputFor(a, d.get(c.capability, a.name), `direct-${ci}-${ai}`);
+        block.append(el("div", { class: "ctl" },
+          el("span", { class: "ctl-label", text: c.commands.length ? "Record reported state" : "Record sensor reading" }),
+          inp,
+          el("button", { class: "btn sm", text: "Record", onclick: () => {
+            try { const v = coerce(inp.value, a); afterChange(sim.setValue(d.id, c.capability, a.name, v), `${a.name} = ${v}`); }
+            catch (e) { toast(e.message); }
+          } })));
+      }
+    }
+    parts.push(block);
+  });
+  parts.push(el("div", { class: "toast", id: "panelToast" }));
+  panel.replaceChildren(...parts);
+}
+
+function updatePlan() {
+  for (const [id, r] of Object.entries(chipRefs)) {
+    const d = sim.house.device(id); if (!d) continue;
+    const s = chipSummary(d), cls = chipClass(s);
+    if (r.btn.className !== cls) r.btn.className = cls;
+    if (r.val.textContent !== s.text) r.val.textContent = s.text;
+  }
+}
+function updatePanel() {
+  for (const v of panelRefs.vals) { const t = fmt(v.d.get(v.cap, v.attr), v.spec); if (v.el.textContent !== t) v.el.textContent = t; }
+  panelRefs.toggles.forEach(sync => sync());
+}
+let lastLogSig = "";
+function renderLogsIfChanged() {
+  const sig = `${sim.log.entries.length}|${sim.pending.raw.length}|${sim.pending.openDay}`;
+  if (sig !== lastLogSig) { lastLogSig = sig; renderLogs(); }
+}
+
+function renderLogs() {
+  const rows = sim.log.entries.slice(-300).reverse().map(e => el("tr", {},
+    el("td", { class: "mono", text: e.time.slice(0, 19).replace("T", " ") }),
+    el("td", { class: "mono", text: `${e.houseId} · ${e.houseVariant || e.houseType}` }),
+    el("td", { class: "mono", text: e.weather ?? "—" }),
+    el("td", { class: "mono", text: e.deviceId }),
+    el("td", { class: "mono", text: `${e.capability}.${e.attribute}` }),
+    el("td", { class: "mono muted", text: e.previousValue == null ? "—" : String(e.previousValue) }),
+    el("td", { class: "mono", text: String(e.value) }),
+    el("td", {}, el("span", { class: `tag ${e.source}`, text: e.source === "command" ? `${e.command}(${e.args.join(", ")})${e.channel === "mobile_app" ? " · phone" : ""}` : e.source === "manual" ? "recorded" : e.source === "sensor" ? `sensor · ${e.reason}` : e.source }))));
+  $("logBody").replaceChildren(...rows);
+  $("logCount").textContent = sim.log.entries.length;
+  const p = sim.pending;
+  $("pendingNote").textContent = p.openDay == null
+    ? "No open day. Sensor logs are written when a simulated day closes."
+    : `Open day ${isoLocal(new Date(p.openDay)).slice(0, 10)}: ${p.raw.length} sensor readings waiting. They are filtered and written when the day closes (1 hour after midnight), using the background count set at that moment.`;
+}
+
+function switchVariant(v) {
+  if (v === sim.variant) return;
+  sim.flush(); /* the open day belongs to the current house */
+  sim.variant = v; sim.resetSteps(); if (selected && !sim.house.device(selected)) selected = null;
+  const ps = sim.phone.s; if (ps.place === "home") { if (!ps.room || !sim.house.at(ps.room, "occupancy_sensor")) ps.room = "entryway"; sim.setPresence(ps.room); }
+  sim.syncRouter();
+  persist(); renderTypes(); renderPlan(); renderPanel(); renderLogs(); renderPhoneControls(); renderPhoneStatus(); renderPhoneLog();
+}
+function renderTypes() {
+  $("houseTypes").replaceChildren(...Object.entries(HOUSE_TYPES).map(([k, t]) =>
+    el("button", { "aria-pressed": sim.type === k ? "true" : "false", text: t.label, onclick: () => { if (k !== sim.type) switchVariant(`${k}-A`); } })));
+  const vs = Object.keys(ROOM_PROFILES).filter(v => ROOM_PROFILES[v].houseType === sim.type);
+  $("variants").replaceChildren(...vs.map(v => el("button", { "aria-pressed": sim.variant === v ? "true" : "false", text: v.split("-")[1],
+    title: v, onclick: () => switchVariant(v) })));
+  const P = ROOM_PROFILES[sim.variant];
+  $("variantInfo").textContent = `${sim.variant}: ${P.areaM2} m², facing ${DIR_LABEL[P.facing]}, ${P.plan === "flat" ? "flat (front and back windows)" : "tower (corner unit)"}`;
+}
+
+function select(id) {
+  selected = id; renderPlan(); renderPanel();
+  if (window.matchMedia("(max-width: 1000px)").matches) $("panel").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+/* Clock */
+const clockInput = $("clock");
+let editingClock = false;
+clockInput.addEventListener("focus", () => editingClock = true);
+clockInput.addEventListener("blur", () => editingClock = false);
+/* typing a time jumps there without simulating the gap; the +min/+hour/+day buttons simulate it */
+clockInput.addEventListener("change", () => { const ms = new Date(clockInput.value).getTime(); if (Number.isFinite(ms)) { sim.jumpTo(ms); persist(); renderLogs(); } });
+document.querySelectorAll("[data-jump]").forEach(b => b.addEventListener("click", () => { sim.clock.jump(Number(b.dataset.jump)); clockInput.value = toInputValue(sim.clock.now()); persist(); }));
+function renderSpeeds() {
+  $("speeds").replaceChildren(...SPEEDS.map(([r, label]) => el("button", { "aria-pressed": sim.clock.speed === r ? "true" : "false", text: label,
+    onclick: () => { sim.clock.setSpeed(r); persist(); renderSpeeds(); } })));
+}
+function renderRun() {
+  const on = sim.clock.running, b = $("runBtn");
+  b.textContent = on ? "Stop" : "Start"; b.setAttribute("aria-pressed", on ? "true" : "false");
+  $("runState").textContent = on ? "Running" : "Stopped";
+}
+$("runBtn").addEventListener("click", () => { sim.clock.setRunning(!sim.clock.running); sim.resetSteps(); persist(); renderRun(); });
+renderSpeeds(); renderRun();
+function renderOutdoor() {
+  const o = outdoorAt(sim.clock.now());
+  $("outdoorNow").replaceChildren(
+    el("span", {}, el("b", { text: "Weather" }), o.weather),
+    el("span", {}, el("b", { text: "Wind" }), `${o.windSpeed.toFixed(1)} m/s`),
+    el("span", {}, el("b", { text: "Precip" }), `${o.precipitation.toFixed(1)} mm/h`),
+    el("span", {}, el("b", { text: "Temp" }), `${o.temperature.toFixed(1)} C`),
+    el("span", {}, el("b", { text: "Humidity" }), `${Math.round(o.humidity)} %`),
+    el("span", {}, el("b", { text: "PM2.5" }), `${Math.round(o.pm25)} µg/m³ (${pmGrade(o.pm25)})`),
+    el("span", {}, el("b", { text: "CO2" }), `${Math.round(o.co2)} ppm`));
+}
+renderOutdoor();
+sim.resetSteps();
+setInterval(() => {
+  if (!editingClock) clockInput.value = toInputValue(sim.clock.now());
+  renderOutdoor(); renderPhoneStatus();
+  if (!sim.tick()) return;
+  updatePlan(); updatePanel(); renderLogsIfChanged(); renderPhoneLogIfChanged(); /* update values in place; never rebuild buttons here */
+}, 250);
+setInterval(persist, 5000);
+clockInput.value = toInputValue(sim.clock.now());
+
+/* House ID */
+const houseIdInput = $("houseId");
+houseIdInput.value = sim.houseId;
+houseIdInput.addEventListener("input", () => { sim.houseId = houseIdInput.value.trim() || "house001"; persist(); });
+
+/* Log buttons */
+const bgInput = $("bgPerDay");
+bgInput.value = sim.policy.backgroundPerDay;
+bgInput.addEventListener("change", () => {
+  const n = Math.floor(Number(bgInput.value));
+  if (!Number.isFinite(n) || n < 0) { bgInput.value = sim.policy.backgroundPerDay; toast("Enter 0 or a positive whole number", "logToast"); return; }
+  sim.policy.backgroundPerDay = n; persist(); toast(`Days closed from now on keep ${n} background lines`, "logToast");
+});
+$("closeDayBtn").addEventListener("click", () => {
+  if (sim.pending.openDay == null) { toast("There is no open day to close", "logToast"); return; }
+  const before = sim.log.entries.length; sim.flush(); persist(); renderLogs();
+  toast(`Closed the day: wrote ${sim.log.entries.length - before} sensor lines`, "logToast");
+});
+let downloads = null;
+window.claude?.use?.("downloads").then(d => { downloads = d; }).catch(() => {});
+$("saveBtn").addEventListener("click", async () => {
+  if (!sim.log.entries.length) { toast("No log to save", "logToast"); return; }
+  const name = `${sim.houseId}_${sim.type}_log.txt`.replace(/[^\w.-]/g, "_");
+  if (!downloads) { showFallback(); toast("File saving is not available here, so the content is shown below", "logToast"); return; }
+  try { await downloads.save({ filename: name, data: sim.log.toJSONL() }); toast(`Saved as ${name} (JSONL content)`, "logToast"); }
+  catch (e) {
+    if (e && e.code === "declined") toast("Save cancelled", "logToast");
+    else { showFallback(); toast("File saving is not available, so the content is shown below", "logToast"); }
+  }
+});
+function showFallback(content) { const f = $("fallback"); f.value = content ?? sim.log.toJSONL(); f.hidden = false; f.focus(); f.select(); }
+$("copyBtn").addEventListener("click", async () => {
+  if (!sim.log.entries.length) { toast("No log to copy", "logToast"); return; }
+  try { await navigator.clipboard.writeText(sim.log.toJSONL()); toast(`Copied ${sim.log.entries.length} lines`, "logToast"); }
+  catch (e) { showFallback(); toast("Automatic copy is blocked; the content below is selected, copy it manually", "logToast"); }
+});
+/* One clear for everything, so the home log and its copies in the phone log never disagree:
+   home log, phone log, and the open day's sensor readings not yet written (the next day starts counting afresh). */
+function clearAllLogs() {
+  sim.log.clear(); sim.phone.events = [];
+  sim.pending = { raw: [], actions: [], openDay: null, rangeStart: null };
+  $("fallback").hidden = true; persist(); renderLogs(); renderPhoneLog();
+}
+function armClear(id, toastId) {
+  let armed = null;
+  $(id).addEventListener("click", () => {
+    const b = $(id);
+    if (!armed) { b.classList.add("armed"); b.textContent = "Click again to clear all"; armed = setTimeout(() => { armed = null; b.classList.remove("armed"); b.textContent = "Clear all logs"; }, 3000); return; }
+    clearTimeout(armed); armed = null; b.classList.remove("armed"); b.textContent = "Clear all logs";
+    clearAllLogs(); toast("Home log, phone log and unwritten sensor readings cleared", toastId);
+  });
+}
+armClear("clearBtn", "logToast");
+
+/* ===== Phone panel ===== */
+const P = () => sim.phone;
+function placeOf(ctx) { const e = Object.entries(PLACES).find(([, p]) => p.lat != null && p.lat === ctx?.location?.latitude && p.lng === ctx?.location?.longitude); return e ? e[0] : "on the way"; }
+function renderPhoneStatus() {
+  const s = P().s, sp = (k, v) => el("span", {}, el("b", { text: k }), String(v));
+  $("phoneStatus").replaceChildren(
+    sp("Battery", `${Math.round(s.battery)}%${s.charging ? " charging" : ""}`), sp("Screen", s.screenOn ? "on" : "off"),
+    sp("Place", s.trip ? `${PLACES[s.place].label} -> ${PLACES[s.trip.to].label}, arrives ${hm(s.trip.end)}` : PLACES[s.place].label), sp("Room", s.room ? (ROOM_LABEL[s.room] || s.room) : "-"), sp("Wi-Fi", s.wifi || "-"), sp("Bluetooth", s.bt.join(", ") || "-"),
+    sp("Activity", s.asleep ? "asleep" : s.activity), sp("Heart", s.bpm ? `${Math.round(s.bpm)} bpm` : "-"), sp("App", s.foreground ? (APPS[s.foreground]?.label || s.foreground) : "-"),
+    sp("Media", s.media ? `${s.media.state.toLowerCase()} · ${s.media.title}` : "-"), sp("Exercise", s.exercise ? s.exercise.kind : "-"),
+    sp("Calendar", `${Object.keys(s.calendar).length} event${Object.keys(s.calendar).length === 1 ? "" : "s"}`));
+}
+function phoneDo(count, what) {
+  persist(); renderPhoneStatus(); renderPhoneLog(); renderCalendar(); renderLogs(); renderPlan(); renderPanel();
+  toast(count ? `${what} -> ${count} event${count > 1 ? "s" : ""} (phone or home)` : (sim.lastRefusal || `${what}: no change`), "phoneToast");
+}
+const opt = (v, label = v) => el("option", { value: v, text: label });
+const sel = (id, pairs) => el("select", { id }, ...pairs.map(([v, l]) => opt(v, l)));
+const btn = (text, fn, cls = "btn sm") => el("button", { class: cls, text, onclick: fn });
+const txt = (id, value = "", ph = "") => el("input", { type: "text", id, value, placeholder: ph });
+const group = (title, ...rows) => el("div", { class: "pgroup" }, el("h3", { text: title }), ...rows);
+const row = (...xs) => el("div", { class: "ctl" }, ...xs);
+function appPairs() { return P().s.installed.map(p => [p, APPS[p]?.label || p]); }
+function renderPhoneControls() {
+  const v = id => $(id).value;
+  const inOneHour = toInputValue(new Date(Math.ceil((sim.clock.now().getTime() + 3600000) / 1800000) * 1800000));
+  $("phoneControls").replaceChildren(
+    group("Place and movement",
+      row(el("select", { id: "phPlace", "aria-label": "Destination" }, ...PLACE_CATEGORIES.filter(c => c !== "On the move").map(c => el("optgroup", { label: c },
+          ...Object.entries(PLACES).filter(([, p]) => p.category === c).map(([k, p]) => opt(k, p.label))))),
+        el("select", { id: "phMode", "aria-label": "Travel by" }, ...Object.keys(TRAVEL_MODES).map(m => opt(m, PLACES[TRAVEL_MODES[m].place].label.replace(" (driving)", " (drive)").replace("On foot", "Walk")))),
+        btn("Travel", () => phoneDo(P().travel(v("phPlace"), v("phMode")), `travel to ${v("phPlace")} by ${v("phMode")}`))),
+      row(el("select", { id: "phRoom" }, ...sim.house.rooms.filter(r => sim.house.at(r.id, "occupancy_sensor")).map(r => opt(r.id, r.label))),
+        btn("Go to room (at home)", () => { if (P().s.place !== "home") { toast("Move home first", "phoneToast"); return; } phoneDo(P().moveRoom(v("phRoom")), `go to ${v("phRoom")}`); })),
+      row(sel("phAct", Object.keys(ACTIVITIES).map(a => [a, a])), btn("Set activity", () => phoneDo(P().setActivity(v("phAct")), v("phAct"))))),
+    group("Phone state",
+      row(btn("Screen on", () => phoneDo(P().screen(true), "screen on")), btn("Screen off", () => phoneDo(P().screen(false), "screen off"))),
+      row(btn("Plug in", () => phoneDo(P().power(true), "plug in")), btn("Unplug", () => phoneDo(P().power(false), "unplug"))),
+      row(btn("Sleep", () => { const was = P().s.asleep, n = P().sleep(); phoneDo(n, "sleep");
+          if (!was && P().s.asleep) toast(`Asleep${n ? " (screen turned off)" : ""}. The SLEEP record is written on waking.`, "phoneToast"); }), btn("Wake up", () => phoneDo(P().wake(), "wake")))),
+    group("Bluetooth",
+      row(sel("phBt", Object.keys(BT_DEVICES).map(n => [n, n])), btn("Connect", () => phoneDo(P().btConnect(v("phBt")), "connect")), btn("Disconnect", () => phoneDo(P().btDisconnect(v("phBt")), "disconnect")))),
+    group("Apps",
+      row(el("select", { id: "phApp" }, ...appPairs().map(([p, l]) => opt(p, l))), btn("Open", () => phoneDo(P().openApp(v("phApp")), "open app")), btn("Close", () => phoneDo(P().closeApp(), "close app"))),
+      row(txt("phPkg", "", "package"), txt("phPkgLabel", "", "label"), btn("Install", () => { const n = P().install(v("phPkg").trim(), v("phPkgLabel").trim()); renderPhoneControls(); phoneDo(n, "install"); }),
+        btn("Uninstall selected", () => { const n = P().uninstall(v("phApp")); renderPhoneControls(); phoneDo(n, "uninstall"); }))),
+    group("Messages and calls",
+      row(el("select", { id: "phNApp" }, ...appPairs().map(([p, l]) => opt(p, l))), txt("phNTitle", "Alex Kim", "title"), txt("phNText", "Are you free tonight?", "text"),
+        btn("Notify", () => phoneDo(P().notify(v("phNApp"), v("phNTitle"), v("phNText")), "notification"))),
+      row(btn("Incoming call", () => phoneDo(P().call("RINGING"), "ringing")), btn("Answer", () => phoneDo(P().call("OFFHOOK"), "answer")), btn("Hang up", () => phoneDo(P().call("IDLE"), "hang up"))),
+      row(btn("SMS in", () => phoneDo(P().sms("INCOMING"), "sms in")), btn("SMS out", () => phoneDo(P().sms("OUTGOING"), "sms out")))),
+    group("Media",
+      row(txt("phSong", "Song Title", "title"), txt("phArtist", "Artist Name", "artist"), btn("Play", () => phoneDo(P().media("PLAYING", v("phSong"), v("phArtist"), "Album Name"), "play"))),
+      row(btn("Pause", () => phoneDo(P().media("PAUSED"), "pause")), btn("Stop", () => phoneDo(P().media("STOPPED"), "stop")))),
+    group("Calendar",
+      row(txt("phCalTitle", "Dinner with Alex", "title"), el("input", { type: "datetime-local", id: "phCalStart", value: inOneHour }),
+        el("input", { type: "number", id: "phCalMin", value: 60, min: 5, max: 1440, step: 5 }), el("span", { class: "small muted", text: "min" }), txt("phCalLoc", "Gangnam", "location"),
+        btn("Add", () => { const b = new Date(v("phCalStart")).getTime(), m = Number(v("phCalMin")) || 60;
+          if (!Number.isFinite(b)) { toast("Pick a start time", "phoneToast"); return; }
+          phoneDo(P().calendarAdd(v("phCalTitle"), b, b + m * 60000, v("phCalLoc")), "add event"); })),
+      el("div", { class: "cal-list", id: "calList" })),
+    group("Health",
+      row(sel("phMeasure", Object.keys(MEASURES).map(k => [k, k])), txt("phMeasureVal", "68.2", "value (BP: 120/80)"),
+        btn("Record", () => { const k = v("phMeasure"), raw = v("phMeasureVal").trim(), val = k === "BLOOD_PRESSURE" ? raw : Number(raw);
+          if (k !== "BLOOD_PRESSURE" && !Number.isFinite(val)) { toast("Enter a number", "phoneToast"); return; } phoneDo(P().measure(k, val), k); })),
+      row(sel("phEx", Object.keys(EXERCISES).map(k => [k, k])), btn("Start exercise", () => phoneDo(P().exerciseStart(v("phEx")), "exercise start")), btn("End exercise", () => phoneDo(P().exerciseEnd(), "exercise end")))),
+    group("Capture",
+      row(btn("Photo", () => phoneDo(P().photo(), "photo")), txt("phOcr", "Meeting agenda 1. ...", "screenshot text"), btn("Screenshot", () => phoneDo(P().screenshot(v("phOcr")), "screenshot"))),
+      row(btn("Copy to clipboard", () => phoneDo(P().copyClipboard(), "clipboard")))));
+  $("phAct").value = P().s.activity; if (P().s.room) $("phRoom").value = P().s.room;
+  renderCalendar();
+}
+function renderCalendar() {
+  const list = $("calList"); if (!list) return;
+  const evs = Object.values(P().s.calendar).sort((a, b) => a.begin - b.begin);
+  list.replaceChildren(...(evs.length ? evs.map(ev => el("div", { class: "cal-item" },
+    el("span", { class: "mono", text: `${md(ev.begin)} ${hm(ev.begin)}-${hm(ev.end)}` }), el("span", { text: ev.title }),
+    btn("+1 h", () => phoneDo(P().calendarUpdate(ev.eventId, { begin: ev.begin + 3600000, end: ev.end + 3600000 }), "move event")),
+    btn("Delete", () => phoneDo(P().calendarDelete(ev.eventId), "delete event"))))
+    : [el("span", { class: "muted", text: "No events" })]));
+}
+let lastPhoneSig = "";
+function renderPhoneLogIfChanged() { const sig = `${P().events.length}|${$("showCopies").checked}`; if (sig !== lastPhoneSig) { lastPhoneSig = sig; renderPhoneLog(); } }
+function renderPhoneLog() {
+  const all = P().events, show = $("showCopies").checked, rows = [];
+  for (let i = all.length - 1; i >= 0 && rows.length < 300; i--) {
+    const e = all[i]; if (!show && e.type === "SMARTTHINGS") continue;
+    rows.push(el("tr", {},
+      el("td", { class: "mono", text: isoLocal(new Date(e.timestamp)).slice(0, 19).replace("T", " ") }),
+      el("td", {}, el("span", { class: `tag ${e.type === "SMARTTHINGS" ? (e.payload.kind === "notification" ? "event" : e.payload.actor.kind === "user" ? "command" : e.payload.actor.kind === "sensor" ? "sensor" : "device") : "phone"}`, text: e.type === "SMARTTHINGS" && e.payload.kind === "notification" ? "SMARTTHINGS alert" : e.type })),
+      el("td", { class: "mono", text: e.source }), el("td", { text: e.title }), el("td", { class: "mono", text: e.text }),
+      el("td", { class: "mono", text: `${e.context.battery.level}%${e.context.battery.charging ? "+" : ""}` }),
+      el("td", { class: "mono", text: e.context.weather }), el("td", { class: "mono", text: placeOf(e.context) })));
+  }
+  $("phoneLogBody").replaceChildren(...rows);
+  $("phoneLogCount").textContent = all.length;
+}
+$("showCopies").addEventListener("change", renderPhoneLog);
+$("phoneSaveBtn").addEventListener("click", async () => {
+  if (!P().events.length) { toast("No phone log to save", "phoneLogToast"); return; }
+  const name = `${sim.houseId}_phone_log.txt`.replace(/[^\w.-]/g, "_");
+  if (!downloads) { showFallback(P().toJSONL()); toast("File saving is not available here, so the content is shown in the home log section", "phoneLogToast"); return; }
+  try { await downloads.save({ filename: name, data: P().toJSONL() }); toast(`Saved as ${name} (JSONL content)`, "phoneLogToast"); }
+  catch (e) { if (e && e.code === "declined") toast("Save cancelled", "phoneLogToast"); else { showFallback(P().toJSONL()); toast("File saving is not available, so the content is shown in the home log section", "phoneLogToast"); } }
+});
+$("phoneCopyBtn").addEventListener("click", async () => {
+  if (!P().events.length) { toast("No phone log to copy", "phoneLogToast"); return; }
+  try { await navigator.clipboard.writeText(P().toJSONL()); toast(`Copied ${P().events.length} events`, "phoneLogToast"); }
+  catch (e) { showFallback(P().toJSONL()); toast("Automatic copy is blocked; the content is shown in the home log section", "phoneLogToast"); }
+});
+armClear("phoneClearBtn", "phoneLogToast");
+
+renderTypes(); renderPlan(); renderPanel(); renderLogs(); renderPhoneControls(); renderPhoneStatus(); renderPhoneLog();
+</script>

@@ -1,0 +1,650 @@
+{
+ "2room-A": {
+  "houseType": "2room",
+  "areaM2": 59,
+  "facing": "S",
+  "plan": "flat",
+  "rooms": {
+   "living_room": {
+    "areaM2": 17.7,
+    "window": "S",
+    "windowSize": "large",
+    "exteriorWalls": 1
+   },
+   "room1": {
+    "areaM2": 11.8,
+    "window": "S",
+    "windowSize": "medium",
+    "exteriorWalls": 1
+   },
+   "room2": {
+    "areaM2": 8.8,
+    "window": "N",
+    "windowSize": "medium",
+    "exteriorWalls": 1
+   },
+   "kitchen": {
+    "areaM2": 5.9,
+    "window": "N",
+    "windowSize": "small",
+    "exteriorWalls": 1
+   },
+   "dining_room": {
+    "areaM2": 4.1,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   },
+   "bathroom": {
+    "areaM2": 4.1,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   },
+   "laundry": {
+    "areaM2": 2.4,
+    "window": "N",
+    "windowSize": "small",
+    "exteriorWalls": 1
+   },
+   "closet": {
+    "areaM2": 2.4,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   },
+   "entryway": {
+    "areaM2": 1.8,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   }
+  }
+ },
+ "2room-B": {
+  "houseType": "2room",
+  "areaM2": 49,
+  "facing": "E",
+  "plan": "flat",
+  "rooms": {
+   "living_room": {
+    "areaM2": 14.7,
+    "window": "E",
+    "windowSize": "large",
+    "exteriorWalls": 1
+   },
+   "room1": {
+    "areaM2": 9.8,
+    "window": "E",
+    "windowSize": "medium",
+    "exteriorWalls": 1
+   },
+   "room2": {
+    "areaM2": 7.3,
+    "window": "W",
+    "windowSize": "medium",
+    "exteriorWalls": 1
+   },
+   "kitchen": {
+    "areaM2": 4.9,
+    "window": "W",
+    "windowSize": "small",
+    "exteriorWalls": 1
+   },
+   "dining_room": {
+    "areaM2": 3.4,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   },
+   "bathroom": {
+    "areaM2": 3.4,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   },
+   "laundry": {
+    "areaM2": 2.0,
+    "window": "W",
+    "windowSize": "small",
+    "exteriorWalls": 1
+   },
+   "closet": {
+    "areaM2": 2.0,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   },
+   "entryway": {
+    "areaM2": 1.5,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   }
+  }
+ },
+ "2room-C": {
+  "houseType": "2room",
+  "areaM2": 59,
+  "facing": "SW",
+  "plan": "tower",
+  "rooms": {
+   "living_room": {
+    "areaM2": 17.7,
+    "window": "SW",
+    "windowSize": "large",
+    "exteriorWalls": 2
+   },
+   "room1": {
+    "areaM2": 11.8,
+    "window": "W",
+    "windowSize": "medium",
+    "exteriorWalls": 2
+   },
+   "room2": {
+    "areaM2": 8.8,
+    "window": "SW",
+    "windowSize": "medium",
+    "exteriorWalls": 1
+   },
+   "kitchen": {
+    "areaM2": 5.9,
+    "window": "W",
+    "windowSize": "small",
+    "exteriorWalls": 1
+   },
+   "dining_room": {
+    "areaM2": 4.1,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   },
+   "bathroom": {
+    "areaM2": 4.1,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   },
+   "laundry": {
+    "areaM2": 2.4,
+    "window": "NE",
+    "windowSize": "small",
+    "exteriorWalls": 1
+   },
+   "closet": {
+    "areaM2": 2.4,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   },
+   "entryway": {
+    "areaM2": 1.8,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   }
+  }
+ },
+ "3room-A": {
+  "houseType": "3room",
+  "areaM2": 84,
+  "facing": "S",
+  "plan": "flat",
+  "rooms": {
+   "living_room": {
+    "areaM2": 21.8,
+    "window": "S",
+    "windowSize": "large",
+    "exteriorWalls": 1
+   },
+   "room1": {
+    "areaM2": 13.4,
+    "window": "S",
+    "windowSize": "medium",
+    "exteriorWalls": 1
+   },
+   "room2": {
+    "areaM2": 9.2,
+    "window": "S",
+    "windowSize": "medium",
+    "exteriorWalls": 1
+   },
+   "room3": {
+    "areaM2": 8.4,
+    "window": "N",
+    "windowSize": "small",
+    "exteriorWalls": 1
+   },
+   "kitchen": {
+    "areaM2": 7.6,
+    "window": "N",
+    "windowSize": "small",
+    "exteriorWalls": 1
+   },
+   "dining_room": {
+    "areaM2": 5.9,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   },
+   "bathroom": {
+    "areaM2": 5.9,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   },
+   "laundry": {
+    "areaM2": 3.4,
+    "window": "N",
+    "windowSize": "small",
+    "exteriorWalls": 1
+   },
+   "closet": {
+    "areaM2": 3.4,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   },
+   "hallway": {
+    "areaM2": 2.5,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   },
+   "entryway": {
+    "areaM2": 2.5,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   }
+  }
+ },
+ "3room-B": {
+  "houseType": "3room",
+  "areaM2": 84,
+  "facing": "SE",
+  "plan": "tower",
+  "rooms": {
+   "living_room": {
+    "areaM2": 21.8,
+    "window": "SE",
+    "windowSize": "large",
+    "exteriorWalls": 2
+   },
+   "room1": {
+    "areaM2": 13.4,
+    "window": "E",
+    "windowSize": "medium",
+    "exteriorWalls": 2
+   },
+   "room2": {
+    "areaM2": 9.2,
+    "window": "SE",
+    "windowSize": "medium",
+    "exteriorWalls": 1
+   },
+   "room3": {
+    "areaM2": 8.4,
+    "window": "E",
+    "windowSize": "small",
+    "exteriorWalls": 1
+   },
+   "kitchen": {
+    "areaM2": 7.6,
+    "window": "NW",
+    "windowSize": "small",
+    "exteriorWalls": 1
+   },
+   "dining_room": {
+    "areaM2": 5.9,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   },
+   "bathroom": {
+    "areaM2": 5.9,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   },
+   "laundry": {
+    "areaM2": 3.4,
+    "window": "NW",
+    "windowSize": "small",
+    "exteriorWalls": 1
+   },
+   "closet": {
+    "areaM2": 3.4,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   },
+   "hallway": {
+    "areaM2": 2.5,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   },
+   "entryway": {
+    "areaM2": 2.5,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   }
+  }
+ },
+ "3room-C": {
+  "houseType": "3room",
+  "areaM2": 74,
+  "facing": "W",
+  "plan": "flat",
+  "rooms": {
+   "living_room": {
+    "areaM2": 19.2,
+    "window": "W",
+    "windowSize": "large",
+    "exteriorWalls": 1
+   },
+   "room1": {
+    "areaM2": 11.8,
+    "window": "W",
+    "windowSize": "medium",
+    "exteriorWalls": 1
+   },
+   "room2": {
+    "areaM2": 8.1,
+    "window": "W",
+    "windowSize": "medium",
+    "exteriorWalls": 1
+   },
+   "room3": {
+    "areaM2": 7.4,
+    "window": "E",
+    "windowSize": "small",
+    "exteriorWalls": 1
+   },
+   "kitchen": {
+    "areaM2": 6.7,
+    "window": "E",
+    "windowSize": "small",
+    "exteriorWalls": 1
+   },
+   "dining_room": {
+    "areaM2": 5.2,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   },
+   "bathroom": {
+    "areaM2": 5.2,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   },
+   "laundry": {
+    "areaM2": 3.0,
+    "window": "E",
+    "windowSize": "small",
+    "exteriorWalls": 1
+   },
+   "closet": {
+    "areaM2": 3.0,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   },
+   "hallway": {
+    "areaM2": 2.2,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   },
+   "entryway": {
+    "areaM2": 2.2,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   }
+  }
+ },
+ "4room-A": {
+  "houseType": "4room",
+  "areaM2": 114,
+  "facing": "S",
+  "plan": "flat",
+  "rooms": {
+   "living_room": {
+    "areaM2": 27.4,
+    "window": "S",
+    "windowSize": "large",
+    "exteriorWalls": 1
+   },
+   "room1": {
+    "areaM2": 17.1,
+    "window": "S",
+    "windowSize": "medium",
+    "exteriorWalls": 1
+   },
+   "room2": {
+    "areaM2": 11.4,
+    "window": "S",
+    "windowSize": "medium",
+    "exteriorWalls": 1
+   },
+   "room3": {
+    "areaM2": 10.3,
+    "window": "S",
+    "windowSize": "medium",
+    "exteriorWalls": 1
+   },
+   "room4": {
+    "areaM2": 9.1,
+    "window": "N",
+    "windowSize": "small",
+    "exteriorWalls": 1
+   },
+   "kitchen": {
+    "areaM2": 9.1,
+    "window": "N",
+    "windowSize": "small",
+    "exteriorWalls": 1
+   },
+   "dining_room": {
+    "areaM2": 8.0,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   },
+   "bathroom": {
+    "areaM2": 6.8,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   },
+   "laundry": {
+    "areaM2": 4.6,
+    "window": "N",
+    "windowSize": "small",
+    "exteriorWalls": 1
+   },
+   "closet": {
+    "areaM2": 4.6,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   },
+   "hallway": {
+    "areaM2": 3.4,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   },
+   "entryway": {
+    "areaM2": 2.3,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   }
+  }
+ },
+ "4room-B": {
+  "houseType": "4room",
+  "areaM2": 101,
+  "facing": "SE",
+  "plan": "tower",
+  "rooms": {
+   "living_room": {
+    "areaM2": 24.2,
+    "window": "SE",
+    "windowSize": "large",
+    "exteriorWalls": 2
+   },
+   "room1": {
+    "areaM2": 15.1,
+    "window": "E",
+    "windowSize": "medium",
+    "exteriorWalls": 2
+   },
+   "room2": {
+    "areaM2": 10.1,
+    "window": "SE",
+    "windowSize": "medium",
+    "exteriorWalls": 1
+   },
+   "room3": {
+    "areaM2": 9.1,
+    "window": "E",
+    "windowSize": "medium",
+    "exteriorWalls": 1
+   },
+   "room4": {
+    "areaM2": 8.1,
+    "window": "NW",
+    "windowSize": "small",
+    "exteriorWalls": 2
+   },
+   "kitchen": {
+    "areaM2": 8.1,
+    "window": "NW",
+    "windowSize": "small",
+    "exteriorWalls": 1
+   },
+   "dining_room": {
+    "areaM2": 7.1,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   },
+   "bathroom": {
+    "areaM2": 6.1,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   },
+   "laundry": {
+    "areaM2": 4.0,
+    "window": "NW",
+    "windowSize": "small",
+    "exteriorWalls": 1
+   },
+   "closet": {
+    "areaM2": 4.0,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   },
+   "hallway": {
+    "areaM2": 3.0,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   },
+   "entryway": {
+    "areaM2": 2.0,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   }
+  }
+ },
+ "4room-C": {
+  "houseType": "4room",
+  "areaM2": 114,
+  "facing": "E",
+  "plan": "flat",
+  "rooms": {
+   "living_room": {
+    "areaM2": 27.4,
+    "window": "E",
+    "windowSize": "large",
+    "exteriorWalls": 1
+   },
+   "room1": {
+    "areaM2": 17.1,
+    "window": "E",
+    "windowSize": "medium",
+    "exteriorWalls": 1
+   },
+   "room2": {
+    "areaM2": 11.4,
+    "window": "E",
+    "windowSize": "medium",
+    "exteriorWalls": 1
+   },
+   "room3": {
+    "areaM2": 10.3,
+    "window": "E",
+    "windowSize": "medium",
+    "exteriorWalls": 1
+   },
+   "room4": {
+    "areaM2": 9.1,
+    "window": "W",
+    "windowSize": "small",
+    "exteriorWalls": 1
+   },
+   "kitchen": {
+    "areaM2": 9.1,
+    "window": "W",
+    "windowSize": "small",
+    "exteriorWalls": 1
+   },
+   "dining_room": {
+    "areaM2": 8.0,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   },
+   "bathroom": {
+    "areaM2": 6.8,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   },
+   "laundry": {
+    "areaM2": 4.6,
+    "window": "W",
+    "windowSize": "small",
+    "exteriorWalls": 1
+   },
+   "closet": {
+    "areaM2": 4.6,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   },
+   "hallway": {
+    "areaM2": 3.4,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   },
+   "entryway": {
+    "areaM2": 2.3,
+    "window": null,
+    "windowSize": "none",
+    "exteriorWalls": 0
+   }
+  }
+ }
+}

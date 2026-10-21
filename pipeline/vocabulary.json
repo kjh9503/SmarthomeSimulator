@@ -1,0 +1,1836 @@
+{
+ "_about": "Names the structured patterns may use. Generated from the simulator (smarthome-sim.html). Do not invent names outside this file except where a field says 'free text'.",
+ "houseTypes": {
+  "2room": {
+   "rooms": [
+    "room1",
+    "room2",
+    "living_room",
+    "kitchen",
+    "dining_room",
+    "bathroom",
+    "laundry",
+    "closet",
+    "entryway",
+    "balcony"
+   ],
+   "variants": [
+    "2room-A",
+    "2room-B",
+    "2room-C"
+   ]
+  },
+  "3room": {
+   "rooms": [
+    "room1",
+    "room2",
+    "room3",
+    "living_room",
+    "kitchen",
+    "dining_room",
+    "bathroom",
+    "laundry",
+    "closet",
+    "hallway",
+    "entryway",
+    "balcony"
+   ],
+   "variants": [
+    "3room-A",
+    "3room-B",
+    "3room-C"
+   ]
+  },
+  "4room": {
+   "rooms": [
+    "room1",
+    "room2",
+    "room3",
+    "room4",
+    "living_room",
+    "kitchen",
+    "dining_room",
+    "bathroom",
+    "laundry",
+    "closet",
+    "hallway",
+    "entryway",
+    "balcony"
+   ],
+   "variants": [
+    "4room-A",
+    "4room-B",
+    "4room-C"
+   ]
+  },
+  "_deviceIds": "A house has device '<room>.<deviceType>' for every deviceType whose rooms include a room of that house type (e.g. 3room has room1.lamp, kitchen.oven; 2room has no room3)."
+ },
+ "deviceTypes": {
+  "temperature_sensor": {
+   "label": "Temperature",
+   "rooms": [
+    "balcony",
+    "bathroom",
+    "closet",
+    "dining_room",
+    "entryway",
+    "hallway",
+    "kitchen",
+    "laundry",
+    "living_room",
+    "room1",
+    "room2",
+    "room3",
+    "room4"
+   ],
+   "capabilities": [
+    {
+     "capability": "temperatureMeasurement",
+     "attributes": [
+      {
+       "name": "temperature",
+       "type": "number",
+       "unit": "C"
+      }
+     ],
+     "commands": []
+    }
+   ]
+  },
+  "humidity_sensor": {
+   "label": "Humidity",
+   "rooms": [
+    "balcony",
+    "bathroom",
+    "closet",
+    "dining_room",
+    "hallway",
+    "kitchen",
+    "laundry",
+    "living_room",
+    "room1",
+    "room2",
+    "room3",
+    "room4"
+   ],
+   "capabilities": [
+    {
+     "capability": "relativeHumidityMeasurement",
+     "attributes": [
+      {
+       "name": "humidity",
+       "type": "integer",
+       "unit": "%",
+       "min": 0,
+       "max": 100
+      }
+     ],
+     "commands": []
+    }
+   ]
+  },
+  "light_sensor": {
+   "label": "Light level",
+   "rooms": [
+    "bathroom",
+    "closet",
+    "dining_room",
+    "entryway",
+    "hallway",
+    "kitchen",
+    "laundry",
+    "living_room",
+    "room1",
+    "room2",
+    "room3",
+    "room4"
+   ],
+   "capabilities": [
+    {
+     "capability": "illuminanceMeasurement",
+     "attributes": [
+      {
+       "name": "illuminance",
+       "type": "number",
+       "unit": "lux"
+      }
+     ],
+     "commands": []
+    }
+   ]
+  },
+  "occupancy_sensor": {
+   "label": "Occupancy",
+   "rooms": [
+    "balcony",
+    "bathroom",
+    "closet",
+    "dining_room",
+    "entryway",
+    "hallway",
+    "kitchen",
+    "laundry",
+    "living_room",
+    "room1",
+    "room2",
+    "room3",
+    "room4"
+   ],
+   "capabilities": [
+    {
+     "capability": "presenceSensor",
+     "attributes": [
+      {
+       "name": "presence",
+       "type": "enum",
+       "values": [
+        "present",
+        "not present"
+       ]
+      }
+     ],
+     "commands": []
+    }
+   ]
+  },
+  "air_quality_sensor": {
+   "label": "Air quality",
+   "rooms": [
+    "balcony",
+    "dining_room",
+    "entryway",
+    "hallway",
+    "kitchen",
+    "laundry",
+    "living_room",
+    "room1",
+    "room2",
+    "room3",
+    "room4"
+   ],
+   "capabilities": [
+    {
+     "capability": "fineDustSensor",
+     "attributes": [
+      {
+       "name": "fineDustLevel",
+       "type": "number",
+       "unit": "µg/m³"
+      }
+     ],
+     "commands": []
+    },
+    {
+     "capability": "carbonDioxideMeasurement",
+     "attributes": [
+      {
+       "name": "carbonDioxide",
+       "type": "number",
+       "unit": "ppm"
+      }
+     ],
+     "commands": []
+    }
+   ]
+  },
+  "noise_sensor": {
+   "label": "Noise",
+   "rooms": [
+    "balcony",
+    "bathroom",
+    "closet",
+    "dining_room",
+    "entryway",
+    "hallway",
+    "kitchen",
+    "laundry",
+    "living_room",
+    "room1",
+    "room2",
+    "room3",
+    "room4"
+   ],
+   "capabilities": [
+    {
+     "capability": "soundPressureLevel",
+     "attributes": [
+      {
+       "name": "soundPressureLevel",
+       "type": "number",
+       "unit": "dB"
+      }
+     ],
+     "commands": []
+    }
+   ]
+  },
+  "door_contact": {
+   "label": "Door contact",
+   "rooms": [
+    "balcony",
+    "entryway"
+   ],
+   "capabilities": [
+    {
+     "capability": "contactSensor",
+     "attributes": [
+      {
+       "name": "contact",
+       "type": "enum",
+       "values": [
+        "open",
+        "closed"
+       ]
+      }
+     ],
+     "commands": []
+    }
+   ]
+  },
+  "window_contact": {
+   "label": "Window contact",
+   "rooms": [
+    "living_room",
+    "room1",
+    "room2",
+    "room3",
+    "room4"
+   ],
+   "capabilities": [
+    {
+     "capability": "contactSensor",
+     "attributes": [
+      {
+       "name": "contact",
+       "type": "enum",
+       "values": [
+        "open",
+        "closed"
+       ]
+      }
+     ],
+     "commands": []
+    }
+   ]
+  },
+  "water_leak_sensor": {
+   "label": "Water leak",
+   "rooms": [
+    "bathroom",
+    "kitchen",
+    "laundry"
+   ],
+   "capabilities": [
+    {
+     "capability": "waterSensor",
+     "attributes": [
+      {
+       "name": "water",
+       "type": "enum",
+       "values": [
+        "dry",
+        "wet"
+       ]
+      }
+     ],
+     "commands": []
+    }
+   ]
+  },
+  "smoke_alarm": {
+   "label": "Smoke alarm",
+   "rooms": [
+    "kitchen"
+   ],
+   "capabilities": [
+    {
+     "capability": "smokeDetector",
+     "attributes": [
+      {
+       "name": "smoke",
+       "type": "enum",
+       "values": [
+        "clear",
+        "detected"
+       ]
+      }
+     ],
+     "commands": []
+    }
+   ]
+  },
+  "doorbell": {
+   "label": "Doorbell",
+   "rooms": [
+    "entryway"
+   ],
+   "capabilities": [
+    {
+     "capability": "button",
+     "attributes": [
+      {
+       "name": "button",
+       "type": "enum",
+       "values": [
+        "pushed"
+       ]
+      }
+     ],
+     "commands": []
+    }
+   ]
+  },
+  "wifi_router": {
+   "label": "Wi-Fi router",
+   "rooms": [
+    "living_room"
+   ],
+   "capabilities": [
+    {
+     "capability": "connectedDevices",
+     "attributes": [
+      {
+       "name": "connectedDevices",
+       "type": "integer"
+      }
+     ],
+     "commands": []
+    }
+   ]
+  },
+  "light": {
+   "label": "Light",
+   "rooms": [
+    "balcony",
+    "bathroom",
+    "closet",
+    "dining_room",
+    "entryway",
+    "hallway",
+    "kitchen",
+    "laundry",
+    "living_room",
+    "room1",
+    "room2",
+    "room3",
+    "room4"
+   ],
+   "capabilities": [
+    {
+     "capability": "switch",
+     "attributes": [
+      {
+       "name": "switch",
+       "type": "enum",
+       "values": [
+        "on",
+        "off"
+       ]
+      }
+     ],
+     "commands": [
+      {
+       "name": "on",
+       "args": []
+      },
+      {
+       "name": "off",
+       "args": []
+      }
+     ]
+    }
+   ]
+  },
+  "lamp": {
+   "label": "Lamp",
+   "rooms": [
+    "living_room",
+    "room1",
+    "room2",
+    "room3",
+    "room4"
+   ],
+   "capabilities": [
+    {
+     "capability": "switch",
+     "attributes": [
+      {
+       "name": "switch",
+       "type": "enum",
+       "values": [
+        "on",
+        "off"
+       ]
+      }
+     ],
+     "commands": [
+      {
+       "name": "on",
+       "args": []
+      },
+      {
+       "name": "off",
+       "args": []
+      }
+     ]
+    },
+    {
+     "capability": "switchLevel",
+     "attributes": [
+      {
+       "name": "level",
+       "type": "integer",
+       "min": 0,
+       "max": 100
+      }
+     ],
+     "commands": [
+      {
+       "name": "setLevel",
+       "args": [
+        "level"
+       ]
+      }
+     ]
+    },
+    {
+     "capability": "colorTemperature",
+     "attributes": [
+      {
+       "name": "colorTemperature",
+       "type": "integer",
+       "unit": "K",
+       "min": 2700,
+       "max": 6500
+      }
+     ],
+     "commands": [
+      {
+       "name": "setColorTemperature",
+       "args": [
+        "K"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "heating_cooling_unit": {
+   "label": "Heating/cooling",
+   "rooms": [
+    "dining_room",
+    "hallway",
+    "kitchen",
+    "living_room",
+    "room1",
+    "room2",
+    "room3",
+    "room4"
+   ],
+   "capabilities": [
+    {
+     "capability": "thermostatMode",
+     "attributes": [
+      {
+       "name": "thermostatMode",
+       "type": "enum",
+       "values": [
+        "off",
+        "cool",
+        "heat"
+       ]
+      }
+     ],
+     "commands": [
+      {
+       "name": "setThermostatMode",
+       "args": [
+        "mode"
+       ]
+      }
+     ]
+    },
+    {
+     "capability": "thermostatCoolingSetpoint",
+     "attributes": [
+      {
+       "name": "coolingSetpoint",
+       "type": "number",
+       "unit": "C"
+      }
+     ],
+     "commands": [
+      {
+       "name": "setCoolingSetpoint",
+       "args": [
+        "C"
+       ]
+      }
+     ]
+    },
+    {
+     "capability": "thermostatHeatingSetpoint",
+     "attributes": [
+      {
+       "name": "heatingSetpoint",
+       "type": "number",
+       "unit": "C"
+      }
+     ],
+     "commands": [
+      {
+       "name": "setHeatingSetpoint",
+       "args": [
+        "C"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "humidifier": {
+   "label": "Humidifier",
+   "rooms": [
+    "room1",
+    "room2",
+    "room3",
+    "room4"
+   ],
+   "capabilities": [
+    {
+     "capability": "switch",
+     "attributes": [
+      {
+       "name": "switch",
+       "type": "enum",
+       "values": [
+        "on",
+        "off"
+       ]
+      }
+     ],
+     "commands": [
+      {
+       "name": "on",
+       "args": []
+      },
+      {
+       "name": "off",
+       "args": []
+      }
+     ]
+    },
+    {
+     "capability": "humiditySetpoint",
+     "attributes": [
+      {
+       "name": "humiditySetpoint",
+       "type": "integer",
+       "unit": "%",
+       "min": 0,
+       "max": 100
+      }
+     ],
+     "commands": [
+      {
+       "name": "setHumiditySetpoint",
+       "args": [
+        "%"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "air_purifier": {
+   "label": "Air purifier",
+   "rooms": [
+    "living_room"
+   ],
+   "capabilities": [
+    {
+     "capability": "fanSpeedPercent",
+     "attributes": [
+      {
+       "name": "percent",
+       "type": "integer",
+       "min": 0,
+       "max": 100
+      }
+     ],
+     "commands": [
+      {
+       "name": "setPercent",
+       "args": [
+        "percent"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "curtain": {
+   "label": "Curtain",
+   "rooms": [
+    "living_room"
+   ],
+   "capabilities": [
+    {
+     "capability": "windowShade",
+     "attributes": [
+      {
+       "name": "windowShade",
+       "type": "enum",
+       "values": [
+        "open",
+        "closed",
+        "opening",
+        "closing",
+        "partially_open",
+        "unknown"
+       ]
+      }
+     ],
+     "commands": [
+      {
+       "name": "open",
+       "args": []
+      },
+      {
+       "name": "close",
+       "args": []
+      },
+      {
+       "name": "pause",
+       "args": []
+      }
+     ]
+    }
+   ]
+  },
+  "tv": {
+   "label": "TV",
+   "rooms": [
+    "living_room"
+   ],
+   "capabilities": [
+    {
+     "capability": "switch",
+     "attributes": [
+      {
+       "name": "switch",
+       "type": "enum",
+       "values": [
+        "on",
+        "off"
+       ]
+      }
+     ],
+     "commands": [
+      {
+       "name": "on",
+       "args": []
+      },
+      {
+       "name": "off",
+       "args": []
+      }
+     ]
+    },
+    {
+     "capability": "mediaPlayback",
+     "attributes": [
+      {
+       "name": "playbackStatus",
+       "type": "enum",
+       "values": [
+        "playing",
+        "paused",
+        "stopped"
+       ]
+      }
+     ],
+     "commands": [
+      {
+       "name": "play",
+       "args": []
+      },
+      {
+       "name": "pause",
+       "args": []
+      },
+      {
+       "name": "stop",
+       "args": []
+      }
+     ]
+    }
+   ]
+  },
+  "speaker": {
+   "label": "Speaker",
+   "rooms": [
+    "living_room",
+    "room1",
+    "room2"
+   ],
+   "capabilities": [
+    {
+     "capability": "connection",
+     "attributes": [
+      {
+       "name": "connection",
+       "type": "enum",
+       "values": [
+        "connected",
+        "disconnected"
+       ]
+      }
+     ],
+     "commands": []
+    },
+    {
+     "capability": "mediaPlayback",
+     "attributes": [
+      {
+       "name": "playbackStatus",
+       "type": "enum",
+       "values": [
+        "playing",
+        "paused",
+        "stopped"
+       ]
+      }
+     ],
+     "commands": [
+      {
+       "name": "play",
+       "args": []
+      },
+      {
+       "name": "stop",
+       "args": []
+      }
+     ]
+    },
+    {
+     "capability": "audioVolume",
+     "attributes": [
+      {
+       "name": "volume",
+       "type": "integer",
+       "min": 0,
+       "max": 100
+      }
+     ],
+     "commands": [
+      {
+       "name": "setVolume",
+       "args": [
+        "volume"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "robot_vacuum": {
+   "label": "Robot vacuum",
+   "rooms": [
+    "living_room"
+   ],
+   "capabilities": [
+    {
+     "capability": "robotCleanerOperatingState",
+     "attributes": [
+      {
+       "name": "operatingState",
+       "type": "enum",
+       "values": [
+        "docked",
+        "running",
+        "seekingCharger",
+        "charging",
+        "paused",
+        "stopped"
+       ]
+      }
+     ],
+     "commands": [
+      {
+       "name": "start",
+       "args": []
+      },
+      {
+       "name": "pause",
+       "args": []
+      },
+      {
+       "name": "goHome",
+       "args": []
+      }
+     ]
+    },
+    {
+     "capability": "battery",
+     "attributes": [
+      {
+       "name": "battery",
+       "type": "integer",
+       "unit": "%",
+       "min": 0,
+       "max": 100
+      }
+     ],
+     "commands": []
+    }
+   ]
+  },
+  "dishwasher": {
+   "label": "Dishwasher",
+   "rooms": [
+    "kitchen"
+   ],
+   "capabilities": [
+    {
+     "capability": "cycleState",
+     "attributes": [
+      {
+       "name": "cycleState",
+       "type": "enum",
+       "values": [
+        "idle",
+        "running",
+        "finished"
+       ]
+      }
+     ],
+     "commands": [
+      {
+       "name": "start",
+       "args": []
+      },
+      {
+       "name": "startHeatedDry",
+       "args": []
+      }
+     ]
+    },
+    {
+     "capability": "remainingTime",
+     "attributes": [
+      {
+       "name": "remainingTime",
+       "type": "integer",
+       "unit": "min"
+      }
+     ],
+     "commands": []
+    },
+    {
+     "capability": "contactSensor",
+     "attributes": [
+      {
+       "name": "contact",
+       "type": "enum",
+       "values": [
+        "open",
+        "closed"
+       ]
+      }
+     ],
+     "commands": []
+    }
+   ]
+  },
+  "oven": {
+   "label": "Oven",
+   "rooms": [
+    "kitchen"
+   ],
+   "capabilities": [
+    {
+     "capability": "mode",
+     "attributes": [
+      {
+       "name": "mode",
+       "type": "enum",
+       "values": [
+        "off",
+        "bake",
+        "convection"
+       ]
+      }
+     ],
+     "commands": [
+      {
+       "name": "setMode",
+       "args": [
+        "mode"
+       ]
+      }
+     ]
+    },
+    {
+     "capability": "temperatureSetpoint",
+     "attributes": [
+      {
+       "name": "temperatureSetpoint",
+       "type": "number",
+       "unit": "C"
+      }
+     ],
+     "commands": [
+      {
+       "name": "setTemperatureSetpoint",
+       "args": [
+        "C"
+       ]
+      }
+     ]
+    },
+    {
+     "capability": "temperatureMeasurement",
+     "attributes": [
+      {
+       "name": "temperature",
+       "type": "number",
+       "unit": "C"
+      }
+     ],
+     "commands": []
+    },
+    {
+     "capability": "contactSensor",
+     "attributes": [
+      {
+       "name": "contact",
+       "type": "enum",
+       "values": [
+        "open",
+        "closed"
+       ]
+      }
+     ],
+     "commands": []
+    },
+    {
+     "capability": "preheat",
+     "attributes": [
+      {
+       "name": "preheat",
+       "type": "enum",
+       "values": [
+        "idle",
+        "preheating",
+        "ready"
+       ]
+      }
+     ],
+     "commands": []
+    }
+   ]
+  },
+  "stove": {
+   "label": "Stove",
+   "rooms": [
+    "kitchen"
+   ],
+   "capabilities": [
+    {
+     "capability": "switch",
+     "attributes": [
+      {
+       "name": "switch",
+       "type": "enum",
+       "values": [
+        "on",
+        "off"
+       ]
+      }
+     ],
+     "commands": [
+      {
+       "name": "on",
+       "args": []
+      },
+      {
+       "name": "off",
+       "args": []
+      }
+     ]
+    }
+   ]
+  },
+  "washer": {
+   "label": "Washer",
+   "rooms": [
+    "laundry"
+   ],
+   "capabilities": [
+    {
+     "capability": "cycleState",
+     "attributes": [
+      {
+       "name": "cycleState",
+       "type": "enum",
+       "values": [
+        "idle",
+        "running",
+        "finished"
+       ]
+      }
+     ],
+     "commands": [
+      {
+       "name": "start",
+       "args": [
+        "mode"
+       ]
+      }
+     ]
+    },
+    {
+     "capability": "mode",
+     "attributes": [
+      {
+       "name": "mode",
+       "type": "enum",
+       "values": [
+        "normal",
+        "quick",
+        "bedding"
+       ]
+      }
+     ],
+     "commands": []
+    },
+    {
+     "capability": "remainingTime",
+     "attributes": [
+      {
+       "name": "remainingTime",
+       "type": "integer",
+       "unit": "min"
+      }
+     ],
+     "commands": []
+    }
+   ],
+   "modes": [
+    "normal",
+    "quick",
+    "bedding"
+   ]
+  },
+  "dryer": {
+   "label": "Dryer",
+   "rooms": [
+    "laundry"
+   ],
+   "capabilities": [
+    {
+     "capability": "cycleState",
+     "attributes": [
+      {
+       "name": "cycleState",
+       "type": "enum",
+       "values": [
+        "idle",
+        "running",
+        "finished"
+       ]
+      }
+     ],
+     "commands": [
+      {
+       "name": "start",
+       "args": [
+        "mode",
+        "minutes"
+       ]
+      }
+     ]
+    },
+    {
+     "capability": "mode",
+     "attributes": [
+      {
+       "name": "mode",
+       "type": "enum",
+       "values": [
+        "normal",
+        "delicate",
+        "timeDry"
+       ]
+      }
+     ],
+     "commands": []
+    },
+    {
+     "capability": "remainingTime",
+     "attributes": [
+      {
+       "name": "remainingTime",
+       "type": "integer",
+       "unit": "min"
+      }
+     ],
+     "commands": []
+    },
+    {
+     "capability": "errorCode",
+     "attributes": [
+      {
+       "name": "errorCode",
+       "type": "string"
+      }
+     ],
+     "commands": []
+    }
+   ]
+  },
+  "lock": {
+   "label": "Lock",
+   "rooms": [
+    "entryway"
+   ],
+   "capabilities": [
+    {
+     "capability": "lock",
+     "attributes": [
+      {
+       "name": "lock",
+       "type": "enum",
+       "values": [
+        "locked",
+        "unlocked"
+       ]
+      }
+     ],
+     "commands": [
+      {
+       "name": "lock",
+       "args": []
+      },
+      {
+       "name": "unlock",
+       "args": []
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "roomLabels": {
+  "room1": "Room 1",
+  "room2": "Room 2",
+  "room3": "Room 3",
+  "room4": "Room 4",
+  "living_room": "Living room",
+  "kitchen": "Kitchen",
+  "dining_room": "Dining room",
+  "bathroom": "Bathroom",
+  "laundry": "Laundry",
+  "closet": "Closet",
+  "hallway": "Hallway",
+  "entryway": "Entryway",
+  "balcony": "Balcony"
+ },
+ "places": {
+  "home": {
+   "label": "Home",
+   "category": "Home",
+   "wifi": "Home-WiFi"
+  },
+  "office": {
+   "label": "Office",
+   "category": "Work and study",
+   "wifi": "Office-WiFi"
+  },
+  "coworking": {
+   "label": "Coworking space",
+   "category": "Work and study",
+   "wifi": "Cowork-Guest"
+  },
+  "campus": {
+   "label": "Campus",
+   "category": "Work and study",
+   "wifi": "eduroam"
+  },
+  "library": {
+   "label": "Library",
+   "category": "Work and study",
+   "wifi": "Library-Free"
+  },
+  "station": {
+   "label": "Train station",
+   "category": "Transport",
+   "wifi": null
+  },
+  "subway_station": {
+   "label": "Subway station",
+   "category": "Transport",
+   "wifi": null
+  },
+  "bus_stop": {
+   "label": "Bus stop",
+   "category": "Transport",
+   "wifi": null
+  },
+  "airport": {
+   "label": "Airport",
+   "category": "Transport",
+   "wifi": "Airport_Free_WiFi"
+  },
+  "gas_station": {
+   "label": "Gas station",
+   "category": "Transport",
+   "wifi": null
+  },
+  "parking_lot": {
+   "label": "Parking lot",
+   "category": "Transport",
+   "wifi": null
+  },
+  "cafe": {
+   "label": "Cafe",
+   "category": "Food and drink",
+   "wifi": "Cafe-Guest"
+  },
+  "restaurant": {
+   "label": "Restaurant",
+   "category": "Food and drink",
+   "wifi": null
+  },
+  "bakery": {
+   "label": "Bakery",
+   "category": "Food and drink",
+   "wifi": null
+  },
+  "bar": {
+   "label": "Bar",
+   "category": "Food and drink",
+   "wifi": null
+  },
+  "market": {
+   "label": "Market",
+   "category": "Shopping",
+   "wifi": null
+  },
+  "grocery_store": {
+   "label": "Grocery store",
+   "category": "Shopping",
+   "wifi": null
+  },
+  "convenience_store": {
+   "label": "Convenience store",
+   "category": "Shopping",
+   "wifi": null
+  },
+  "mall": {
+   "label": "Shopping mall",
+   "category": "Shopping",
+   "wifi": "Mall-Free-WiFi"
+  },
+  "department_store": {
+   "label": "Department store",
+   "category": "Shopping",
+   "wifi": "Store-Guest"
+  },
+  "electronics_store": {
+   "label": "Electronics store",
+   "category": "Shopping",
+   "wifi": null
+  },
+  "gym": {
+   "label": "Gym",
+   "category": "Leisure and sport",
+   "wifi": null
+  },
+  "swimming_pool": {
+   "label": "Swimming pool",
+   "category": "Leisure and sport",
+   "wifi": null
+  },
+  "park": {
+   "label": "Park",
+   "category": "Leisure and sport",
+   "wifi": null
+  },
+  "river_park": {
+   "label": "Riverside park",
+   "category": "Leisure and sport",
+   "wifi": null
+  },
+  "hiking_trail": {
+   "label": "Hiking trail",
+   "category": "Leisure and sport",
+   "wifi": null
+  },
+  "cinema": {
+   "label": "Cinema",
+   "category": "Leisure and sport",
+   "wifi": null
+  },
+  "museum": {
+   "label": "Museum",
+   "category": "Leisure and sport",
+   "wifi": "Museum-Free"
+  },
+  "stadium": {
+   "label": "Stadium",
+   "category": "Leisure and sport",
+   "wifi": null
+  },
+  "place_of_worship": {
+   "label": "Place of worship",
+   "category": "Leisure and sport",
+   "wifi": null
+  },
+  "hospital": {
+   "label": "Hospital",
+   "category": "Health and services",
+   "wifi": "Hospital-Guest"
+  },
+  "clinic": {
+   "label": "Clinic",
+   "category": "Health and services",
+   "wifi": null
+  },
+  "dentist": {
+   "label": "Dentist",
+   "category": "Health and services",
+   "wifi": null
+  },
+  "pharmacy": {
+   "label": "Pharmacy",
+   "category": "Health and services",
+   "wifi": null
+  },
+  "bank": {
+   "label": "Bank",
+   "category": "Health and services",
+   "wifi": null
+  },
+  "post_office": {
+   "label": "Post office",
+   "category": "Health and services",
+   "wifi": null
+  },
+  "hair_salon": {
+   "label": "Hair salon",
+   "category": "Health and services",
+   "wifi": null
+  },
+  "government_office": {
+   "label": "Government office",
+   "category": "Health and services",
+   "wifi": null
+  },
+  "friend_home": {
+   "label": "Friend's home",
+   "category": "People and stays",
+   "wifi": "Friend-WiFi"
+  },
+  "parents_home": {
+   "label": "Parents' home",
+   "category": "People and stays",
+   "wifi": "Parents-WiFi"
+  },
+  "hotel": {
+   "label": "Hotel",
+   "category": "People and stays",
+   "wifi": "Hotel-Guest"
+  }
+ },
+ "travelModes": {
+  "walk": {
+   "rideActivity": "WALKING",
+   "drives": false,
+   "bluetooth": null
+  },
+  "bicycle": {
+   "rideActivity": "ON_BICYCLE",
+   "drives": false,
+   "bluetooth": null
+  },
+  "scooter": {
+   "rideActivity": "IN_VEHICLE",
+   "drives": false,
+   "bluetooth": null
+  },
+  "motorcycle": {
+   "rideActivity": "IN_VEHICLE",
+   "drives": true,
+   "bluetooth": null
+  },
+  "car": {
+   "rideActivity": "IN_VEHICLE",
+   "drives": true,
+   "bluetooth": "Car Audio"
+  },
+  "car_passenger": {
+   "rideActivity": "IN_VEHICLE",
+   "drives": false,
+   "bluetooth": null
+  },
+  "taxi": {
+   "rideActivity": "IN_VEHICLE",
+   "drives": false,
+   "bluetooth": null
+  },
+  "bus": {
+   "rideActivity": "IN_VEHICLE",
+   "drives": false,
+   "bluetooth": null
+  },
+  "subway": {
+   "rideActivity": "IN_VEHICLE",
+   "drives": false,
+   "bluetooth": null
+  },
+  "train": {
+   "rideActivity": "IN_VEHICLE",
+   "drives": false,
+   "bluetooth": null
+  },
+  "airport_rail": {
+   "rideActivity": "IN_VEHICLE",
+   "drives": false,
+   "bluetooth": null
+  }
+ },
+ "activities": [
+  "IN_VEHICLE",
+  "ON_BICYCLE",
+  "STILL",
+  "WALKING",
+  "RUNNING"
+ ],
+ "exercises": [
+  "Running",
+  "Walking",
+  "Cycling"
+ ],
+ "healthMeasures": [
+  "WEIGHT",
+  "BODY_FAT",
+  "BLOOD_PRESSURE",
+  "BLOOD_GLUCOSE",
+  "BODY_TEMPERATURE",
+  "OXYGEN_SATURATION",
+  "RESPIRATORY_RATE",
+  "RESTING_HEART_RATE",
+  "VO2_MAX",
+  "HYDRATION"
+ ],
+ "healthRecords": {
+  "HOURLY": [
+   "steps",
+   "meters",
+   "kilocalories",
+   "averageBpm",
+   "minBpm",
+   "maxBpm"
+  ],
+  "SLEEP": [
+   "durationMinutes",
+   "startTime",
+   "endTime"
+  ],
+  "EXERCISE": [
+   "title",
+   "durationMinutes",
+   "startTime",
+   "endTime"
+  ]
+ },
+ "apps": {
+  "com.kakao.talk": "KakaoTalk",
+  "com.android.chrome": "Chrome",
+  "com.google.android.youtube": "YouTube",
+  "com.spotify.music": "Spotify",
+  "com.instagram.android": "Instagram",
+  "com.nhn.android.nmap": "Naver Map",
+  "com.samsung.android.oneconnect": "SmartThings"
+ },
+ "bluetoothDevices": [
+  "Galaxy Buds",
+  "Car Audio"
+ ],
+ "weather": {
+  "states": [
+   "clear",
+   "cloudy",
+   "rain",
+   "snow"
+  ],
+  "outdoorVariables": {
+   "temperature": "C",
+   "humidity": "%",
+   "pm25": "µg/m³",
+   "windSpeed": "m/s",
+   "precipitation": "mm/h",
+   "daylight": "lux"
+  }
+ },
+ "smartThingsAlerts": [
+  {
+   "category": "doorbell",
+   "device": "doorbell",
+   "attribute": "button",
+   "severity": "info"
+  },
+  {
+   "category": "smoke",
+   "device": "smoke_alarm",
+   "attribute": "smoke",
+   "severity": "critical"
+  },
+  {
+   "category": "water_leak",
+   "device": "water_leak_sensor",
+   "attribute": "water",
+   "severity": "critical"
+  },
+  {
+   "category": "cycle_finished",
+   "device": "any device with cycleState",
+   "attribute": "cycleState",
+   "severity": "info"
+  },
+  {
+   "category": "cleaning_finished",
+   "device": "robot_vacuum",
+   "attribute": "operatingState",
+   "severity": "info"
+  },
+  {
+   "category": "preheat_done",
+   "device": "oven",
+   "attribute": "preheat",
+   "severity": "info"
+  },
+  {
+   "category": "device_error",
+   "device": "any device with errorCode",
+   "attribute": "errorCode",
+   "severity": "warning"
+  }
+ ],
+ "phoneEventTypes": [
+  "NOTIFICATION",
+  "APP_USAGE",
+  "HEALTH",
+  "SMARTTHINGS",
+  "DEVICE_STATE",
+  "CONNECTIVITY",
+  "MEDIA",
+  "APP_LIFECYCLE",
+  "DATA_USAGE",
+  "ACTIVITY",
+  "TELEPHONY",
+  "CALENDAR",
+  "CLIPBOARD",
+  "MEDIA_CAPTURE"
+ ],
+ "calendarActions": [
+  "ADD",
+  "UPDATE",
+  "DELETE",
+  "REMINDER"
+ ],
+ "homeRoomRoles": {
+  "_about": "A pattern may name a room by role (e.g. study_room, bedroom). Each structured pattern maps every role it uses to a real room id of the persona's house type.",
+  "examples": [
+   "bedroom",
+   "study_room",
+   "kids_room",
+   "guest_room",
+   "home_office"
+  ]
+ },
+ "away": "any place other than home (including being on the way)",
+ "personActions": {
+  "_about": "Everything the person can do. 'do' is the action name used in structured patterns. Phone actions are refused while asleep or driving; hand actions at home need the person in that room.",
+  "home.command": {
+   "args": {
+    "device": "device id or <role>.<deviceType>",
+    "capability": "",
+    "command": "",
+    "args": "list",
+    "channel": "physical | mobile_app"
+   },
+   "note": "physical = at the device (person must be in that room); mobile_app = from the phone, anywhere"
+  },
+  "home.record": {
+   "args": {
+    "device": "",
+    "capability": "",
+    "attribute": "",
+    "value": ""
+   },
+   "note": "hand-made states: window_contact / door_contact open or closed (person must be in that room)"
+  },
+  "person.travel": {
+   "args": {
+    "to": "place",
+    "mode": "travel mode"
+   },
+   "note": "takes time; leaving and arriving home also logs the front door, lock and occupancy"
+  },
+  "person.moveRoom": {
+   "args": {
+    "room": "room id or role"
+   },
+   "note": "only at home"
+  },
+  "phone.screen": {
+   "args": {
+    "on": "true|false"
+   }
+  },
+  "phone.openApp": {
+   "args": {
+    "package": "app package"
+   }
+  },
+  "phone.closeApp": {
+   "args": {}
+  },
+  "phone.install": {
+   "args": {
+    "package": "",
+    "label": ""
+   }
+  },
+  "phone.uninstall": {
+   "args": {
+    "package": ""
+   }
+  },
+  "phone.power": {
+   "args": {
+    "connected": "true|false"
+   },
+   "note": "charger"
+  },
+  "phone.btConnect": {
+   "args": {
+    "name": "bluetooth device"
+   }
+  },
+  "phone.btDisconnect": {
+   "args": {
+    "name": ""
+   }
+  },
+  "phone.media": {
+   "args": {
+    "state": "PLAYING | PAUSED | STOPPED",
+    "title": "free text",
+    "artist": "free text"
+   },
+   "note": "music on the phone (Spotify)"
+  },
+  "phone.call": {
+   "args": {
+    "state": "OFFHOOK | IDLE"
+   },
+   "note": "answer / dial, hang up"
+  },
+  "phone.sms": {
+   "args": {
+    "direction": "OUTGOING"
+   }
+  },
+  "phone.calendarAdd": {
+   "args": {
+    "title": "free text",
+    "begin": "time",
+    "durationMinutes": "number",
+    "location": "free text"
+   }
+  },
+  "phone.calendarUpdate": {
+   "args": {
+    "titleContains": "",
+    "shiftMinutes": "number"
+   }
+  },
+  "phone.calendarDelete": {
+   "args": {
+    "titleContains": ""
+   }
+  },
+  "phone.sleep": {
+   "args": {}
+  },
+  "phone.wake": {
+   "args": {}
+  },
+  "phone.setActivity": {
+   "args": {
+    "activity": "WALKING | RUNNING | ON_BICYCLE | STILL"
+   },
+   "note": "not while travelling; trips set activity themselves"
+  },
+  "phone.exerciseStart": {
+   "args": {
+    "kind": "exercise"
+   }
+  },
+  "phone.exerciseEnd": {
+   "args": {}
+  },
+  "phone.measure": {
+   "args": {
+    "source": "health measure",
+    "value": "number (BLOOD_PRESSURE: '120/80')"
+   }
+  },
+  "phone.photo": {
+   "args": {}
+  },
+  "phone.screenshot": {
+   "args": {
+    "ocrText": "free text"
+   }
+  },
+  "phone.copyClipboard": {
+   "args": {
+    "label": "free text"
+   }
+  },
+  "phone.appNotice": {
+   "args": {
+    "package": "app package",
+    "title": "free text",
+    "text": "free text"
+   },
+   "note": "a notification the person's OWN action makes an app show (navigation running, timer running, reminder set). Use with phone.openApp to stand in for in-app actions the phone schema has no type for (navigation, checklist, timer)."
+  },
+  "wait": {
+   "args": {
+    "minutes": "number or {min,max}"
+   }
+  }
+ },
+ "extraApps": {
+  "_about": "Apps not installed in the simulator yet that patterns may use; the agent installs them before the year starts.",
+  "com.sec.android.app.clockpackage": "Clock (alarm, timer)",
+  "com.samsung.android.app.notes": "Samsung Notes (memo, checklist)",
+  "com.samsung.android.app.reminder": "Reminder (to-do, checklist)",
+  "com.sec.android.daemonapp": "Weather",
+  "com.kakao.taxi": "Kakao T (taxi)"
+ },
+ "phoneSignals": {
+  "_about": "Things happening TO the phone that conditions or triggers may watch (generated by the environment or other people, not by the person).",
+  "NOTIFICATION": "incoming message or app notification (package, title, text)",
+  "TELEPHONY": "call RINGING / missed, SMS INCOMING",
+  "CALENDAR REMINDER": "an event starts (at its start time)",
+  "SMARTTHINGS notification": "home device alert (see smartThingsAlerts)",
+  "HEALTH HOURLY": "hourly steps / distance / kcal / heart rate"
+ }
+}

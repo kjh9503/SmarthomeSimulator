@@ -1,0 +1,122 @@
+[
+  {
+    "input": {
+      "personaId": "900",
+      "houseType": "3room",
+      "row": "900,ex1_bedroom_cool_26,temporal_numeric,\"On summer weeknights at Home between 22:30 and 23:30, if the bedroom temperature is 26 C or higher and the air conditioner is off, the user turns on the bedroom air conditioner in cooling mode at 25 C from the phone.\","
+    },
+    "output": {
+      "personaId": "900",
+      "patternId": "ex1_bedroom_cool_26",
+      "patternType": "temporal_numeric",
+      "sourceText": "On summer weeknights at Home between 22:30 and 23:30, if the bedroom temperature is 26 C or higher and the air conditioner is off, the user turns on the bedroom air conditioner in cooling mode at 25 C from the phone.",
+      "summary": "Summer weeknights 22:30-23:30 at home, bedroom >= 26 C and AC off -> cool the bedroom to 25 C from the phone.",
+      "houseType": "3room",
+      "roomRoles": { "bedroom": "room1" },
+      "trigger": { "kind": "time_window", "window": { "from": "22:30", "to": "23:30" }, "days": "weekdays", "months": [6, 7, 8, 9] },
+      "conditions": [
+        { "kind": "place", "op": "is", "place": "home" },
+        { "kind": "device", "device": "bedroom.temperature_sensor", "capability": "temperatureMeasurement", "attribute": "temperature", "op": ">=", "value": 26 },
+        { "kind": "device", "device": "bedroom.heating_cooling_unit", "capability": "thermostatMode", "attribute": "thermostatMode", "op": "==", "value": "off" }
+      ],
+      "actions": [
+        { "do": "home.command", "args": { "device": "bedroom.heating_cooling_unit", "capability": "thermostatCoolingSetpoint", "command": "setCoolingSetpoint", "args": [25], "channel": "mobile_app" } },
+        { "do": "home.command", "args": { "device": "bedroom.heating_cooling_unit", "capability": "thermostatMode", "command": "setThermostatMode", "args": ["cool"], "channel": "mobile_app" } }
+      ],
+      "followProbability": 0.85,
+      "maxPerDay": 1,
+      "shift": null,
+      "prerequisites": [],
+      "approximations": [
+        { "text": "bedroom", "mappedTo": "roomRoles.bedroom = room1" },
+        { "text": "air conditioner", "mappedTo": "heating_cooling_unit (thermostatMode cool)" },
+        { "text": "summer", "mappedTo": "months 6-9" }
+      ]
+    }
+  },
+  {
+    "input": {
+      "personaId": "900",
+      "houseType": "3room",
+      "row": "900,ex2_rain_taxi_home,conditional_logic,\"If it is raining when the user is ready to leave the Office after a work shift on a weekday, the user books a taxi with the taxi app and rides home by taxi instead of the subway.\","
+    },
+    "output": {
+      "personaId": "900",
+      "patternId": "ex2_rain_taxi_home",
+      "patternType": "conditional_logic",
+      "sourceText": "If it is raining when the user is ready to leave the Office after a work shift on a weekday, the user books a taxi with the taxi app and rides home by taxi instead of the subway.",
+      "summary": "Weekday, at office after the work shift, raining -> book a taxi in Kakao T and ride home by taxi.",
+      "houseType": "3room",
+      "roomRoles": {},
+      "trigger": { "kind": "event", "event": { "source": "phone", "type": "CALENDAR", "action": "REMINDER", "titleContains": "Leave office" } },
+      "conditions": [
+        { "kind": "day", "days": "weekdays" },
+        { "kind": "place", "op": "is", "place": "office" },
+        { "kind": "weather", "op": "==", "value": "rain" }
+      ],
+      "actions": [
+        { "do": "phone.openApp", "args": { "package": "com.kakao.taxi" } },
+        { "do": "phone.appNotice", "args": { "package": "com.kakao.taxi", "title": "Kakao T", "text": "Your taxi is on the way" } },
+        { "do": "wait", "args": { "minutes": { "min": 3, "max": 8 } } },
+        { "do": "person.travel", "args": { "to": "home", "mode": "taxi" } }
+      ],
+      "followProbability": 0.8,
+      "maxPerDay": 1,
+      "shift": null,
+      "prerequisites": [
+        { "kind": "presence", "description": "Weekday work at the office, going by subway in the morning.", "spec": { "days": "weekdays", "start": { "from": "08:00", "to": "08:30" }, "durationMinutes": { "min": 540, "max": 600 }, "place": "office", "travelMode": "subway", "probability": 0.95 } },
+        { "kind": "calendar", "description": "A daily 'Leave office' reminder at the end of the work shift; without rain the user goes home by subway.", "spec": { "days": "weekdays", "start": { "from": "18:00", "to": "18:30" }, "durationMinutes": 5, "title": "Leave office", "probability": 0.95,
+          "action": { "do": "person.travel", "args": { "to": "home", "mode": "subway" } } } }
+      ],
+      "approximations": [
+        { "text": "ready to leave the Office after a work shift", "mappedTo": "CALENDAR REMINDER of a daily 'Leave office' event (prerequisite)" },
+        { "text": "books a taxi with the taxi app", "mappedTo": "phone.openApp com.kakao.taxi + phone.appNotice (no booking type in the phone schema)" },
+        { "text": "instead of the subway", "mappedTo": "prerequisite: the default way home is person.travel by subway" }
+      ]
+    }
+  },
+  {
+    "input": {
+      "personaId": "900",
+      "houseType": "3room",
+      "row": "900,ex3_morning_news_speaker,preference_shift,\"On mornings at Home between 07:00 and 08:00, the user used to play the news on the living-room TV; from spring on, the user plays it on the living-room speaker instead.\","
+    },
+    "output": {
+      "personaId": "900",
+      "patternId": "ex3_morning_news_speaker",
+      "patternType": "preference_shift",
+      "sourceText": "On mornings at Home between 07:00 and 08:00, the user used to play the news on the living-room TV; from spring on, the user plays it on the living-room speaker instead.",
+      "summary": "Mornings 07:00-08:00 at home: news on the living-room TV, shifting in spring to the living-room speaker.",
+      "houseType": "3room",
+      "roomRoles": {},
+      "trigger": { "kind": "time_window", "window": { "from": "07:00", "to": "08:00" }, "days": "all" },
+      "conditions": [
+        { "kind": "place", "op": "is", "place": "home" },
+        { "kind": "phone_state", "field": "asleep", "op": "==", "value": false }
+      ],
+      "actions": [
+        { "do": "person.moveRoom", "args": { "room": "living_room" } },
+        { "do": "home.command", "args": { "device": "living_room.speaker", "capability": "mediaPlayback", "command": "play", "args": [], "channel": "physical" },
+          "revert": { "afterMinutes": { "min": 15, "max": 40 }, "action": { "do": "home.command", "args": { "device": "living_room.speaker", "capability": "mediaPlayback", "command": "stop", "args": [], "channel": "mobile_app" } } } }
+      ],
+      "followProbability": 0.85,
+      "maxPerDay": 1,
+      "shift": {
+        "before": [
+          { "do": "person.moveRoom", "args": { "room": "living_room" } },
+          { "do": "home.command", "args": { "device": "living_room.tv", "capability": "switch", "command": "on", "args": [], "channel": "physical" },
+            "revert": { "afterMinutes": { "min": 15, "max": 40 }, "action": { "do": "home.command", "args": { "device": "living_room.tv", "capability": "switch", "command": "off", "args": [], "channel": "mobile_app" } } } },
+          { "do": "home.command", "args": { "device": "living_room.tv", "capability": "mediaPlayback", "command": "play", "args": [], "channel": "physical" } }
+        ],
+        "at": { "monthDay": "03-01" },
+        "transitionDays": 21
+      },
+      "prerequisites": [],
+      "approximations": [
+        { "text": "play the news", "mappedTo": "mediaPlayback play (content is not modelled)" },
+        { "text": "from spring on", "mappedTo": "shift at 03-01 over 21 days" },
+        { "text": "turning it off afterwards (implied)", "mappedTo": "revert after 15-40 minutes from the phone app" }
+      ]
+    }
+  }
+]

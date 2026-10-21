@@ -1,0 +1,7 @@
+out/
+__pycache__/
+*.pyc
+pipeline/requests/
+pipeline/rewrite/requests/
+pipeline/rewrite/replies/
+pipeline/structured/

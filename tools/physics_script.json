@@ -1,0 +1,11 @@
+[[480, "set", "living_room.window_contact", "contactSensor", "contact", "open"], [540, "set", "living_room.window_contact", "contactSensor", "contact", "closed"],
+ [600, "move", "kitchen"], [1080, "run", "kitchen.stove", "switch", "on"], [1110, "run", "kitchen.stove", "switch", "off"],
+ [1200, "move", "living_room"], [1260, "run", "living_room.air_purifier", "fanSpeedPercent", "setPercent", [60]], [1290, "run", "living_room.air_purifier", "fanSpeedPercent", "setPercent", [0]],
+ [1300, "run", "living_room.tv", "switch", "on"], [1320, "run", "living_room.light", "switch", "on"], [1330, "run", "living_room.curtain", "windowShade", "close"],
+ [1320, "run", "room1.heating_cooling_unit", "thermostatHeatingSetpoint", "setHeatingSetpoint", [23]], [1321, "run", "room1.heating_cooling_unit", "thermostatMode", "setThermostatMode", ["heat"]],
+ [1380, "move", "room1"], [1400, "run", "room1.humidifier", "switch", "on"], [1500, "run", "living_room.tv", "switch", "off"],
+ [2000, "run", "laundry.washer", "cycleState", "start", ["normal"]], [2100, "run", "kitchen.dishwasher", "cycleState", "start"],
+ [2200, "run", "living_room.robot_vacuum", "robotCleanerOperatingState", "start"], [2300, "run", "kitchen.oven", "mode", "setMode", ["bake"]],
+ [2400, "run", "kitchen.oven", "mode", "setMode", ["off"]], [2500, "run", "room1.heating_cooling_unit", "thermostatMode", "setThermostatMode", ["cool"]],
+ [2600, "set", "balcony.door_contact", "contactSensor", "contact", "open"], [2700, "set", "balcony.door_contact", "contactSensor", "contact", "closed"],
+ [2800, "run", "living_room.speaker", "mediaPlayback", "play"], [2900, "run", "laundry.dryer", "cycleState", "start", ["normal", 60]]]

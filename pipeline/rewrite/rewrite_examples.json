@@ -1,0 +1,92 @@
+[
+  {
+    "input": "900,3room,ex_a,temporal_numeric,\"Before 07:00 at Home when the bathroom floor heater is off and bathroom temperature is 19 C or lower, the user sets the floor heater to 24 C for 20 minutes.\",",
+    "output": {
+      "personaId": "900",
+      "patternId": "ex_a",
+      "patternType": "temporal_numeric",
+      "originalText": "Before 07:00 at Home when the bathroom floor heater is off and bathroom temperature is 19 C or lower, the user sets the floor heater to 24 C for 20 minutes.",
+      "text": "Before 07:00 at Home when the hallway heating is off and bathroom temperature is 19 C or lower, the user sets the hallway heating to 24 C for 20 minutes from the phone.",
+      "note": "",
+      "changeLevel": "substituted",
+      "changes": [
+        {
+          "from": "bathroom floor heater",
+          "to": "hallway heating_cooling_unit (heat)",
+          "reason": "no floor heater; the bathroom has no heating unit, the hallway next to it does"
+        },
+        {
+          "from": "sets the floor heater",
+          "to": "from the phone",
+          "reason": "the person may not be in the hallway; SmartThings app control"
+        }
+      ],
+      "newApps": []
+    }
+  },
+  {
+    "input": "901,3room,ex_b,conditional_logic,\"At Office when the laptop connects to the desk dock within 15 minutes before a client call, the user sets the webcam exposure to 40 percent; for internal calls the user only opens the meeting notes.\",",
+    "output": {
+      "personaId": "901",
+      "patternId": "ex_b",
+      "patternType": "conditional_logic",
+      "originalText": "At Office when the laptop connects to the desk dock within 15 minutes before a client call, the user sets the webcam exposure to 40 percent; for internal calls the user only opens the meeting notes.",
+      "text": "At Office when the Galaxy Buds connect within 15 minutes before a calendar call titled 'Client call', the user opens Zoom and its notification shows 'Camera set to 40% exposure'; when the event is titled 'Internal call', the user only opens Samsung Notes for meeting notes.",
+      "note": "",
+      "changeLevel": "substituted",
+      "changes": [
+        {
+          "from": "laptop connects to the desk dock",
+          "to": "Galaxy Buds connect (Bluetooth)",
+          "reason": "the phone cannot see the laptop dock; a headset connecting before a call is visible"
+        },
+        {
+          "from": "client call / internal calls",
+          "to": "calendar event titles 'Client call' / 'Internal call'",
+          "reason": "meeting type carried in the event title"
+        },
+        {
+          "from": "sets the webcam exposure to 40 percent",
+          "to": "Zoom opened + notification 'Camera set to 40% exposure'",
+          "reason": "in-app setting shown as the app's notification"
+        }
+      ],
+      "newApps": [
+        {
+          "package": "us.zoom.videomeetings",
+          "label": "Zoom"
+        }
+      ]
+    }
+  },
+  {
+    "input": "902,3room,ex_c,preference_shift,\"Before 07:30 at Home when the smart kettle reports waterReady true, the user's morning drink shifts from 250 ml green tea to 350 ml barley tea.\",조건은 waterReady. 같은 로그에 kettleTemperatureC 가 있음",
+    "output": {
+      "personaId": "902",
+      "patternId": "ex_c",
+      "patternType": "preference_shift",
+      "originalText": "Before 07:30 at Home when the smart kettle reports waterReady true, the user's morning drink shifts from 250 ml green tea to 350 ml barley tea.",
+      "text": "Before 07:30 at Home, about 5 minutes after the user turns the kitchen stove on to boil water, the user's morning drink shifts from logging 250 ml green tea to logging 350 ml barley tea (hydration).",
+      "note": "The condition is the kitchen stove being on before 07:30. The same morning also has kitchen temperature and kitchen noise readings.",
+      "changeLevel": "substituted",
+      "changes": [
+        {
+          "from": "smart kettle reports waterReady true",
+          "to": "kitchen stove on, then about 5 minutes",
+          "reason": "no kettle; boiling water on the stove"
+        },
+        {
+          "from": "drink 250 ml green tea / 350 ml barley tea",
+          "to": "HYDRATION record 250 ml / 350 ml",
+          "reason": "the drink is visible as a health hydration record"
+        },
+        {
+          "from": "note: kettleTemperatureC",
+          "to": "kitchen temperature and noise readings",
+          "reason": "decoy values that exist in the simulator"
+        }
+      ],
+      "newApps": []
+    }
+  }
+]

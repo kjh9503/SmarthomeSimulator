@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "agent-profile.schema.json",
+  "title": "Agent profile (one persona's behaviour distribution)",
+  "description": "Everything the agent runner needs for one persona: house, simulation period, and behaviours. A behaviour is either a hidden pattern (kind 'pattern', the ground truth to be learned) or ordinary life (kind 'routine'). Both use the structured-pattern parts of pattern.schema.json (trigger, conditions, actions). Conventions inside actions: any args value may be {\"choice\": [..], \"weights\": [..]} (one option drawn each time, weights optional) and a number may be {\"min\": a, \"max\": b} (uniform). A time range whose 'to' is earlier than 'from' runs past midnight and belongs to the day it starts.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "personaId",
+    "houseType",
+    "variant",
+    "roomRoles",
+    "simulation",
+    "start",
+    "behaviours"
+  ],
+  "properties": {
+    "personaId": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "houseType": {
+      "enum": [
+        "2room",
+        "3room",
+        "4room"
+      ]
+    },
+    "variant": {
+      "type": "string",
+      "description": "layout variant, e.g. 3room-A"
+    },
+    "roomRoles": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "simulation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "startDate",
+        "days",
+        "seed"
+      ],
+      "properties": {
+        "startDate": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "days": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "seed": {
+          "type": "integer",
+          "description": "random seed: the same profile and seed give the same year"
+        }
+      }
+    },
+    "start": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "place"
+      ],
+      "description": "Where the person is at the first minute.",
+      "properties": {
+        "place": {
+          "type": "string"
+        },
+        "room": {
+          "type": "string"
+        },
+        "asleep": {
+          "type": "boolean"
+        },
+        "battery": {
+          "type": "number"
+        }
+      }
+    },
+    "behaviours": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind",
+          "description",
+          "trigger",
+          "conditions",
+          "actions",
+          "probability",
+          "maxPerDay"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "pattern",
+              "routine"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "pattern": {
+            "type": "object",
+            "description": "kind 'pattern' only: the full structured pattern (pattern.schema.json) it comes from, kept for reference and ground truth"
+          },
+          "trigger": {
+            "$ref": "pattern.schema.json#/$defs/trigger"
+          },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "$ref": "pattern.schema.json#/$defs/condition"
+            }
+          },
+          "actions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "pattern.schema.json#/$defs/action"
+            }
+          },
+          "probability": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "chance the behaviour happens when the trigger fires and the conditions hold (a pattern's followProbability)"
+          },
+          "maxPerDay": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "priority": {
+            "type": "integer",
+            "description": "when two behaviours want the person at the same minute, the higher one goes first (default 0)"
+          },
+          "shift": {
+            "description": "preference_shift only (same as pattern.schema.json shift)"
+          }
+        }
+      }
+    },
+    "cookingMinutes": {
+      "$ref": "pattern.schema.json#/$defs/cookingMinutes",
+      "description": "This person's usual cooking time: every time the stove is turned on, a time is drawn and the person turns it off then (a step may override it). Default lognormal, median 15, sigma 0.6."
+    }
+  }
+}
