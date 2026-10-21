@@ -68,7 +68,7 @@ class TestRunner(unittest.TestCase):
         outs = []
         for _ in range(2):
             d = tempfile.mkdtemp()
-            AgentRunner(prof, d, days=2, log=lambda *a: None).run()
+            AgentRunner(prof, d, days=2, log=lambda *a: None, home_log=True).run()
             outs.append([open(os.path.join(d, f)).read() for f in ("home_log.jsonl", "phone_log.jsonl")])
         self.assertTrue(outs[0][0] and outs[0][1])
         self.assertEqual(outs[0], outs[1])

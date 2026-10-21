@@ -120,7 +120,7 @@ def subset(a, b):
 
 
 class AgentRunner:
-    def __init__(self, profile, out_dir, days=None, seed=None, trace=False, off_rules=None, vocabulary=None, log=print):
+    def __init__(self, profile, out_dir, days=None, seed=None, trace=False, off_rules=None, vocabulary=None, log=print, home_log=False):
         self.P = profile
         self.out_dir = out_dir
         self.days = int(days or profile["simulation"]["days"])
@@ -129,6 +129,7 @@ class AgentRunner:
         vp = vocabulary or os.path.join(REPO, "pipeline", "vocabulary.json")
         self.VOCAB = json.load(open(vp, encoding="utf-8")) if os.path.exists(vp) else None
         self.print = log
+        self.write_home = home_log  # the home lines also reach the phone log as SMARTTHINGS copies; home_log.jsonl only on request
         self.rnd = random.Random(self.seed * 104729 + 7)  # the person's choices
         y0, m0, d0 = (int(x) for x in profile["simulation"]["startDate"].split("-"))
         self.T0 = local_ms(y0, m0 - 1, d0)
@@ -824,7 +825,8 @@ class AgentRunner:
         while i < len(L.times) and L.times[i] < cutoff:
             i += 1
         if i:
-            self.home_f.write("".join(dumps(e) + "\n" for e in L.entries[:i]))
+            if self.home_f:
+                self.home_f.write("".join(dumps(e) + "\n" for e in L.entries[:i]))
             self.n_home += i
             del L.entries[:i]
             del L.times[:i]
@@ -840,7 +842,7 @@ class AgentRunner:
 
     # ----- main loop -----
     def run(self):
-        self.home_f = open(os.path.join(self.out_dir, "home_log.jsonl"), "w", encoding="utf-8")
+        self.home_f = open(os.path.join(self.out_dir, "home_log.jsonl"), "w", encoding="utf-8") if self.write_home else None
         self.phone_f = open(os.path.join(self.out_dir, "phone_log.jsonl"), "w", encoding="utf-8")
         self.n_home = self.n_phone = 0
         t0 = _time.time()
@@ -874,22 +876,23 @@ class AgentRunner:
                 self.write_out(t - 2 * DAY_MS)
                 d = (t - self.T0) // DAY_MS
                 if d % 30 == 0 or d == self.days:
-                    self.print(f"day {d}/{self.days} ({day_key(t - MIN_MS)}) home {self.n_home} phone {self.n_phone} lines written, {_time.time() - t0:.0f} s")
+                    self.print(f"day {d}/{self.days} ({day_key(t - MIN_MS)}) home {self.n_home} phone {self.n_phone} lines, {_time.time() - t0:.0f} s")
             t += MIN_MS
         self.sim.flush()
         self.write_out(float("inf"))
-        self.home_f.close()
+        if self.home_f:
+            self.home_f.close()
         self.phone_f.close()
         if self.trace_f:
             self.trace_f.close()
         c = sorted(self.cook_times)
         q = lambda f: c[min(len(c) - 1, int(f * len(c)))] if c else None
-        summary = dict(personaId=self.P["personaId"], variant=self.P["variant"], startDate=self.P["simulation"]["startDate"], days=self.days,
+        summary = dict(personaId=self.P["personaId"], houseId=self.sim.house_id, houseType=self.sim.type, variant=self.P["variant"], startDate=self.P["simulation"]["startDate"], days=self.days,
                        seed=self.seed, homeLines=self.n_home, phoneEvents=self.n_phone,
                        cooking=dict(times=len(c), minutesMedian=q(0.5), minutesP10=q(0.1), minutesP90=q(0.9), minutesMax=c[-1] if c else None),
                        behaviours=self.stats, checks=self.check_stats, seconds=round(_time.time() - t0))
         with open(os.path.join(self.out_dir, "summary.json"), "w", encoding="utf-8") as f:
             json.dump(summary, f, indent=2, ensure_ascii=False)
             f.write("\n")
-        self.print(f"done: {self.n_home} home lines, {self.n_phone} phone events -> {self.out_dir}")
+        self.print(f"done: {self.n_phone} phone events ({self.n_home} of them copies of home lines) -> {self.out_dir}")
         return summary

@@ -3,10 +3,10 @@
    following an agent profile (profiles/<personaId>.json), and writes the home log and the phone log.
 
    usage: node tools/js/run_agent.js --profile profiles/063.json [--sim browser/smarthome-sim.html]
-                            [--out out/063] [--days 365] [--seed 63] [--trace]
+                            [--out out/063] [--days 365] [--seed 63] [--trace] [--home-log]
 
    Outputs (in --out):
-     home_log.jsonl    every saved home log line (the simulator's own format)
+     home_log.jsonl    only with --home-log: the home lines alone (they are in the phone log as SMARTTHINGS copies)
      phone_log.jsonl   every phone event (event-formats v3), including the SMARTTHINGS copies of home lines
      summary.json      counts per behaviour and per check, for checking the run (not training data)
      trace.jsonl       only with --trace: one line per behaviour decision with its step results
@@ -75,13 +75,13 @@ for (const pkg of new Set(JSON.stringify(profile).match(/"(?:com|us|net|org|kr|j
 }
 
 /* ---------------- output: write finished lines, keep memory small ---------------- */
-const homeOut = fs.openSync(path.join(outDir, "home_log.jsonl"), "w");
+const homeOut = opt["home-log"] ? fs.openSync(path.join(outDir, "home_log.jsonl"), "w") : null; /* the home lines also reach the phone log as SMARTTHINGS copies */
 const phoneOut = fs.openSync(path.join(outDir, "phone_log.jsonl"), "w");
 const traceOut = opt.trace ? fs.openSync(path.join(outDir, "trace.jsonl"), "w") : null;
 let nHome = 0, nPhone = 0;
 function writeOut(cutoff) { /* lines older than cutoff are final (a day's sensor lines are written when the day closes) */
   const E = sim.log.entries; let i = 0; while (i < E.length && Date.parse(E[i].time) < cutoff) i++;
-  if (i) { fs.writeSync(homeOut, E.slice(0, i).map(e => JSON.stringify(e)).join("\n") + "\n"); nHome += i; E.splice(0, i); }
+  if (i) { if (homeOut) fs.writeSync(homeOut, E.slice(0, i).map(e => JSON.stringify(e)).join("\n") + "\n"); nHome += i; E.splice(0, i); }
   const P = phone.events; let j = 0; while (j < P.length && P[j].timestamp < cutoff) j++;
   if (j) { fs.writeSync(phoneOut, P.slice(0, j).map(e => JSON.stringify(e)).join("\n") + "\n"); nPhone += j; P.splice(0, j); }
 }
@@ -537,10 +537,10 @@ for (let t = T0 + MIN; t <= TEND; t += MIN) {
   }
 }
 sim.flush(); writeOut(Infinity);
-fs.closeSync(homeOut); fs.closeSync(phoneOut); if (traceOut) fs.closeSync(traceOut);
-const summary = { personaId: profile.personaId, variant: profile.variant, startDate: profile.simulation.startDate, days: DAYS, seed: SEED,
+if (homeOut) fs.closeSync(homeOut); fs.closeSync(phoneOut); if (traceOut) fs.closeSync(traceOut);
+const summary = { personaId: profile.personaId, houseId: sim.houseId, houseType: sim.type, variant: profile.variant, startDate: profile.simulation.startDate, days: DAYS, seed: SEED,
   homeLines: nHome, phoneEvents: nPhone, behaviours: stats, checks: checkStats,
   cooking: (() => { const c = cookTimes.slice().sort((a, b) => a - b), q = f => c.length ? c[Math.min(c.length - 1, Math.floor(f * c.length))] : null;
     return { times: c.length, minutesMedian: q(0.5), minutesP10: q(0.1), minutesP90: q(0.9), minutesMax: c.length ? c[c.length - 1] : null }; })(), seconds: Math.round((Date.now() - t0) / 1000) };
 fs.writeFileSync(path.join(outDir, "summary.json"), JSON.stringify(summary, null, 2) + "\n");
-console.log(`done: ${nHome} home lines, ${nPhone} phone events -> ${outDir}`);
+console.log(`done: ${nPhone} phone events (${nHome} of them copies of home lines) -> ${outDir}`);

@@ -11,18 +11,20 @@ def load(d):
     src = collections.Counter()
     cmds = collections.Counter()
     sensors = collections.defaultdict(list)
-    for l in open(f"{d}/home_log.jsonl", encoding="utf-8"):
-        e = json.loads(l)
-        src[e["source"]] += 1
-        if e["source"] in ("command", "manual"):
-            cmds[e["device"]] += 1
-        if e["source"] == "sensor" and e["reason"] != "presence" and isinstance(e["value"], (int, float)):
-            sensors[(e["roomId"], e["attribute"])].append(e["value"])
     types = collections.Counter()
     sleep, steps, hr = [], [], []
     for l in open(f"{d}/phone_log.jsonl", encoding="utf-8"):
         e = json.loads(l)
         types[e["type"]] += 1
+        p = e.get("payload") or {}
+        if e["type"] == "SMARTTHINGS" and p.get("kind") == "state":  # the copy of a home line
+            a, ch = p["actor"], p["change"]
+            kind = {"user": "command" if a.get("command") else "manual"}.get(a["kind"], a["kind"])
+            src[kind] += 1
+            if a["kind"] == "user":
+                cmds[p["name"]] += 1
+            if a["kind"] == "sensor" and a.get("reason") != "presence" and isinstance(ch["value"], (int, float)):
+                sensors[(p["roomId"], ch["attribute"])].append(ch["value"])
         if e["type"] == "HEALTH" and e["source"] == "SLEEP":
             sleep.append(e["payload"]["durationMinutes"] / 60)
         if e["type"] == "HEALTH" and e["source"] == "HOURLY":
@@ -34,9 +36,9 @@ def load(d):
 def main():
     a, b = load(sys.argv[1]), load(sys.argv[2])
     la, lb = (sys.argv[3:5] + ["A", "B"])[:2] if len(sys.argv) > 3 else ("A", "B")
-    rows = [("home lines", a["S"]["homeLines"], b["S"]["homeLines"]), ("phone events", a["S"]["phoneEvents"], b["S"]["phoneEvents"])]
+    rows = [("home lines (SMARTTHINGS state copies)", a["S"]["homeLines"], b["S"]["homeLines"]), ("phone events", a["S"]["phoneEvents"], b["S"]["phoneEvents"])]
     for k in sorted(set(a["src"]) | set(b["src"])):
-        rows.append((f"home source={k}", a["src"][k], b["src"][k]))
+        rows.append((f"home line actor={k}", a["src"][k], b["src"][k]))
     for k in sorted(set(a["types"]) | set(b["types"])):
         rows.append((f"phone type={k}", a["types"][k], b["types"][k]))
     for k in sorted(set(a["cmds"]) | set(b["cmds"])):
