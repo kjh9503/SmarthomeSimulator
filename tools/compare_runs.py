@@ -3,7 +3,11 @@ usage: python3 tools/compare_runs.py <out_dir_a> <out_dir_b> [label_a] [label_b]
 import collections
 import json
 import statistics
+import os
 import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+from smarthome_sim.formats import expand
 
 
 def load(d):
@@ -14,7 +18,7 @@ def load(d):
     types = collections.Counter()
     sleep, steps, hr = [], [], []
     for l in open(f"{d}/phone_log.jsonl", encoding="utf-8"):
-        e = json.loads(l)
+        e = expand(json.loads(l))
         types[e["type"]] += 1
         p = e.get("payload") or {}
         if e["type"] == "SMARTTHINGS" and p.get("kind") == "state":  # the copy of a home line

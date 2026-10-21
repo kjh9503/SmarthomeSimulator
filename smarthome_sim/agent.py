@@ -13,6 +13,7 @@ from .simulator import Simulator
 from .phone import ST_ALERTS
 from .timeutil import (DAY_MS, MIN_MS, fields, local_ms, start_of_day, iso_local, js_round)
 from .weather import outdoor_at
+from .formats import compact
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
@@ -120,7 +121,7 @@ def subset(a, b):
 
 
 class AgentRunner:
-    def __init__(self, profile, out_dir, days=None, seed=None, trace=False, off_rules=None, vocabulary=None, log=print, home_log=False):
+    def __init__(self, profile, out_dir, days=None, seed=None, trace=False, off_rules=None, vocabulary=None, log=print, home_log=False, full_format=False):
         self.P = profile
         self.out_dir = out_dir
         self.days = int(days or profile["simulation"]["days"])
@@ -129,6 +130,7 @@ class AgentRunner:
         vp = vocabulary or os.path.join(REPO, "pipeline", "vocabulary.json")
         self.VOCAB = json.load(open(vp, encoding="utf-8")) if os.path.exists(vp) else None
         self.print = log
+        self.full_format = full_format  # False: SMARTTHINGS copies stored without the fields other fields determine (formats.py)
         self.write_home = home_log  # the home lines also reach the phone log as SMARTTHINGS copies; home_log.jsonl only on request
         self.rnd = random.Random(self.seed * 104729 + 7)  # the person's choices
         y0, m0, d0 = (int(x) for x in profile["simulation"]["startDate"].split("-"))
@@ -835,7 +837,7 @@ class AgentRunner:
         while j < len(P.times) and P.times[j] < cutoff:
             j += 1
         if j:
-            self.phone_f.write("".join(dumps(e) + "\n" for e in P.events[:j]))
+            self.phone_f.write("".join(dumps(e if self.full_format else compact(e)) + "\n" for e in P.events[:j]))
             self.n_phone += j
             del P.events[:j]
             del P.times[:j]

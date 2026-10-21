@@ -74,5 +74,21 @@ class TestRunner(unittest.TestCase):
         self.assertEqual(outs[0], outs[1])
 
 
+class TestStoredForm(unittest.TestCase):
+    def test_expand_restores_full_format(self):
+        """the stored phone log, expanded, is byte for byte the full event-formats log of the same run"""
+        from smarthome_sim.agent import dumps
+        from smarthome_sim.formats import expand
+        prof = json.load(open(os.path.join(os.path.dirname(HERE), "profiles", "063.json")))
+        dc, df = tempfile.mkdtemp(), tempfile.mkdtemp()
+        AgentRunner(prof, dc, days=2, log=lambda *a: None).run()
+        AgentRunner(prof, df, days=2, log=lambda *a: None, full_format=True).run()
+        stored = open(os.path.join(dc, "phone_log.jsonl"), encoding="utf-8").read().splitlines()
+        full = open(os.path.join(df, "phone_log.jsonl"), encoding="utf-8").read().splitlines()
+        self.assertEqual(len(stored), len(full))
+        self.assertLess(sum(map(len, stored)), 0.6 * sum(map(len, full)))
+        self.assertEqual([dumps(expand(json.loads(l))) for l in stored], full)
+
+
 if __name__ == "__main__":
     unittest.main()

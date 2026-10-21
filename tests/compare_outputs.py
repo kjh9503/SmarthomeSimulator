@@ -1,6 +1,8 @@
-"""Compares the shape of two runs' outputs (JS runner vs Python runner): for each kind of line, the field paths and value types.
+"""Compares the shape of two runs' phone logs (after expand) (JS runner vs Python runner): for each kind of line, the field paths and value types.
 usage: python3 tests/compare_outputs.py <js_out_dir> <py_out_dir>"""
-import json, sys, collections
+import json, sys, os, collections
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+from smarthome_sim.formats import expand
 
 
 def paths(o, pre=""):
@@ -17,7 +19,7 @@ def shapes(path, kind):
     S = collections.defaultdict(set)
     n = collections.Counter()
     for l in open(path, encoding="utf-8"):
-        e = json.loads(l)
+        e = expand(json.loads(l))
         k = (e["source"], e["device"]) if kind == "home" else (e["type"], (e.get("payload") or {}).get("kind", ""))
         S[k] |= paths(e)
         n[k] += 1
@@ -25,7 +27,7 @@ def shapes(path, kind):
 
 
 ok = True
-for f, kind in (("home_log.jsonl", "home"), ("phone_log.jsonl", "phone")):
+for f, kind in (("phone_log.jsonl", "phone"),):
     a, na = shapes(f"{sys.argv[1]}/{f}", kind)
     b, nb = shapes(f"{sys.argv[2]}/{f}", kind)
     for k in sorted(set(a) | set(b), key=str):

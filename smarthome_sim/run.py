@@ -15,11 +15,12 @@ def main(argv=None):
     ap.add_argument("--trace", action="store_true", help="also write trace.jsonl")
     ap.add_argument("--off-rules", help="checks before sleep / leaving / after waking (default: smarthome_sim/off_rules.json)")
     ap.add_argument("--home-log", action="store_true", help="also write home_log.jsonl (the home lines alone; for checking)")
+    ap.add_argument("--full-format", action="store_true", help="write SMARTTHINGS copies with every event-formats field (default: without the fields other fields determine; tools/expand_log.py restores them)")
     ap.add_argument("--vocabulary", help="vocabulary.json, for apps the profile uses (default: pipeline/vocabulary.json)")
     a = ap.parse_args(argv)
     profile = json.load(open(a.profile, encoding="utf-8"))
     out = a.out or os.path.join("out", profile["personaId"])
-    AgentRunner(profile, out, days=a.days, seed=a.seed, trace=a.trace, off_rules=a.off_rules, vocabulary=a.vocabulary, home_log=a.home_log).run()
+    AgentRunner(profile, out, days=a.days, seed=a.seed, trace=a.trace, off_rules=a.off_rules, vocabulary=a.vocabulary, home_log=a.home_log, full_format=a.full_format).run()
 
 
 if __name__ == "__main__":

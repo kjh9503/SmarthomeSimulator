@@ -41,6 +41,7 @@ python3 -m smarthome_sim.run --profile profiles/063.json --out out/063
 | `--trace` | off | also write `trace.jsonl` |
 | `--off-rules` | `smarthome_sim/off_rules.json` | checks before sleep / leaving / after waking |
 | `--vocabulary` | `pipeline/vocabulary.json` | for apps the profile uses that are not installed by default |
+| `--full-format` | off | write SMARTTHINGS copies with every event-formats field (default: the stored form, below) |
 | `--home-log` | off | also write `home_log.jsonl` (the home lines alone, for checking); they are always in the phone log |
 
 `pip install -e .` also gives the command `smarthome-sim-run` with the same options.
@@ -57,13 +58,14 @@ Check a profile before running it (needs `pip install jsonschema` for the schema
 `python3 pipeline/check_profile.py profiles/063.json`.
 
 Measured for 063 (365 days, 3room-A), Python 3.13 on one core: 6 min 21 s (the JavaScript runner: 110 s).
-Output: `phone_log.jsonl` 359,464 events (319 MB, 17 MB with gzip), of which 302,151 are copies of home lines.
+Output: `phone_log.jsonl` 359,464 events, of which 302,151 are copies of home lines: 152 MB in the stored form (6 MB with gzip); 319 MB with `--full-format`.
 
 ## Outputs
 
 | File | Content |
 |---|---|
 | `phone_log.jsonl` | the dataset: every phone event, in time order (event-formats v3: type, source, title, text, timestamp, collectedAt, dedupeKey, payload, context {battery, weather, location}). Every saved home log line is in it as a SMARTTHINGS event (`payload.kind: "state"`: deviceId, roomId, change {capability, attribute, value, previousValue}, actor {kind user / sensor / device / event, channel, command, args, reason}); SmartThings alerts are `payload.kind: "notification"` |
+| (stored form) | the SMARTTHINGS copies of home lines leave out the fields their other fields determine: `source`, `title`, `text`, `collectedAt`, `dedupeKey`, `payload.name`, `label`, `deviceTypeName`, `roomId`, `capabilities`, `change.unit`, and for sensor reports `payload.status` and the empty actor fields. `python3 tools/expand_log.py out/063/phone_log.jsonl > full.jsonl` puts them back; the result is byte for byte the `--full-format` log (`tests/test_port.py`). Rules in `smarthome_sim/formats.py` |
 | `home_log.jsonl` | only with `--home-log`: the home lines alone (time, houseId, houseType, houseVariant, weather, deviceId, roomId, device, capability, attribute, value, previousValue, source, command, args, channel, reason) |
 | `summary.json` | for checking the run, not training data: houseId, houseType, variant; cooking times drawn; per behaviour `triggered`, `conditionsTrue`, `followed`, `notFollowed`, `deferred` (minutes waited because the person was busy), `overMaxPerDay`, step results (`done`, `no_change`, `skipped`, `refused`) and refusal reasons; per check: devices checked, turned off, left on |
 | `trace.jsonl` | with `--trace`: one line per decision (`followed` with each step's result, `not_followed`) and per device in a check |

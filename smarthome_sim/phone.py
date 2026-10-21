@@ -870,6 +870,8 @@ def _txt(v):
         return "true"
     if v is False:
         return "false"
+    if v is None:
+        return "null"
     if isinstance(v, float) and v.is_integer():
         return str(int(v))
     return str(v)

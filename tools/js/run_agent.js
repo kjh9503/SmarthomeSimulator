@@ -3,7 +3,7 @@
    following an agent profile (profiles/<personaId>.json), and writes the home log and the phone log.
 
    usage: node tools/js/run_agent.js --profile profiles/063.json [--sim browser/smarthome-sim.html]
-                            [--out out/063] [--days 365] [--seed 63] [--trace] [--home-log]
+                            [--out out/063] [--days 365] [--seed 63] [--trace] [--home-log] [--full-format]
 
    Outputs (in --out):
      home_log.jsonl    only with --home-log: the home lines alone (they are in the phone log as SMARTTHINGS copies)
@@ -83,7 +83,15 @@ function writeOut(cutoff) { /* lines older than cutoff are final (a day's sensor
   const E = sim.log.entries; let i = 0; while (i < E.length && Date.parse(E[i].time) < cutoff) i++;
   if (i) { if (homeOut) fs.writeSync(homeOut, E.slice(0, i).map(e => JSON.stringify(e)).join("\n") + "\n"); nHome += i; E.splice(0, i); }
   const P = phone.events; let j = 0; while (j < P.length && P[j].timestamp < cutoff) j++;
-  if (j) { fs.writeSync(phoneOut, P.slice(0, j).map(e => JSON.stringify(e)).join("\n") + "\n"); nPhone += j; P.splice(0, j); }
+  if (j) { fs.writeSync(phoneOut, P.slice(0, j).map(e => JSON.stringify(compact(e))).join("\n") + "\n"); nPhone += j; P.splice(0, j); }
+}
+/* stored form: SMARTTHINGS copies of home lines without the fields their other fields determine (same as smarthome_sim/formats.py) */
+function compact(e) {
+  const p = e.payload; if (e.type !== "SMARTTHINGS" || !p || p.kind !== "state" || opt["full-format"]) return e;
+  const { unit, ...ch } = p.change, a = p.actor;
+  const q = { kind: "state", deviceId: p.deviceId, change: ch, actor: a.kind === "sensor" ? { kind: "sensor", reason: a.reason } : a };
+  if (a.kind !== "sensor") q.status = p.status;
+  return { type: e.type, timestamp: e.timestamp, payload: q, context: e.context };
 }
 const trace = o => { if (traceOut) fs.writeSync(traceOut, JSON.stringify(o) + "\n"); };
 const iso = t => { const d = new Date(t), p = n => String(n).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}+09:00`; };
