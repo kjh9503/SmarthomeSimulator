@@ -76,7 +76,9 @@ class Checker:
             if n not in self.v["places"]: self.err(p["patternId"], f"{where}: unknown place '{n}'")
 
     # ---- parts ----
-    def action(self, p, act, where):
+    def action(self, p, act, where, match=False):
+        """match=True: the action is a recent_action pattern; the engine compares only the fields given,
+        so a missing 'args' list matches any arguments"""
         do, args = act.get("do"), act.get("args", {})
         if do not in self.v["personActions"]:
             self.err(p["patternId"], f"{where}: unknown action '{do}'"); return
@@ -87,6 +89,7 @@ class Checker:
                 if c:
                     m = next((m for m in c["commands"] if m["name"] == args.get("command")), None)
                     if not m: self.err(p["patternId"], f"{where}: command '{args.get('command')}' not in {c['capability']} (has: {', '.join(x['name'] for x in c['commands']) or 'none'})")
+                    elif match and "args" not in args: pass
                     elif len(args.get("args", [])) != len(m["args"]): self.err(p["patternId"], f"{where}: {m['name']} takes {len(m['args'])} argument(s) {m['args']}, got {args.get('args')}")
                     elif m["name"].startswith("set") and m["args"] and c["attributes"]:
                         self.value(p, c["attributes"][0], "==", args["args"][0], where)
@@ -138,7 +141,7 @@ class Checker:
         elif k == "health":
             if c["field"] not in self.v["healthRecords"][c["record"]]: self.err(p["patternId"], f"{where}: {c['record']} has no field '{c['field']}'")
         elif k == "recent_action":
-            self.action(p, c["action"], where + ".action")
+            self.action(p, c["action"], where + ".action", match=True)
 
     def event(self, p, e, where):
         s = e.get("source")

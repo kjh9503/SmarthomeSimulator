@@ -35,6 +35,7 @@ prompt and everything the prompt needs.
 | File | Role | Made by |
 |---|---|---|
 | `prompt_pattern_structuring.md` | The prompt: SYSTEM message (rules) and USER message template, with `{{...}}` placeholders | written |
+| `prompt_agent_profile.md` | DRAFT prompt for step 3 (persona + structured patterns -> agent profile). Has the household-appliance groups (A: everyone uses, guarded by temperature / days; B: everyone owns, frequency varies; C: owned by some; D: not operated) with ownership sources and rule templates. The base daily-life list is still TODO | written |
 | `vocabulary.json` | Every name a structured pattern may use: house types and rooms, device types with capabilities / attributes / values / commands, places, travel modes, activities, exercises, health measures and record fields, apps (+ extraApps), Bluetooth devices, weather, SmartThings alert categories, phone event types, the person's actions | generated from the simulator code, then the person-action list added |
 | `pattern.schema.json` | JSON Schema (draft 2020-12) of one structured pattern; goes into the prompt and is used to validate replies | written |
 | `structured_examples.json` | 3 worked examples (one per pattern type), made-up patterns so the model copies the form, not the content | written, checked by the validator |
