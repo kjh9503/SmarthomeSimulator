@@ -136,20 +136,25 @@ photos and the like.
 Write one or more rules with trigger `rate`, so that the uses fall through the waking day. Different rules can carry
 different apps for different places or times (commute: video and music; evening at home: messenger and video).
 
-Values from studies of real phones (use them as the centre and move them with the persona):
+Values from studies of real phones (use them as the centre and move them with the persona). Prefer the recent
+sources; the older ones are used only where no recent source has the number.
 
 | Value | Real data | Source |
 |---|---|---|
-| Uses with unlocking per day | median 20 (mean 25) | Hintze et al. 2014, 1,960 Android phones |
-| Glances at the lock screen per day | median 22 (mean 33) | same; set `phoneHabits.glancesPerDay` |
-| Screen time per day | median 97 min (71 min unlocked) | same |
-| Apps in one use | 1: 68.2%, 2: 19.5%, 3: 6.6% | Bohmer et al. 2011, 4,125 Android users; `continue` 0.32 gives 68 / 22 / 7 % |
-| First app | communication apps (messenger, SMS, phone, mail) 49.6% of uses | same |
+| Unlocks (uses) per day | median 1.71 per hour = 41 a day (IQR 1.10-2.49 per hour) | Winbush et al. 2025 (PNAS), 10,099 US adults, Android |
+| App screen time per day | median 15.2 min per hour = 364 min a day (IQR 10.8-20.6 min per hour); social media median 43 min | same |
+| App time per day, Korea | 5.2 hours (Q1 2022) | data.ai |
+| Per app, Korea (all ages, per user) | KakaoTalk about 52 opens and 22 min a day; YouTube about 80 min a day (2025, totals divided by monthly users) | WiseApp-Retail 2025 |
+| Glances at the lock screen per day | median 22 (mean 33); one glance median 56 s | Hintze et al. 2014 (no recent source counts glances) |
+| Apps in one use | 1: 68.2%, 2: 19.5%, 3: 6.6% | Bohmer et al. 2011 (no recent source); `continue` 0.32 gives 68 / 22 / 7 % |
+| First app | communication apps 49.6% of uses | same |
 | Next app | after most apps a communication app follows with at least 23% | same |
 
-So: total rate of the phone-use rules about 1.2 per waking hour for a median person (more for a heavy user, fewer for
-someone who rarely uses the phone); the messenger first in about half of the uses; `seconds` per app as a lognormal
-(a messenger tens of seconds, social media and browsing about a minute or two, video several minutes).
+So, for a median Korean adult: phone-use rules firing about 3.4 times per waking hour in total (a use that is still
+running skips the next firing, so about 2.4 uses per hour happen), about 5 hours of app time a day, the messenger first
+in about half of the uses, `seconds` per app as a lognormal (messenger about a minute, social media and browsing two to
+three minutes, video several minutes). Move these with the persona: a light user (older, busy at work) about half,
+a heavy user (student, gamer) up to the upper quartile.
 Only installed apps can be used: VOCABULARY.apps for everyone, VOCABULARY.extraApps only if the persona would have them.
 
 `phoneHabits` (top level of the profile):
@@ -157,13 +162,13 @@ Only installed apps can be used: VOCABULARY.apps for everyone, VOCABULARY.extraA
 - `manualScreenOff`: chance the person presses the power button right after a use (default 0.9; people differ a lot)
 - `glancesPerDay`: default 22
 
-Template (a median person living alone; adapt apps, weights and times to the persona):
+Template (profile 063, a university student; adapt apps, weights and times to the persona):
 
 ```json
 {
   "id": "r_phone_use", "kind": "routine",
-  "description": "Ordinary phone use while awake: about 20 uses a day, one or more apps in a row.",
-  "trigger": { "kind": "rate", "window": { "from": "07:30", "to": "23:50" }, "perHour": 1.2 },
+  "description": "Ordinary phone use while awake: about 38 uses a day, one or more apps in a row.",
+  "trigger": { "kind": "rate", "window": { "from": "07:30", "to": "23:50" }, "perHour": 3.4 },
   "conditions": [ { "kind": "phone_state", "field": "asleep", "op": "==", "value": false } ],
   "actions": [
     { "do": "phone.useApps", "args": {
@@ -172,19 +177,20 @@ Template (a median person living alone; adapt apps, weights and times to the per
       "next":  { "com.kakao.talk": 4, "com.instagram.android": 2, "com.google.android.youtube": 1.5,
                  "com.android.chrome": 1.5, "com.google.android.apps.maps": 0.3 },
       "continue": 0.32,
-      "seconds": { "default": { "median": 20, "sigma": 1.3 },
-                   "com.kakao.talk": { "median": 25, "sigma": 1.2 },
-                   "com.instagram.android": { "median": 90, "sigma": 1.1 },
-                   "com.google.android.youtube": { "median": 240, "sigma": 1.0 },
-                   "com.android.chrome": { "median": 60, "sigma": 1.1 },
-                   "com.google.android.apps.maps": { "median": 40, "sigma": 1.0 } } } }
+      "seconds": { "default": { "median": 60, "sigma": 1.2 },
+                   "com.kakao.talk": { "median": 51, "sigma": 1.2 },
+                   "com.instagram.android": { "median": 143, "sigma": 1.1 },
+                   "com.google.android.youtube": { "median": 475, "sigma": 1.0 },
+                   "com.android.chrome": { "median": 178, "sigma": 1.1 },
+                   "com.google.android.apps.maps": { "median": 158, "sigma": 1.0 } } } }
   ],
-  "probability": 1, "maxPerDay": 60
+  "probability": 1, "maxPerDay": 80
 }
 ```
 
-With this template and `phoneHabits` 30 / 0.9 / 22, profile 063 gives per day: 37 screen-ons (19 glances, 18 uses
-with apps), 88 min screen time, apps per use 68 / 21 / 7 %.
+With this template and `phoneHabits` 30 / 0.9 / 22, profile 063 (a university student) gives per day: 59 screen-ons
+(21 glances, 38 uses with apps), 272 min screen time with apps, apps per use 68 / 21 / 7 %; KakaoTalk 21 opens and
+36 min, YouTube 113 min, Instagram 56 min.
 
 ### Daily-life routines
 

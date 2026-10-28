@@ -146,6 +146,7 @@ class AgentRunner:
         self.S = self.phone.s
         self.phone.habits.update(profile.get("phoneHabits") or {})
         self.phone.rand = self.rnd.random
+        self.glance_day, self.glance_idle, self.glance_idle_prev = -1, 0, GLANCE_AWAKE_MIN
         self.roles = profile.get("roomRoles") or {}
         os.makedirs(out_dir, exist_ok=True)
         self.trace_f = open(os.path.join(out_dir, "trace.jsonl"), "w", encoding="utf-8") if trace else None
@@ -549,6 +550,9 @@ class AgentRunner:
         end = self.minute_ms + MIN_MS
         last = None
         while c["at"] < end:
+            c["at"] = max(c["at"], self.minute_ms + self.sec * 1000)  # never before what already happened this minute
+            if c["at"] >= end:
+                break
             self.sim.clock.set_to(c["at"])
             last = c["at"]
             if c["i"] < len(c["plan"]):
@@ -569,10 +573,17 @@ class AgentRunner:
         """a look at the lock screen (time, notifications) while awake and not using the phone"""
         ph, S = self.phone, self.S
         n = float(ph.habits.get("glancesPerDay", 0))
+        day = (t - self.T0) // DAY_MS
+        if day != self.glance_day:  # glances fall in the idle waking minutes: rate from yesterday's count of them
+            self.glance_idle_prev = self.glance_idle or GLANCE_AWAKE_MIN
+            self.glance_day, self.glance_idle = day, 0
         if n <= 0 or S["asleep"] or ph.driving or S["screenOn"] or ph.in_chain or S["foreground"]:
             return
-        if self.rnd.random() < n / GLANCE_AWAKE_MIN:
-            at = t + int(self.rnd.random() * 50) * 1000
+        self.glance_idle += 1
+        if self.rnd.random() < n / max(60, self.glance_idle_prev):
+            at = max(t + int(self.rnd.random() * 50) * 1000, self.minute_ms + (self.sec + 1) * 1000)
+            if at >= t + MIN_MS:
+                return
             secs = max(3, min(600, GLANCE["median"] * math.exp(GLANCE["sigma"] * self.gauss())))
             ph.glance(at, secs)
 
