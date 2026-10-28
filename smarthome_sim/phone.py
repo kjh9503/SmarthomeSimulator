@@ -78,14 +78,26 @@ TRAVEL_MODES = {
     "train": dict(place="train", activity="IN_VEHICLE", kmh=80, before=[["walk", 10], ["wait", 10]], after=[["walk", 10]]),
     "airport_rail": dict(place="airport_rail", activity="IN_VEHICLE", kmh=60, before=[["walk", 8], ["wait", 6]], after=[["walk", 8]]),
 }
+# Apps every persona has from the start (Samsung / Google preinstalled apps and the most used apps in Korea).
+# about: what the app is used for, shown to the LLM in vocabulary.json (not in the log). mbPerMin: mobile data while
+# in the foreground (new values from 2026-10-28 are estimates). Apps only some personas have: vocabulary_extra.json extraApps.
 APPS = {
-    "com.kakao.talk": dict(label="KakaoTalk", uid=10101, mbPerMin=0.3),
-    "com.android.chrome": dict(label="Chrome", uid=10123, mbPerMin=1.5),
-    "com.google.android.youtube": dict(label="YouTube", uid=10131, mbPerMin=12),
-    "com.spotify.music": dict(label="Spotify", uid=10142, mbPerMin=1),
-    "com.instagram.android": dict(label="Instagram", uid=10155, mbPerMin=6),
-    "com.nhn.android.nmap": dict(label="Naver Map", uid=10163, mbPerMin=1),
-    "com.samsung.android.oneconnect": dict(label="SmartThings", uid=10177, mbPerMin=0.2),
+    "com.kakao.talk": dict(label="KakaoTalk", uid=10101, mbPerMin=0.3, about="messenger"),
+    "com.android.chrome": dict(label="Chrome", uid=10123, mbPerMin=1.5, about="web browser"),
+    "com.google.android.youtube": dict(label="YouTube", uid=10131, mbPerMin=12, about="video"),
+    "com.spotify.music": dict(label="Spotify", uid=10142, mbPerMin=1, about="music, podcasts"),
+    "com.instagram.android": dict(label="Instagram", uid=10155, mbPerMin=6, about="social media"),
+    "com.google.android.apps.maps": dict(label="Google Maps", uid=10163, mbPerMin=1, about="maps, navigation, commute"),
+    "com.samsung.android.oneconnect": dict(label="SmartThings", uid=10177, mbPerMin=0.2, about="home devices, laundry"),
+    "com.samsung.android.calendar": dict(label="Calendar", uid=10181, mbPerMin=0.01, about="calendar events"),
+    "com.samsung.android.dialer": dict(label="Phone", uid=10182, mbPerMin=0, about="calls"),
+    "com.samsung.android.messaging": dict(label="Messages", uid=10183, mbPerMin=0.05, about="SMS"),
+    "com.sec.android.app.camera": dict(label="Camera", uid=10184, mbPerMin=0, about="photos"),
+    "com.sec.android.app.shealth": dict(label="Samsung Health", uid=10185, mbPerMin=0.05, about="exercise, health measures"),
+    "com.samsung.android.app.notes": dict(label="Samsung Notes", uid=10186, mbPerMin=0.01, about="memo, checklist"),
+    "com.sec.android.app.clockpackage": dict(label="Clock", uid=10187, mbPerMin=0, about="alarm, timer"),
+    "com.samsung.android.app.reminder": dict(label="Reminder", uid=10188, mbPerMin=0.01, about="to-do, tasks"),
+    "com.sec.android.daemonapp": dict(label="Weather", uid=10189, mbPerMin=0.2, about="weather"),
 }
 BT_DEVICES = {"Galaxy Buds": "AA:BB:CC:DD:EE:FF", "Car Audio": "11:AA:22:BB:33:CC"}
 ACTIVITIES = dict(IN_VEHICLE=0, ON_BICYCLE=1, STILL=3, WALKING=7, RUNNING=8)

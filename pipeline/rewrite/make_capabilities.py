@@ -36,7 +36,10 @@ L.append("- Calendar events: title, start, end, location (any text). Values a pa
 L.append("- Phone states: screen on/off, charging, battery %, activity (" + ", ".join(v["activities"]) + "), asleep, music playing/paused (phone), Bluetooth (" + ", ".join(v["bluetoothDevices"]) + "), Wi-Fi network, app in the foreground.")
 L.append("- Health: measures " + ", ".join(v["healthMeasures"]) + "; exercises " + ", ".join(v["exercises"]) + " (with durationMinutes); SLEEP record with durationMinutes on waking.")
 L.append("- Person's phone actions: open/close any app, the app then shows a notification describing the result (navigation started, item added to a checklist, timer started, setting changed); play/pause/stop phone music; add/change/delete calendar events; calls, SMS, photos, screenshots, clipboard; connect/disconnect Bluetooth; plug in/unplug; sleep/wake; start/end exercise; record health measures; control any home device from the SmartThings app.")
-L.append("- Apps already installed: " + ", ".join(f"{lab} ({pkg})" for pkg, lab in v["apps"].items()) + ". Other realistic Android apps may be named (give package and label).")
+L.append("- Apps every persona has: " + "; ".join(f"{pkg} = {lab}" for pkg, lab in v["apps"].items()) + ".")
+L.append("- Apps some personas have: " + "; ".join(f"{pkg} = {a['label']} ({a['about']})" if isinstance(a, dict) else f"{pkg} = {a}"
+                                                  for pkg, a in v["extraApps"].items() if not pkg.startswith("_"))
+         + ". Use these for the matching kind of app; other realistic Android apps may be named (give package and label).")
 L.append("")
 L.append("## Outdoors")
 L.append("- Weather: " + ", ".join(v["weather"]["states"]) + "; outdoor " + ", ".join(f"{k} ({u})" for k, u in v["weather"]["outdoorVariables"].items()) + ". Seoul climate.")

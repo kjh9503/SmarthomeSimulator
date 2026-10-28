@@ -1694,7 +1694,7 @@
                 "com.instagram.android",
                 "com.google.android.youtube",
                 "com.android.chrome",
-                "com.nhn.android.nmap"
+                "com.google.android.apps.maps"
               ],
               "weights": [
                 5,

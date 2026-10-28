@@ -1286,14 +1286,24 @@ function kmBetween(a, b) {
   const h = Math.sin(dLa / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(dLo / 2) ** 2;
   return 6371 * 2 * Math.asin(Math.sqrt(h));
 }
+/* apps every persona has from the start; about = what the app is for (vocabulary only); same table as smarthome_sim/phone.py */
 const APPS = {
-  "com.kakao.talk":                 { label: "KakaoTalk",  uid: 10101, mbPerMin: 0.3 },
-  "com.android.chrome":             { label: "Chrome",     uid: 10123, mbPerMin: 1.5 },
-  "com.google.android.youtube":     { label: "YouTube",    uid: 10131, mbPerMin: 12 },
-  "com.spotify.music":              { label: "Spotify",    uid: 10142, mbPerMin: 1 },
-  "com.instagram.android":          { label: "Instagram",  uid: 10155, mbPerMin: 6 },
-  "com.nhn.android.nmap":           { label: "Naver Map",  uid: 10163, mbPerMin: 1 },
-  "com.samsung.android.oneconnect": { label: "SmartThings", uid: 10177, mbPerMin: 0.2 },
+  "com.kakao.talk":                   { label: "KakaoTalk",      uid: 10101, mbPerMin: 0.3,  about: "messenger" },
+  "com.android.chrome":               { label: "Chrome",         uid: 10123, mbPerMin: 1.5,  about: "web browser" },
+  "com.google.android.youtube":       { label: "YouTube",        uid: 10131, mbPerMin: 12,   about: "video" },
+  "com.spotify.music":                { label: "Spotify",        uid: 10142, mbPerMin: 1,    about: "music, podcasts" },
+  "com.instagram.android":            { label: "Instagram",      uid: 10155, mbPerMin: 6,    about: "social media" },
+  "com.google.android.apps.maps":     { label: "Google Maps",    uid: 10163, mbPerMin: 1,    about: "maps, navigation, commute" },
+  "com.samsung.android.oneconnect":   { label: "SmartThings",    uid: 10177, mbPerMin: 0.2,  about: "home devices, laundry" },
+  "com.samsung.android.calendar":     { label: "Calendar",       uid: 10181, mbPerMin: 0.01, about: "calendar events" },
+  "com.samsung.android.dialer":       { label: "Phone",          uid: 10182, mbPerMin: 0,    about: "calls" },
+  "com.samsung.android.messaging":    { label: "Messages",       uid: 10183, mbPerMin: 0.05, about: "SMS" },
+  "com.sec.android.app.camera":       { label: "Camera",         uid: 10184, mbPerMin: 0,    about: "photos" },
+  "com.sec.android.app.shealth":      { label: "Samsung Health", uid: 10185, mbPerMin: 0.05, about: "exercise, health measures" },
+  "com.samsung.android.app.notes":    { label: "Samsung Notes",  uid: 10186, mbPerMin: 0.01, about: "memo, checklist" },
+  "com.sec.android.app.clockpackage": { label: "Clock",          uid: 10187, mbPerMin: 0,    about: "alarm, timer" },
+  "com.samsung.android.app.reminder": { label: "Reminder",       uid: 10188, mbPerMin: 0.01, about: "to-do, tasks" },
+  "com.sec.android.daemonapp":        { label: "Weather",        uid: 10189, mbPerMin: 0.2,  about: "weather" },
 };
 const BT_DEVICES = { "Galaxy Buds": "AA:BB:CC:DD:EE:FF", "Car Audio": "11:AA:22:BB:33:CC" };
 /* Android activity recognition codes (DetectedActivity) and transitions (ENTER 0, EXIT 1) */

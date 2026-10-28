@@ -225,7 +225,11 @@ class AgentRunner:
             ex = (self.VOCAB.get("extraApps") or {}).get(p)
             if ex or p in (self.VOCAB.get("apps") or {}):
                 S["installed"].append(p)
-                self.phone.apps.setdefault(p, dict(label=(ex.get("label") if isinstance(ex, dict) else ex) or p, uid=10200 + len(S["installed"]), mbPerMin=1))
+                if isinstance(ex, dict):  # fixed label / uid / data rate from vocabulary_extra.json
+                    app = dict(label=ex.get("label") or p, uid=ex.get("uid") or 10200 + len(S["installed"]), mbPerMin=ex.get("mbPerMin", 1))
+                else:  # older form "package": "label" (e.g. added by rewrite/apply_rewrites.py)
+                    app = dict(label=ex or p, uid=10200 + len(S["installed"]), mbPerMin=1)
+                self.phone.apps.setdefault(p, app)
 
     def _hooks(self):
         sim, ph = self.sim, self.phone

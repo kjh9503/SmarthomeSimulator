@@ -71,7 +71,12 @@ if (st.asleep) { S.asleep = true; S.sleepStart = T0; S.screenOn = false; }
 for (const pkg of new Set(JSON.stringify(profile).match(/"(?:com|us|net|org|kr|jp)\.[a-z0-9_.]+"/gi) || [])) {
   const p = pkg.slice(1, -1); if (S.installed.includes(p)) continue;
   const ex = VOCAB && VOCAB.extraApps && VOCAB.extraApps[p];
-  if (ex || (VOCAB && VOCAB.apps && VOCAB.apps[p])) { S.installed.push(p); APPS[p] ||= { label: (ex && (ex.label || ex)) || p, uid: 10200 + S.installed.length, mbPerMin: 1 }; }
+  if (ex || (VOCAB && VOCAB.apps && VOCAB.apps[p])) {
+    S.installed.push(p);
+    APPS[p] ||= (ex && typeof ex === "object")  /* fixed label / uid / data rate from vocabulary_extra.json */
+      ? { label: ex.label || p, uid: ex.uid || 10200 + S.installed.length, mbPerMin: ex.mbPerMin ?? 1 }
+      : { label: ex || p, uid: 10200 + S.installed.length, mbPerMin: 1 };
+  }
 }
 
 /* ---------------- output: write finished lines, keep memory small ---------------- */

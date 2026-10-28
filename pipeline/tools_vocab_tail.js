@@ -19,7 +19,7 @@ const vocab = {
   exercises: Object.keys(EXERCISES),
   healthMeasures: Object.keys(MEASURES),
   healthRecords: { HOURLY: ["steps", "meters", "kilocalories", "averageBpm", "minBpm", "maxBpm"], SLEEP: ["durationMinutes", "startTime", "endTime"], EXERCISE: ["title", "durationMinutes", "startTime", "endTime"] },
-  apps: Object.fromEntries(Object.entries(APPS).map(([k, a]) => [k, a.label])),
+  apps: Object.fromEntries(Object.entries(APPS).map(([k, a]) => [k, a.about ? `${a.label} (${a.about})` : a.label])),
   bluetoothDevices: Object.keys(BT_DEVICES),
   weather: { states: ["clear", "cloudy", "rain", "snow"], outdoorVariables: { temperature: "C", humidity: "%", pm25: "µg/m³", windSpeed: "m/s", precipitation: "mm/h", daylight: "lux" } },
   smartThingsAlerts: ST_ALERTS.map(a => ({ category: a.category, device: a.device || `any device with ${a.attr}`, attribute: a.attr, severity: a.severity })),
