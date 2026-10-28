@@ -24,9 +24,10 @@
     "sigma": 0.6
   },
   "phoneHabits": {
-    "screenTimeoutSeconds": 30,
-    "manualScreenOff": 0.9,
-    "glancesPerDay": 22
+    "screenTimeoutSeconds": 15,
+    "manualScreenOff": 0.962,
+    "glancesPerDay": 11.5,
+    "dailySigma": 0.215
   },
   "behaviours": [
     {
@@ -1679,7 +1680,7 @@
           "from": "07:30",
           "to": "23:50"
         },
-        "perHour": 3.4
+        "perHour": 7.003
       },
       "conditions": [
         {
@@ -1710,35 +1711,49 @@
             "continue": 0.32,
             "seconds": {
               "default": {
-                "median": 60,
+                "median": 120.6,
                 "sigma": 1.2
               },
               "com.kakao.talk": {
-                "median": 51,
+                "median": 102.5,
                 "sigma": 1.2
               },
               "com.instagram.android": {
-                "median": 143,
+                "median": 287.4,
                 "sigma": 1.1
               },
               "com.google.android.youtube": {
-                "median": 475,
+                "median": 954.8,
                 "sigma": 1.0
               },
               "com.android.chrome": {
-                "median": 178,
+                "median": 357.8,
                 "sigma": 1.1
               },
               "com.google.android.apps.maps": {
-                "median": 158,
+                "median": 317.6,
                 "sigma": 1.0
+              }
+            },
+            "check": {
+              "first": {
+                "com.kakao.talk": 8,
+                "com.instagram.android": 0.75,
+                "com.google.android.youtube": 0.5,
+                "com.android.chrome": 0.5,
+                "com.google.android.apps.maps": 0.125
+              },
+              "share": 0.461,
+              "seconds": {
+                "median": 10,
+                "sigma": 0.8
               }
             }
           }
         }
       ],
       "probability": 1,
-      "maxPerDay": 80
+      "maxPerDay": 229
     },
     {
       "id": "r_bedtime",
@@ -1848,5 +1863,67 @@
       "maxPerDay": 1,
       "priority": 5
     }
-  ]
+  ],
+  "phoneUseLevel": "heavy",
+  "phonePerson": {
+    "level": "heavy",
+    "seed": 63,
+    "drawn": {
+      "unlocksPerHour": 2.489,
+      "unlocksPerDay": 59.7,
+      "appMinutesPerHour": 19.51,
+      "appMinutesPerDay": 468.3,
+      "checkShare": 0.461,
+      "manualScreenOff": 0.962,
+      "glancesPerDay": 11.5,
+      "screenTimeoutSeconds": 15,
+      "dailySigma": 0.215
+    },
+    "factors": {
+      "rate": 2.0597,
+      "seconds": 2.0101,
+      "expectedBusyShare": 0.478
+    },
+    "template": {
+      "r_phone_use": {
+        "perHour": 3.4,
+        "seconds": [
+          {
+            "default": {
+              "median": 60,
+              "sigma": 1.2
+            },
+            "com.kakao.talk": {
+              "median": 51,
+              "sigma": 1.2
+            },
+            "com.instagram.android": {
+              "median": 143,
+              "sigma": 1.1
+            },
+            "com.google.android.youtube": {
+              "median": 475,
+              "sigma": 1.0
+            },
+            "com.android.chrome": {
+              "median": 178,
+              "sigma": 1.1
+            },
+            "com.google.android.apps.maps": {
+              "median": 158,
+              "sigma": 1.0
+            }
+          }
+        ]
+      }
+    },
+    "sources": {
+      "unlocksPerHour, appMinutesPerHour": "Winbush et al. 2025, PNAS 122(43) e2427311122, 10,099 US adults, Android",
+      "checkShare": "assumption: uniform 0.25-0.55; 41% of sessions under 40 s in arXiv 2609.24477 (Denmark, 2024)",
+      "manualScreenOff": "assumption: beta(4.5, 0.5); Hintze et al. 2014: some always switch off by hand, some almost never",
+      "glancesPerDay": "Hintze et al. 2014 (UbiComp): locked sessions median 22, mean 33 a day",
+      "screenTimeoutSeconds": "assumption; Galaxy default 30 s (Samsung support)",
+      "dailySigma": "Appiah et al. 2026 (J Technol Behav Sci): within-person CV of daily unlocks mostly > 25%, examples 16% and 60%; StudentLife 2013"
+    }
+  }
 }

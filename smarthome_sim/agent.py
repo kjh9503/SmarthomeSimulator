@@ -157,7 +157,9 @@ class AgentRunner:
         self.check_stats = {k: dict(checked=0, turnedOff=0, leftOn=0) for k in ("bedtime", "leaving", "morning")}
         cm = profile.get("cookingMinutes")
         self.cook_default = cm or dict(dist="lognormal", median=15, sigma=0.6)
-        self.behaviours = [dict(b, _st={}, _firings=0) for b in profile["behaviours"]]
+        self.behaviours = [dict(b, _st={}, _firings=0, _phoneUse=any(a["do"] == "phone.useApps" for a in b["actions"]))
+                           for b in profile["behaviours"]]
+        self.day_mult_day, self.day_mult = -1, 1.0
         self._setup_start()
         self._hooks()
         self.prev_person = self._snap()
@@ -524,6 +526,12 @@ class AgentRunner:
         """[(package, seconds), ...] for one phone use: the first app from 'first', then with probability 'continue'
         a different app from 'next' (default: 'first'), each used for a lognormal number of seconds"""
         inst = set(self.S["installed"])
+        ck = args.get("check")
+        if ck and self.rnd.random() < float(ck.get("share", 0)):  # a quick check: one app, a few seconds
+            cf = {p: w for p, w in (ck.get("first") or args.get("first") or {}).items() if p in inst and w > 0}
+            if cf:
+                d = ck.get("seconds") or dict(median=10, sigma=0.8)
+                return [(self.pick(list(cf), list(cf.values())), max(2, min(300, d["median"] * math.exp(d["sigma"] * self.gauss()))))]
         first = {p: w for p, w in (args.get("first") or {}).items() if p in inst and w > 0}
         nxt = {p: w for p, w in (args.get("next") or args.get("first") or {}).items() if p in inst and w > 0}
         secs = args.get("seconds") or {}
@@ -543,6 +551,16 @@ class AgentRunner:
             if not cand:
                 return plan
             cur = self.pick(list(cand), list(cand.values()))
+
+    def phone_day_mult(self, t):
+        """today's factor on the rate of phone-use rules: lognormal with mean 1 and sigma phoneHabits.dailySigma
+        (within-person day-to-day variation; Appiah et al. 2026: unlock CV mostly above 25%, examples 16% and 60%)"""
+        day = (t - self.T0) // DAY_MS
+        if day != self.day_mult_day:
+            s = float(self.phone.habits.get("dailySigma", 0) or 0)
+            self.day_mult_day = day
+            self.day_mult = math.exp(s * self.gauss() - s * s / 2) if s > 0 else 1.0
+        return self.day_mult
 
     def run_chain(self, task):
         """run the apps of a phone.useApps step that fall inside this minute, at their own seconds"""
@@ -876,7 +894,7 @@ class AgentRunner:
                 if dl["at"] == t:
                     lst.append((b, dict(day=day, via="daily", daily=dl)))
             elif tr["kind"] == "rate":
-                if self.chance(tr["perHour"] / 60):
+                if self.chance(tr["perHour"] * (self.phone_day_mult(t) if b["_phoneUse"] else 1) / 60):
                     lst.append((b, dict(day=day, via="rate")))
         lst.sort(key=lambda x: -(x[0].get("priority") or 0))
         for b, how in lst:

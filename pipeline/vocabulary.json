@@ -1714,7 +1714,8 @@
     "next": "{package: weight} for each following app (optional, default = first; never the same app twice in a row)",
     "continue": "chance to switch to another app after each app (0-1; 0.32 gives 1 app 68%, 2 apps 22%, 3 apps 7%, as in Bohmer et al. 2011)",
     "seconds": "{\"default\": {\"median\": s, \"sigma\": x}, package: {...}}: time on each app, lognormal",
-    "maxApps": "optional cap on apps in one use (default 15)"
+    "maxApps": "optional cap on apps in one use (default 15)",
+    "check": "optional quick checks: {\"share\": 0-1 chance a use is a check, \"first\": {package: weight}, \"seconds\": {\"median\": s, \"sigma\": x}}: one app for a few seconds (share and seconds are set by sample_phone_person.py)"
    },
    "note": "one ordinary use of the phone: the screen comes on, the apps follow one another, the screen goes off by hand or by time-out (phoneHabits). Use this for everyday phone use instead of openApp / wait / closeApp."
   },

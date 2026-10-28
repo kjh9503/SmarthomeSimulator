@@ -150,19 +150,19 @@ sources; the older ones are used only where no recent source has the number.
 | First app | communication apps 49.6% of uses | same |
 | Next app | after most apps a communication app follows with at least 23% | same |
 
-So, for a median Korean adult: phone-use rules firing about 3.4 times per waking hour in total (a use that is still
-running skips the next firing, so about 2.4 uses per hour happen), about 5 hours of app time a day, the messenger first
-in about half of the uses, `seconds` per app as a lognormal (messenger about a minute, social media and browsing two to
-three minutes, video several minutes). Move these with the persona: a light user (older, busy at work) about half,
-a heavy user (student, gamer) up to the upper quartile.
+How much the person uses the phone is NOT written by you as numbers. You write:
+- `phoneUseLevel` (top level): "light", "medium" or "heavy", from the persona (lower, middle or upper third of adults;
+  e.g. a student or a gamer heavy, a busy manual worker or an older person light);
+- the phone-use rules: which apps, their weights, at which places and times, and the apps' relative lengths in
+  `seconds` (messenger shortest, social media and browsing longer, video longest); optionally `check.first`, the apps
+  this person checks quickly (mostly the messenger).
+Then `pipeline/sample_phone_person.py` draws the person's numbers from the population distributions above (uses and app
+time per day from Winbush 2025 within the level's third, share of quick checks, screen-off habit, glances, time-out,
+day-to-day variation), rescales the rules' `perHour` and `seconds` to reach them, and writes `phoneHabits` and a
+`phonePerson` record. Do not write `phoneHabits` or `phonePerson` yourself.
 Only installed apps can be used: VOCABULARY.apps for everyone, VOCABULARY.extraApps only if the persona would have them.
 
-`phoneHabits` (top level of the profile):
-- `screenTimeoutSeconds`: the phone's setting, one of 15, 30, 60, 120, 300, 600 (Galaxy default 30)
-- `manualScreenOff`: chance the person presses the power button right after a use (default 0.9; people differ a lot)
-- `glancesPerDay`: default 22
-
-Template (profile 063, a university student; adapt apps, weights and times to the persona):
+Template (profile 063, a university student; adapt apps, weights and relative times to the persona; the numbers of perHour and the medians are rescaled by the sampler):
 
 ```json
 {
@@ -188,9 +188,10 @@ Template (profile 063, a university student; adapt apps, weights and times to th
 }
 ```
 
-With this template and `phoneHabits` 30 / 0.9 / 22, profile 063 (a university student) gives per day: 59 screen-ons
-(21 glances, 38 uses with apps), 272 min screen time with apps, apps per use 68 / 21 / 7 %; KakaoTalk 21 opens and
-36 min, YouTube 113 min, Instagram 56 min.
+After `sample_phone_person.py`, profile 063 at each level (one year, seed 63) gives per day:
+light 17 uses (target 17), 120 app min (target 155); medium 35 uses (35), 271 min (311); heavy 60 uses (60), 427 min
+(468); in all levels about 48% of uses under 40 s, glances as drawn, day-to-day CV of uses 0.19-0.30. 063 itself is
+heavy (a university student).
 
 ### Daily-life routines
 

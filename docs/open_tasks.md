@@ -28,8 +28,12 @@ Done in the Python engine: `phone.useApps` (apps in a row), screen on when a pho
 (`phoneHabits.manualScreenOff`) or after `screenTimeoutSeconds`, glances at the lock screen (`glancesPerDay`).
 Not done yet:
 - The JS runner (`tools/js/run_agent.js`) and the browser page do not have `phone.useApps`, the screen model or glances.
-- Short app uses: in 063 only 1.0% of app uses are under 5 s; Bohmer et al. 2011 report 49.8% of uses under 5 s
-  (their unit is a chain of apps, ours a single app, so the numbers are not the same measure).
+- Quick checks (phone.useApps check) are in: about 48% of uses are under 40 s (41% in arXiv 2609.24477), but only
+  about 9% under 5 s (Bohmer et al. 2011: 49.8% of chains, 2011 data).
+- Apps per use: checks are one app, so one-app uses are about 83% (Bohmer et al. 2011: 68.2%). Not changed yet:
+  matching it with the geometric `continue` would give too many uses of 4+ apps.
+- App time reaches 77-91% of the drawn target (light 120 of 155 min, heavy 427 of 468); the sampler's estimate of
+  skipped firings is rough.
 - Opening the app before using it (SmartThings before app control, Calendar, Phone, Messages, Camera): agreed, not built.
 - Music pause, health entry, exercise: the choice "with the app or without" (agreed to be a probability), not built.
 - Glances do not follow notifications yet (there are no incoming notifications, see below).

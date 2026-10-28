@@ -120,6 +120,17 @@ class Checker:
                     if not isinstance(x, (int, float)) or x < 0: self.err(pid, f"{where}: {k}: weight of {pkg} must be a number >= 0")
             c = args.get("continue", 0.32)
             if not isinstance(c, (int, float)) or not 0 <= c < 1: self.err(pid, f"{where}: continue must be a number in [0, 1)")
+            ck = args.get("check")
+            if ck is not None:
+                if not isinstance(ck, dict): self.err(pid, f"{where}: check must be an object")
+                else:
+                    sh = ck.get("share", 0)
+                    if not isinstance(sh, (int, float)) or not 0 <= sh <= 1: self.err(pid, f"{where}: check.share must be in [0, 1]")
+                    for pkg in (ck.get("first") or {}):
+                        if pkg not in self.apps: self.err(pid, f"{where}: check.first: unknown app '{pkg}'")
+                    d = ck.get("seconds")
+                    if d is not None and (not isinstance(d, dict) or not isinstance(d.get("median"), (int, float)) or d["median"] <= 0):
+                        self.err(pid, f"{where}: check.seconds must be {{median > 0, sigma >= 0}}")
             for key, d in (args.get("seconds") or {}).items():
                 if key != "default" and key not in self.apps: self.err(pid, f"{where}: seconds: unknown app '{key}'")
                 if not isinstance(d, dict) or not isinstance(d.get("median"), (int, float)) or d["median"] <= 0 or not isinstance(d.get("sigma"), (int, float)) or d["sigma"] < 0:
