@@ -32,8 +32,9 @@ Not done yet:
   about 9% under 5 s (Bohmer et al. 2011: 49.8% of chains, 2011 data).
 - Apps per use: checks are one app, so one-app uses are about 83% (Bohmer et al. 2011: 68.2%). Not changed yet:
   matching it with the geometric `continue` would give too many uses of 4+ apps.
-- App time reaches 77-91% of the drawn target (light 120 of 155 min, heavy 427 of 468); the sampler's estimate of
-  skipped firings is rough.
+- App time reaches 94-97% of the drawn target and uses 96-97% (sampler with the engine's 1-hour cap per app,
+  2026-10-28). Not explained: the rest; the sampler counts all unlocks as phone.useApps uses, but other rules
+  (music on the way, the pattern) also unlock the phone.
 - Opening the app before using it (SmartThings before app control, Calendar, Phone, Messages, Camera): agreed, not built.
 - Music pause, health entry, exercise: the choice "with the app or without" (agreed to be a probability), not built.
 - Glances do not follow notifications yet (there are no incoming notifications, see below).

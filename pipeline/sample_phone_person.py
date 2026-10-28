@@ -64,11 +64,20 @@ def day_share(days):
     return len(days) / 7
 
 
-def expected_use_seconds(args):
-    """mean seconds of one full (non-check) use of a phone.useApps step"""
+def capped_mean_ln(d, scale=1.0):
+    """mean of min(X, cap) for X lognormal(median * scale, sigma); cap = d['max'] or 3600 s, as the engine cuts it"""
+    mu, s, c = math.log(d["median"] * scale), d["sigma"], float(d.get("max", 3600))
+    if s <= 0:
+        return min(c, math.exp(mu))
+    N = statistics.NormalDist()
+    return math.exp(mu + s * s / 2) * N.cdf((math.log(c) - mu - s * s) / s) + c * (1 - N.cdf((math.log(c) - mu) / s))
+
+
+def expected_use_seconds(args, scale=1.0):
+    """mean seconds of one full (non-check) use of a phone.useApps step, with every app time scaled by `scale`"""
     secs = args.get("seconds") or {}
     dflt = secs.get("default") or dict(median=30, sigma=1.5)
-    m = lambda p: mean_ln(secs.get(p) or dflt)
+    m = lambda p: capped_mean_ln(secs.get(p) or dflt, scale)
     wmean = lambda w: sum(x * m(p) for p, x in w.items()) / sum(w.values())
     first = args["first"]
     nxt = args.get("next") or first
@@ -131,11 +140,17 @@ def main():
             ck["share"] = round(share, 3)
             ck.setdefault("seconds", dict(CHECK_SECONDS))
             args["check"] = ck
-            e_full[b["id"]] = expected_use_seconds(args)
+            e_full[b["id"]] = args
     f0 = sum(fires.values())
-    e_avg = sum(fires[k] * e_full[k] for k in fires) / f0
+    e_avg = lambda scale: sum(fires[k] * expected_use_seconds(e_full[k], scale) for k in fires) / f0
     full_target = max(10.0, (M * 60 - U * share * mean_check) / (U * (1 - share)))
-    g = full_target / e_avg
+    lo_g, hi_g = 0.01, 100.0  # the capped mean grows with the scale: find the scale that reaches the target
+    for _ in range(80):
+        mid = math.sqrt(lo_g * hi_g)
+        lo_g, hi_g = (mid, hi_g) if e_avg(mid) < full_target else (lo_g, mid)
+    g = math.sqrt(lo_g * hi_g)
+    if e_avg(g) < 0.98 * full_target:
+        print(f"warning: app time can reach only {e_avg(g):.0f} of {full_target:.0f} s per use (per-app cap)")
     busy = min(0.85, M / WAKING_MIN)
     k = (U / (1 - busy)) / f0
     for b in rules:

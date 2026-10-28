@@ -1711,27 +1711,27 @@
             "continue": 0.32,
             "seconds": {
               "default": {
-                "median": 120.6,
+                "median": 135.1,
                 "sigma": 1.2
               },
               "com.kakao.talk": {
-                "median": 102.5,
+                "median": 114.8,
                 "sigma": 1.2
               },
               "com.instagram.android": {
-                "median": 287.4,
+                "median": 321.9,
                 "sigma": 1.1
               },
               "com.google.android.youtube": {
-                "median": 954.8,
+                "median": 1069.3,
                 "sigma": 1.0
               },
               "com.android.chrome": {
-                "median": 357.8,
+                "median": 400.7,
                 "sigma": 1.1
               },
               "com.google.android.apps.maps": {
-                "median": 317.6,
+                "median": 355.7,
                 "sigma": 1.0
               }
             },
@@ -1881,7 +1881,7 @@
     },
     "factors": {
       "rate": 2.0597,
-      "seconds": 2.0101,
+      "seconds": 2.2512,
       "expectedBusyShare": 0.478
     },
     "template": {

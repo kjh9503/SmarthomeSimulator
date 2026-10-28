@@ -188,10 +188,10 @@ Template (profile 063, a university student; adapt apps, weights and relative ti
 }
 ```
 
-After `sample_phone_person.py`, profile 063 at each level (one year, seed 63) gives per day:
-light 17 uses (target 17), 120 app min (target 155); medium 35 uses (35), 271 min (311); heavy 60 uses (60), 427 min
-(468); in all levels about 48% of uses under 40 s, glances as drawn, day-to-day CV of uses 0.19-0.30. 063 itself is
-heavy (a university student).
+After `sample_phone_person.py`, profile 063 at each level (one year, seed 63) gives per day (target in brackets):
+light 16.3 uses (17), 146 app min (155); medium 33.9 uses (35), 298 min (311); heavy 57.6 uses (60), 453 min (468);
+in all levels about 47% of uses under 40 s, glances as drawn, day-to-day CV of uses 0.19-0.30. 063 itself is heavy
+(a university student).
 
 ### Daily-life routines
 
