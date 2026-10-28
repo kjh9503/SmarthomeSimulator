@@ -1,6 +1,6 @@
 # Agent simulator: design notes and references
 
-State: 2026-10-29, repo commit a1d0c42. What was decided, why, what was checked, and the sources.
+State: 2026-10-29, repo commit a1d0c42. Korean version: `docs/agent_design_notes.ko.md`. What was decided, why, what was checked, and the sources.
 Marks: **[src]** taken from a source listed in References; **[assume]** our assumption, no source;
 **[ours]** measured in our own runs (profile 063, Python, seed 63, 365 days of 2026, unless noted).
 
@@ -200,7 +200,7 @@ immediate response timing, gap-dependent off probabilities, persona -> daily-lif
 | Appiah 2026 | Appiah K. N., Adu N., Singh D. K. Using Fixed-Effects Panel Models to Assess Within-Person Variation in Smartphone Unlocks from Continuous Sensing. J. Technology in Behavioral Science, 2026. https://doi.org/10.1007/s41347-026-00691-7 | day-to-day variation (StudentLife 2013, 47 students); some internal inconsistencies noted | full PDF (user) |
 | arXiv 2609.24477 | Beyond Screen Time: Demonstrating the Value of App Activity Logs to Understand User Behavior Further. arXiv 2609.24477 (2026), https://arxiv.org/html/2609.24477v1 | share of sessions under 40 s (Denmark, 13-17, iOS, 2024) | web page |
 | Common Sense 2023 | Common Sense Media. Constant Companion: A Week in the Life of a Young Person's Smartphone Use. 2023. https://www.commonsensemedia.org/sites/default/files/research/report/2023-cs-smartphone-research-report_final-for-web.pdf | pickups (median 51), 4.5 h, notifications (US 11-17, 2022) | web summary |
-| Hintze 2014 | Hintze D., Findling R. D., Scholz S., Mayrhofer R. Mobile Device Usage Characteristics: The Effect of Context and Form Factor on Locked and Unlocked Usage. UbiComp 2014. https://ins.jku.at/publications/2014/Hintze_2014_UbiComp.pdf | glances (locked use), session lengths | web summary |
+| Hintze 2014 | Hintze et al., UbiComp 2014 (title and co-authors not checked). https://ins.jku.at/publications/2014/Hintze_2014_UbiComp.pdf | glances (locked use), session lengths | web summary |
 | Bohmer 2011 | Bohmer M., Hecht B., Schoning J., Kruger A., Bauer G. Falling Asleep with Angry Birds, Facebook and Kindle. MobileHCI 2011. https://www.brenthecht.com/papers/bhecht_mobilehci2011_sleepbirds.pdf | apps per use, first and next app, app session 71.6 s | web summary |
 | Device Analyzer 2017 | How to Measure Sessions of Mobile Device Use? arXiv 1711.09408. https://arxiv.org/pdf/1711.09408 | session definition (unlock to lock), sessions per day | web summary |
 | Turner 2019 | Turner L. et al., Royal Society Open Science, 2019 (Cardiff University news): https://www.cardiff.ac.uk/news/view/1462214 | 87 app switches a day (53 people) | news page |
@@ -217,5 +217,5 @@ immediate response timing, gap-dependent off probabilities, persona -> daily-lif
 | AgentSense | AgentSense: Virtual Sensor Data Generation Using LLM Agents in Simulated Home Environments. AAAI. https://arxiv.org/abs/2506.11773 | related work: synthetic data validated on real HAR data | abstract |
 | Android docs | Emulator console https://developer.android.com/studio/run/emulator-console ; netsim https://developer.android.com/studio/run/emulator-networking-advanced ; Android 10 privacy (clipboard) https://developer.android.com/about/versions/10/privacy/changes | emulator decision | web pages |
 
-Not read (could not open): Ferreira et al. 2014 micro-usage (41.5% under 15 s, only as cited in arXiv 2609.24477);
+Not read (could not open): Ferreira et al. 2014 micro-usage (41.5%, only as cited in arXiv 2609.24477; its threshold not checked);
 PMC11303118 (daily smartphone use and sleep, adolescents); Ohme et al. 2021 (iOS Screen Time data donations, abstract only).
