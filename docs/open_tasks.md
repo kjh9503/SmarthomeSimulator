@@ -22,6 +22,18 @@ Open questions:
 - Engine: allow future dates in `begin` (e.g. weekly class times) and decide whether `calendar` prerequisites run
   directly or are always written as routines.
 
+## Phone screen and app use: what is not done yet (2026-10-28)
+
+Done in the Python engine: `phone.useApps` (apps in a row), screen on when a phone use starts, screen off by hand
+(`phoneHabits.manualScreenOff`) or after `screenTimeoutSeconds`, glances at the lock screen (`glancesPerDay`).
+Not done yet:
+- The JS runner (`tools/js/run_agent.js`) and the browser page do not have `phone.useApps`, the screen model or glances.
+- Short app uses: in 063 only 3.7% of app uses are under 5 s; Bohmer et al. 2011 report 49.8% of uses under 5 s
+  (their unit is a chain of apps, ours a single app, so the numbers are not the same measure).
+- Opening the app before using it (SmartThings before app control, Calendar, Phone, Messages, Camera): agreed, not built.
+- Music pause, health entry, exercise: the choice "with the app or without" (agreed to be a probability), not built.
+- Glances do not follow notifications yet (there are no incoming notifications, see below).
+
 ## Incoming phone events (2026-10-22)
 
 The simulator can post incoming notifications, ringing calls and incoming SMS, but nothing triggers them: the agent's

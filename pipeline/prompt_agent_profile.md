@@ -125,10 +125,71 @@ Laundry:
 
 (The `recent_action` condition matches any washer start: the engine compares only the fields given.)
 
+### Phone use
+
+Write everyday phone use with `phone.useApps`, not with phone.openApp / wait / phone.closeApp. One `phone.useApps`
+step is one use of the phone: the engine turns the screen on, opens the first app, switches to further apps with
+probability `continue`, closes the last app and turns the screen off (by hand or after the time-out). Never write
+screen on/off steps for this; the engine does it, and also turns the screen on for app control, calendar, calls, SMS,
+photos and the like.
+
+Write one or more rules with trigger `rate`, so that the uses fall through the waking day. Different rules can carry
+different apps for different places or times (commute: video and music; evening at home: messenger and video).
+
+Values from studies of real phones (use them as the centre and move them with the persona):
+
+| Value | Real data | Source |
+|---|---|---|
+| Uses with unlocking per day | median 20 (mean 25) | Hintze et al. 2014, 1,960 Android phones |
+| Glances at the lock screen per day | median 22 (mean 33) | same; set `phoneHabits.glancesPerDay` |
+| Screen time per day | median 97 min (71 min unlocked) | same |
+| Apps in one use | 1: 68.2%, 2: 19.5%, 3: 6.6% | Bohmer et al. 2011, 4,125 Android users; `continue` 0.32 gives 68 / 22 / 7 % |
+| First app | communication apps (messenger, SMS, phone, mail) 49.6% of uses | same |
+| Next app | after most apps a communication app follows with at least 23% | same |
+
+So: total rate of the phone-use rules about 1.2 per waking hour for a median person (more for a heavy user, fewer for
+someone who rarely uses the phone); the messenger first in about half of the uses; `seconds` per app as a lognormal
+(a messenger tens of seconds, social media and browsing about a minute or two, video several minutes).
+Only installed apps can be used: VOCABULARY.apps for everyone, VOCABULARY.extraApps only if the persona would have them.
+
+`phoneHabits` (top level of the profile):
+- `screenTimeoutSeconds`: the phone's setting, one of 15, 30, 60, 120, 300, 600 (Galaxy default 30)
+- `manualScreenOff`: chance the person presses the power button right after a use (default 0.9; people differ a lot)
+- `glancesPerDay`: default 22
+
+Template (a median person living alone; adapt apps, weights and times to the persona):
+
+```json
+{
+  "id": "r_phone_use", "kind": "routine",
+  "description": "Ordinary phone use while awake: about 20 uses a day, one or more apps in a row.",
+  "trigger": { "kind": "rate", "window": { "from": "07:30", "to": "23:50" }, "perHour": 1.2 },
+  "conditions": [ { "kind": "phone_state", "field": "asleep", "op": "==", "value": false } ],
+  "actions": [
+    { "do": "phone.useApps", "args": {
+      "first": { "com.kakao.talk": 5, "com.instagram.android": 3, "com.google.android.youtube": 2,
+                 "com.android.chrome": 2, "com.google.android.apps.maps": 0.5 },
+      "next":  { "com.kakao.talk": 4, "com.instagram.android": 2, "com.google.android.youtube": 1.5,
+                 "com.android.chrome": 1.5, "com.google.android.apps.maps": 0.3 },
+      "continue": 0.32,
+      "seconds": { "default": { "median": 20, "sigma": 1.3 },
+                   "com.kakao.talk": { "median": 25, "sigma": 1.2 },
+                   "com.instagram.android": { "median": 90, "sigma": 1.1 },
+                   "com.google.android.youtube": { "median": 240, "sigma": 1.0 },
+                   "com.android.chrome": { "median": 60, "sigma": 1.1 },
+                   "com.google.android.apps.maps": { "median": 40, "sigma": 1.0 } } } }
+  ],
+  "probability": 1, "maxPerDay": 60
+}
+```
+
+With this template and `phoneHabits` 30 / 0.9 / 22, profile 063 gives per day: 37 screen-ons (19 glances, 18 uses
+with apps), 88 min screen time, apps per use 68 / 21 / 7 %.
+
 ### Daily-life routines
 
 TODO (not agreed yet): the base list every profile needs (waking and sleeping, meals, commute or day place,
-evening at home, phone use, ...).
+evening at home, ...).
 
 ### Output
 

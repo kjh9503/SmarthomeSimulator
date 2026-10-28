@@ -152,6 +152,25 @@
         }
       }
     },
+    "phoneHabits": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "How this person handles the phone screen. The engine turns the screen on when a phone use starts and off when it ends; these values decide how it goes off, and how often the person glances at the lock screen.",
+      "properties": {
+        "screenTimeoutSeconds": {
+          "enum": [15, 30, 60, 120, 300, 600],
+          "description": "The phone's screen time-out setting (Galaxy default 30)."
+        },
+        "manualScreenOff": {
+          "type": "number", "minimum": 0, "maximum": 1,
+          "description": "Chance the person turns the screen off by hand right after a use; otherwise it goes off after the time-out. Default 0.9. People differ a lot (Hintze et al. 2014)."
+        },
+        "glancesPerDay": {
+          "type": "number", "minimum": 0,
+          "description": "Looks at the lock screen without unlocking (time, notifications) per waking day. Default 22 (median in Hintze et al. 2014; mean 33)."
+        }
+      }
+    },
     "cookingMinutes": {
       "$ref": "pattern.schema.json#/$defs/cookingMinutes",
       "description": "This person's usual cooking time: every time the stove is turned on, a time is drawn and the person turns it off then (a step may override it). Default lognormal, median 15, sigma 0.6."

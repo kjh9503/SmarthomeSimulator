@@ -236,6 +236,12 @@ class Phone:
                       installed=list(APPS), calendar={}, nextEventId=1, notifSeq=100, captureSeq=100000, trip=None,
                       heart=None, heartNoise=0, cadenceNoise=0, bpm=None)
         self.apps = {k: dict(v) for k, v in APPS.items()}
+        # screen: on when the person starts using the phone, off when a use ends (by hand with probability manualScreenOff,
+        # else after screenTimeoutSeconds). Galaxy default timeout 30 s (Samsung support). Set per persona by the agent runner.
+        self.habits = dict(screenTimeoutSeconds=30, manualScreenOff=0.9, glancesPerDay=22)
+        self.s["screenOffAt"] = None  # time the screen goes off (pending), None = no off planned
+        self.rand = None              # the person's random source (set by the agent runner); None = always turn off by hand
+        self.in_chain = False         # a phone.useApps chain is running: a closed app is not the end of the use
         self.acc = None
         self.last_step_t = None
         self.timeline = []
@@ -299,6 +305,7 @@ class Phone:
     # ----- time passing (once per simulated minute) -----
     def step(self, t):
         s = self.s
+        self.apply_pending(t)
         if self.last_step_t is None or t - self.last_step_t > MIN_MS:
             self.acc = None
         self.last_step_t = t
@@ -549,16 +556,62 @@ class Phone:
                          dict(state=state, deviceName=name, deviceAddress=BT_DEVICES[name]), f"CONN:BT:{state}:{BT_DEVICES[name]}:{t}", t)
 
     def screen(self, on):
-        s = self.s
-        if s["screenOn"] == on:
-            return 0
-        s["screenOn"] = on
-        if not on:
-            s["foreground"] = None
-        st = "SCREEN_ON" if on else "SCREEN_OFF"
+        """the person turns the screen on or off (power button)"""
         t = self.now()
-        self.emit("DEVICE_STATE", "system", "Screen on" if on else "Screen off", st, dict(state=st, action=f"android.intent.action.{st}"), f"DEVICE:{st}:{t}", t)
+        return self.wake_screen(t) if on else self.screen_off(t)
+
+    def _screen_line(self, st, t):
+        self.emit("DEVICE_STATE", "system", "Screen on" if st == "SCREEN_ON" else "Screen off", st,
+                  dict(state=st, action=f"android.intent.action.{st}"), f"DEVICE:{st}:{t}", t)
+
+    def apply_pending(self, t):
+        """a planned screen-off whose time has come (time out or by hand after a use or a glance)"""
+        off = self.s["screenOffAt"]
+        if off is not None and off <= t:
+            self.screen_off(off)
+
+    def wake_screen(self, t):
+        """the screen is needed at t: a planned off before t happens first, a planned off after t is cancelled"""
+        s = self.s
+        self.apply_pending(t)
+        s["screenOffAt"] = None
+        if s["screenOn"]:
+            return 0
+        s["screenOn"] = True
+        self._screen_line("SCREEN_ON", t)
         return 1
+
+    def screen_off(self, t):
+        """screen off at t; an app still in front goes to the background (Android pauses it)"""
+        s = self.s
+        s["screenOffAt"] = None
+        if not s["screenOn"]:
+            return 0
+        if s["foreground"]:
+            self.usage(s["foreground"], "BACKGROUND", t)
+            s["foreground"] = None
+        s["screenOn"] = False
+        self._screen_line("SCREEN_OFF", t)
+        return 1
+
+    def end_use(self, t, force=False):
+        """a use of the phone ends at t: plan the screen-off (by hand within 1-3 s, or after the timeout).
+        Not the end while an app is still in front or an app chain is running, unless force (an app left open)."""
+        s = self.s
+        if not s["screenOn"] or s["asleep"] or self.in_chain or (s["foreground"] and not force):
+            return
+        r = self.rand or (lambda: 0.0)
+        if r() < self.habits["manualScreenOff"]:
+            s["screenOffAt"] = t + (1 + int(r() * 3)) * 1000
+        else:
+            s["screenOffAt"] = t + int(self.habits["screenTimeoutSeconds"]) * 1000
+
+    def glance(self, t, seconds):
+        """screen on without unlocking (time, notifications), off after seconds"""
+        if self.wake_screen(t):
+            self.s["screenOffAt"] = t + int(seconds * 1000)
+            return 1
+        return 0
 
     def power(self, connected):
         s = self.s
@@ -576,8 +629,8 @@ class Phone:
         s = self.s
         if pkg not in s["installed"] or s["foreground"] == pkg:
             return 0
-        n = self.screen(True)
         t = self.now()
+        n = self.wake_screen(t)
         if s["foreground"]:
             n += self.usage(s["foreground"], "BACKGROUND", t)
         s["foreground"] = pkg
@@ -589,7 +642,10 @@ class Phone:
             return 0
         p = s["foreground"]
         s["foreground"] = None
-        return self.usage(p, "BACKGROUND", self.now())
+        t = self.now()
+        n = self.usage(p, "BACKGROUND", t)
+        self.end_use(t)
+        return n
 
     def usage(self, pkg, action, t):
         label = (self.apps.get(pkg) or {}).get("label", pkg)
@@ -705,7 +761,9 @@ class Phone:
         if why:
             self.sim.last_refusal = f"The person cannot fall asleep while {why}"
             return 0
-        n = self.screen(False)
+        t = self.now()
+        self.apply_pending(t)
+        n = self.screen_off(t)
         s["asleep"] = True
         s["sleepStart"] = self.now()
         return n
@@ -887,6 +945,33 @@ def _txt(v):
     if isinstance(v, float) and v.is_integer():
         return str(int(v))
     return str(v)
+
+
+# Phone actions the person does on the screen: the screen comes on first, and the use ends after them
+# (unless an app stays in front). 1 = always, a function = depends on the arguments.
+USES_SCREEN = dict(control_home=1, calendar_add=1, calendar_update=1, calendar_delete=1, measure=1, photo=1, screenshot=1,
+                   copy_clipboard=1, install=1, uninstall=1,
+                   call=lambda state, *a: state == "OFFHOOK", sms=lambda d="INCOMING", *a: d == "OUTGOING")
+
+
+def _uses_screen(name, rule):
+    f = getattr(Phone, name)
+
+    def wrapped(self, *args, **kw):
+        if not (rule == 1 or (callable(rule) and rule(*args))) or self.s["asleep"] or self.driving:
+            return f(self, *args, **kw)
+        t = self.now()
+        self.wake_screen(t)
+        n = f(self, *args, **kw)
+        self.end_use(self.now())
+        return n
+
+    wrapped.__name__ = name
+    setattr(Phone, name, wrapped)
+
+
+for _n, _r in USES_SCREEN.items():  # inside the awake check below: a refused action does not touch the screen
+    _uses_screen(_n, _r)
 
 
 def _needs_awake(name, rule):

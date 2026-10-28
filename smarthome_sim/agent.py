@@ -19,6 +19,10 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
 DOW = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"]
 BODY_DO = {"person.travel", "person.moveRoom", "home.record"}
+# glances at the lock screen: Hintze et al. 2014 (1,960 Android phones): locked sessions median 56 s, mean 88 s
+# -> lognormal sigma = sqrt(2 ln(88/56)) = 0.95; median 22 glances a day, spread over about 16 waking hours
+GLANCE = dict(median=56, sigma=0.95)
+GLANCE_AWAKE_MIN = 16 * 60
 DEFER_MAX_MIN = 180  # a daily behaviour waits at most this long after its minute
 
 
@@ -140,6 +144,8 @@ class AgentRunner:
         self.sim.jump_to(self.T0)
         self.phone = self.sim.phone
         self.S = self.phone.s
+        self.phone.habits.update(profile.get("phoneHabits") or {})
+        self.phone.rand = self.rnd.random
         self.roles = profile.get("roomRoles") or {}
         os.makedirs(out_dir, exist_ok=True)
         self.trace_f = open(os.path.join(out_dir, "trace.jsonl"), "w", encoding="utf-8") if trace else None
@@ -495,6 +501,14 @@ class AgentRunner:
             out = done(ph.copy_clipboard(args.get("label") or "Memo"))
         elif do == "phone.appNotice":
             out = awake() or done(ph.notify(args["package"], args.get("title") or "", args.get("text") or "", "status"))
+        elif do == "phone.useApps":
+            if S["asleep"] or ph.driving:
+                out = refused("asleep" if S["asleep"] else "The person is driving: no phone use until the drive ends")
+            elif ph.in_chain:
+                out = dict(result="no_change")  # already using the phone
+            else:
+                plan = self.app_chain(args)
+                out = dict(result="done", block=dict(chain=plan)) if plan else dict(result="no_change")
         elif do == "wait":
             out = dict(result="done", block=dict(until=t + js_round(self.num(args["minutes"])) * MIN_MS))
         else:
@@ -503,6 +517,64 @@ class AgentRunner:
             self.action_history.append((t, do, args))
         self.person_changes()
         return out
+
+    # ----- phone use: apps one after another -----
+    def app_chain(self, args):
+        """[(package, seconds), ...] for one phone use: the first app from 'first', then with probability 'continue'
+        a different app from 'next' (default: 'first'), each used for a lognormal number of seconds"""
+        inst = set(self.S["installed"])
+        first = {p: w for p, w in (args.get("first") or {}).items() if p in inst and w > 0}
+        nxt = {p: w for p, w in (args.get("next") or args.get("first") or {}).items() if p in inst and w > 0}
+        secs = args.get("seconds") or {}
+        cont = float(args.get("continue", 0.32))
+        cap = int(args.get("maxApps", 15))
+        if not first:
+            return []
+        cur = self.pick(list(first), list(first.values()))
+        plan = []
+        while True:
+            d = secs.get(cur) or secs.get("default") or dict(median=30, sigma=1.5)
+            s = d["median"] * math.exp(d["sigma"] * self.gauss())
+            plan.append((cur, max(2, min(float(d.get("max", 3600)), s))))
+            if len(plan) >= cap or self.rnd.random() >= cont:
+                return plan
+            cand = {p: w for p, w in nxt.items() if p != cur}
+            if not cand:
+                return plan
+            cur = self.pick(list(cand), list(cand.values()))
+
+    def run_chain(self, task):
+        """run the apps of a phone.useApps step that fall inside this minute, at their own seconds"""
+        c, ph = task["chain"], self.phone
+        end = self.minute_ms + MIN_MS
+        last = None
+        while c["at"] < end:
+            self.sim.clock.set_to(c["at"])
+            last = c["at"]
+            if c["i"] < len(c["plan"]):
+                pkg, secs = c["plan"][c["i"]]
+                ph.open_app(pkg)
+                c["i"] += 1
+                c["at"] += int(secs * 1000)
+            else:
+                ph.in_chain = False
+                ph.close_app()
+                task["chain"] = None
+                break
+        if last is not None:
+            self.sec = min(59, max(self.sec, (last - self.minute_ms) // 1000))
+        self.sim.clock.set_to(self.minute_ms + self.sec * 1000)
+
+    def maybe_glance(self, t):
+        """a look at the lock screen (time, notifications) while awake and not using the phone"""
+        ph, S = self.phone, self.S
+        n = float(ph.habits.get("glancesPerDay", 0))
+        if n <= 0 or S["asleep"] or ph.driving or S["screenOn"] or ph.in_chain or S["foreground"]:
+            return
+        if self.rnd.random() < n / GLANCE_AWAKE_MIN:
+            at = t + int(self.rnd.random() * 50) * 1000
+            secs = max(3, min(600, GLANCE["median"] * math.exp(GLANCE["sigma"] * self.gauss())))
+            ph.glance(at, secs)
 
     # ----- reverts, cooking -----
     def device_revert(self, a):
@@ -646,7 +718,12 @@ class AgentRunner:
     def run_task(self, task):
         s = self.stat(task["b"]["id"])
         acts = task["actions"]
-        while task["i"] < len(acts):
+        while task["i"] < len(acts) or task.get("chain"):
+            if task.get("chain"):
+                self.run_chain(task)
+                if task.get("chain"):
+                    return
+                continue
             if task["until"] and self.now() < task["until"]:
                 return
             if task["travelTo"]:
@@ -680,6 +757,10 @@ class AgentRunner:
                 task["i"] = len(acts)
                 break
             blk = r.get("block") or {}
+            if blk.get("chain"):
+                task["chain"] = dict(plan=blk["chain"], i=0, at=self.now())
+                self.phone.in_chain = True
+                continue
             if blk.get("until"):
                 task["until"] = blk["until"]
                 return
@@ -687,6 +768,8 @@ class AgentRunner:
                 task["travelTo"] = blk["travelTo"]
                 return
         task["finished"] = True
+        if self.S["foreground"] and not self.phone.in_chain and self.S["screenOffAt"] is None and any(a["do"].startswith("phone.") for a in acts):
+            self.phone.end_use(self.now(), force=True)  # an app left open: the screen goes off by hand or by time-out
         self.trace(dict(t=iso_local(task["start"]), behaviour=task["b"]["id"], outcome="followed", via=task["via"], steps=task["steps"]))
 
     # ----- event triggers -----
@@ -873,6 +956,7 @@ class AgentRunner:
                     self.run_task(task)
                     self.process_happenings()
             self.tasks = [k for k in self.tasks if not k["finished"]]
+            self.maybe_glance(t)
             self.sim.clock.set_to(t)
             if t % (6 * 3600000) == 0:
                 self.recent_phone = [e for e in self.recent_phone if e["timestamp"] >= t - DAY_MS]

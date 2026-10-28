@@ -23,6 +23,11 @@
     "median": 15,
     "sigma": 0.6
   },
+  "phoneHabits": {
+    "screenTimeoutSeconds": 30,
+    "manualScreenOff": 0.9,
+    "glancesPerDay": 22
+  },
   "behaviours": [
     {
       "id": "p63_a",
@@ -1667,14 +1672,14 @@
     {
       "id": "r_phone_use",
       "kind": "routine",
-      "description": "Ordinary phone use during waking hours.",
+      "description": "Ordinary phone use while awake: about 20 uses a day (Hintze et al. 2014: median 20 unlocked uses), each one or more apps in a row.",
       "trigger": {
         "kind": "rate",
         "window": {
           "from": "07:30",
           "to": "23:50"
         },
-        "perHour": 2.5
+        "perHour": 1.2
       },
       "conditions": [
         {
@@ -1686,38 +1691,50 @@
       ],
       "actions": [
         {
-          "do": "phone.openApp",
+          "do": "phone.useApps",
           "args": {
-            "package": {
-              "choice": [
-                "com.kakao.talk",
-                "com.instagram.android",
-                "com.google.android.youtube",
-                "com.android.chrome",
-                "com.google.android.apps.maps"
-              ],
-              "weights": [
-                5,
-                3,
-                2,
-                2,
-                0.5
-              ]
+            "first": {
+              "com.kakao.talk": 5,
+              "com.instagram.android": 3,
+              "com.google.android.youtube": 2,
+              "com.android.chrome": 2,
+              "com.google.android.apps.maps": 0.5
+            },
+            "next": {
+              "com.kakao.talk": 4,
+              "com.instagram.android": 2,
+              "com.google.android.youtube": 1.5,
+              "com.android.chrome": 1.5,
+              "com.google.android.apps.maps": 0.3
+            },
+            "continue": 0.32,
+            "seconds": {
+              "default": {
+                "median": 20,
+                "sigma": 1.3
+              },
+              "com.kakao.talk": {
+                "median": 25,
+                "sigma": 1.2
+              },
+              "com.instagram.android": {
+                "median": 90,
+                "sigma": 1.1
+              },
+              "com.google.android.youtube": {
+                "median": 240,
+                "sigma": 1.0
+              },
+              "com.android.chrome": {
+                "median": 60,
+                "sigma": 1.1
+              },
+              "com.google.android.apps.maps": {
+                "median": 40,
+                "sigma": 1.0
+              }
             }
           }
-        },
-        {
-          "do": "wait",
-          "args": {
-            "minutes": {
-              "min": 1,
-              "max": 12
-            }
-          }
-        },
-        {
-          "do": "phone.closeApp",
-          "args": {}
         }
       ],
       "probability": 1,

@@ -107,6 +107,23 @@ class Checker:
             self.room(p, args.get("room"), where)
         elif do in ("phone.openApp", "phone.appNotice", "phone.uninstall"):
             if args.get("package") not in self.apps: self.err(p["patternId"], f"{where}: unknown app '{args.get('package')}' (add it to extraApps if needed)")
+        elif do == "phone.useApps":
+            pid = p["patternId"]
+            for k in ("first", "next"):
+                w = args.get(k)
+                if w is None and k == "next":
+                    continue
+                if not isinstance(w, dict) or not w:
+                    self.err(pid, f"{where}: {k} must be a non-empty {{package: weight}} object"); continue
+                for pkg, x in w.items():
+                    if pkg not in self.apps: self.err(pid, f"{where}: {k}: unknown app '{pkg}' (add it to extraApps if needed)")
+                    if not isinstance(x, (int, float)) or x < 0: self.err(pid, f"{where}: {k}: weight of {pkg} must be a number >= 0")
+            c = args.get("continue", 0.32)
+            if not isinstance(c, (int, float)) or not 0 <= c < 1: self.err(pid, f"{where}: continue must be a number in [0, 1)")
+            for key, d in (args.get("seconds") or {}).items():
+                if key != "default" and key not in self.apps: self.err(pid, f"{where}: seconds: unknown app '{key}'")
+                if not isinstance(d, dict) or not isinstance(d.get("median"), (int, float)) or d["median"] <= 0 or not isinstance(d.get("sigma"), (int, float)) or d["sigma"] < 0:
+                    self.err(pid, f"{where}: seconds.{key} must be {{median > 0, sigma >= 0}}")
         elif do in ("phone.btConnect", "phone.btDisconnect"):
             if args.get("name") not in self.v["bluetoothDevices"]: self.err(p["patternId"], f"{where}: unknown bluetooth device '{args.get('name')}'")
         elif do == "phone.setActivity":
