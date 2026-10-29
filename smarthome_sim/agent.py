@@ -22,6 +22,9 @@ BODY_DO = {"person.travel", "person.moveRoom", "home.record"}
 # glances at the lock screen: Hintze et al. 2014 (1,960 Android phones): locked sessions median 56 s, mean 88 s
 # -> lognormal sigma = sqrt(2 ln(88/56)) = 0.95; median 22 glances a day, spread over about 16 waking hours
 GLANCE = dict(median=56, sigma=0.95)
+# minimum minutes a person means to keep a device on: switching on / opening is skipped if a planned departure or
+# sleep comes sooner (assumption, agreed 2026-10-29). Lights, lamps, stove: not limited (short use is normal).
+PLAN_MIN = dict(window_contact=10, door_contact=10, heating_cooling_unit=30, tv=20, air_purifier=20, humidifier=20)
 GLANCE_AWAKE_MIN = 16 * 60
 DEFER_MAX_MIN = 180  # a daily behaviour waits at most this long after its minute
 
@@ -552,6 +555,68 @@ class AgentRunner:
                 return plan
             cur = self.pick(list(cand), list(cand.values()))
 
+    # ----- a person does not switch on what they are about to leave or sleep away from -----
+    def turn_on_minutes(self, a):
+        """PLAN_MIN minutes for an action that switches on / opens a device of those types, else None"""
+        args = a.get("args") or {}
+        if a["do"] not in ("home.command", "home.record") or not args.get("device"):
+            return None
+        d = self.sim.house.device(self.dev_id(args["device"]))
+        if not d or d.type not in PLAN_MIN:
+            return None
+        if d.type == "door_contact" and d.roomId != "balcony":
+            return None
+        if a["do"] == "home.record":
+            on = args.get("value") == "open"
+        else:
+            cmd, xs = args.get("command"), args.get("args") or []
+            on = (cmd == "on" or (cmd == "setThermostatMode" and xs and xs[0] in ("cool", "heat"))
+                  or (cmd == "setPercent" and xs and isinstance(xs[0], (int, float)) and xs[0] > 0))
+        return PLAN_MIN[d.type] if on else None
+
+    def next_plan(self, t, task=None):
+        """earliest planned time >= t at which the person leaves home or goes to sleep: today's daily rules (their minute
+        is drawn now if their window has not opened yet, the same way the trigger draws it) and running tasks"""
+        S, best = self.S, None
+        leaves = lambda acts: any((x["do"] == "person.travel" and S["place"] == "home" and not S["trip"]) or x["do"] == "phone.sleep"
+                                  for x in acts)
+        d0 = start_of_day(t)
+        this_minute = self.minute_ms  # a rule due in this minute counts, even if its second has passed
+        for b in self.behaviours:
+            tr = b["trigger"]
+            if tr["kind"] != "daily" or not leaves(b["actions"]):
+                continue
+            st = b["_st"]
+            dl = st.get("daily")
+            open_day = window_day(tr["window"], t)
+            if open_day is not None:  # the window is open: the trigger has drawn its minute (a window past midnight
+                if not dl or dl["dk"] != day_key(open_day):  # belongs to the day it started)
+                    continue
+            elif not dl or dl["dk"] != day_key(d0):
+                f, to = hhmm(tr["window"]["from"]), hhmm(tr["window"]["to"])
+                if d0 + f * MIN_MS <= t or not day_ok(tr.get("days"), d0) or not month_ok(tr.get("months"), d0):
+                    continue  # not today
+                ln = (to - f + 1440) % 1440 + 1
+                dl = st["daily"] = dict(dk=day_key(d0), day=d0, at=d0 + (f + int(self.rnd.random() * ln)) * MIN_MS)
+            if dl["at"] >= this_minute and (best is None or dl["at"] < best):
+                best = max(dl["at"], t)
+        for k in self.tasks:
+            if k is task or k["finished"] or not leaves(k["actions"][k["i"]:]):
+                continue
+            at = max(t, k["until"] or t)
+            best = at if best is None else min(best, at)
+        if task is not None and leaves(task["actions"][task["i"]:]):
+            best = t if best is None else min(best, t)
+        return best
+
+    def leaving_soon(self, a, task):
+        m = self.turn_on_minutes(a)
+        if not m:
+            return False
+        t = self.now()
+        p = self.next_plan(t, task)
+        return p is not None and p - t < m * MIN_MS
+
     def phone_day_mult(self, t):
         """today's factor on the rate of phone-use rules: lognormal with mean 1 and sigma phoneHabits.dailySigma
         (within-person day-to-day variation; Appiah et al. 2026: unlock CV mostly above 25%, examples 16% and 60%)"""
@@ -769,6 +834,11 @@ class AgentRunner:
             if a.get("when") and not self.all_conds(a["when"], self.now()):
                 s["steps"]["skipped"] += 1
                 task["steps"].append([a["do"], "skipped_when"])
+                continue
+            if self.leaving_soon(a, task):
+                s["steps"]["skipped"] += 1
+                s["skippedPlan"] = s.get("skippedPlan", 0) + 1
+                task["steps"].append([a["do"], "skipped_plan"])
                 continue
             r = self.exec(a)
             s["steps"][r["result"]] += 1

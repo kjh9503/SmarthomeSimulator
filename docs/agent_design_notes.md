@@ -74,12 +74,19 @@ cooling); sleeping with cooling on conflicts with the bedtime off check.
 
 ## 6. Repeated operations on one device
 
-- No minimum interval exists in the engine. Measured [ours]: most short on->off gaps come from one rule (hall light,
-  cooking). Collisions between paths: morning window opened and closed by the leaving check within 0.1 min (3 times),
-  heating on and off by the leaving check within 60 min (15 times).
-- Agreed split: (a) the second action too soon -> a gap-dependent probability, the same for pattern and routine
-  actions, never inside a duration the pattern itself sets; (b) the first action unsuited to someone about to leave or
-  sleep -> not solved by gap probabilities. Both are open.
+- No minimum interval per device in the engine. Most short on->off pairs come from one rule (hall light, cooking),
+  as the rule means. Collisions between paths were all "switch on / open -> soon leaving or sleeping -> the off check
+  switches it off" [ours].
+- (a) second action too soon: not seen on its own in 063; on hold. (b) switching on just before leaving or sleep:
+  **solved 2026-10-29** by "a person does not switch on what they are about to leave" (agent.py `leaving_soon`):
+  before switching on / opening, the engine looks at today's planned departures and sleep (the minutes of daily
+  rules, drawn now in the same way if not drawn yet, and running tasks); if one comes within the device's minimum
+  time the step is skipped, for patterns and routines alike. Minimum times [assume]: window / balcony door 10 min,
+  heating / cooling 30, TV / purifier / humidifier 20; lights, lamps, stove not limited. Result [ours, 063 + appliance
+  rules, one year]: on and then off by a check sooner than the minimum 19 -> 0; 132 steps skipped (heating 72, TV 27,
+  cooling 13, window 17, pattern p63_a 3). Departures from event rules cannot be known in advance.
+- Very short uses made by the profile's own distributions (left tail of cooking time): almost none in 063 (shortest
+  cooking 2.6 min). No engine rule; to be measured over many LLM-written profiles (on hold).
 
 ## 7. Steps before an operation
 
