@@ -176,7 +176,8 @@
    "args": {
     "package": "app package",
     "title": "free text",
-    "text": "free text"
+    "text": "free text",
+    "task": "optional: tap | input, how long the app stays in front (default by app: notes, reminder, calendar, messages, KakaoTalk = input; others tap)"
    },
    "note": "a notification the person's OWN action makes an app show (navigation running, timer running, reminder set). Use with phone.openApp to stand in for in-app actions the phone schema has no type for (navigation, checklist, timer)."
   },

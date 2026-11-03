@@ -25,6 +25,15 @@ GLANCE = dict(median=56, sigma=0.95)
 # minimum minutes a person means to keep a device on: switching on / opening is skipped if a planned departure or
 # sleep comes sooner (assumption, agreed 2026-10-29). Lights, lamps, stove: not limited (short use is normal).
 PLAN_MIN = dict(window_contact=10, door_contact=10, heating_cooling_unit=30, tv=20, air_purifier=20, humidifier=20)
+# apps a task is done in; the person opens it, does the task and closes it (agreed 2026-11-03)
+APP_FOR = dict(home="com.samsung.android.oneconnect", calendar="com.samsung.android.calendar", sms="com.samsung.android.messaging",
+               camera="com.sec.android.app.camera", call="com.samsung.android.dialer")
+INPUT_APPS = {"com.samsung.android.app.notes", "com.samsung.android.app.reminder", "com.samsung.android.calendar",
+              "com.samsung.android.messaging", "com.kakao.talk"}
+# seconds an app stays in front for one task (lognormal). No direct measurement found:
+# tap (device control, timer, photo): weather-app dwell terciles 6 s / 23 s (arXiv 2106.01490, US 2017) -> median 12, sigma 1.56
+# input (note, checklist, event, SMS): an appointment on a PDA 37.7 s (Starner et al. 2004), typing 36.2 wpm (Palin et al. 2019)
+TASK_SECONDS = dict(tap=dict(median=12, sigma=1.56, min=3), input=dict(median=30, sigma=0.7, min=5))
 GLANCE_AWAKE_MIN = 16 * 60
 DEFER_MAX_MIN = 180  # a daily behaviour waits at most this long after its minute
 
@@ -160,8 +169,12 @@ class AgentRunner:
         self.check_stats = {k: dict(checked=0, turnedOff=0, leftOn=0) for k in ("bedtime", "leaving", "morning")}
         cm = profile.get("cookingMinutes")
         self.cook_default = cm or dict(dist="lognormal", median=15, sigma=0.6)
-        self.behaviours = [dict(b, _st={}, _firings=0, _phoneUse=any(a["do"] == "phone.useApps" for a in b["actions"]))
-                           for b in profile["behaviours"]]
+        self.keep_on = set()  # devices switched on with keepOn: left out of the leaving / bedtime checks
+        self.behaviours = []
+        for b in profile["behaviours"]:
+            acts, merged = self.merge_app_steps(b["actions"])
+            self.behaviours.append(dict(b, actions=acts, _st={}, _firings=0, _merged=merged,
+                                        _phoneUse=any(a["do"] == "phone.useApps" for a in acts)))
         self.day_mult_day, self.day_mult = -1, 1.0
         self._setup_start()
         self._hooks()
@@ -394,10 +407,21 @@ class AgentRunner:
         self.phone.move_room(room)
         self.person_changes()
 
-    def exec(self, a):
+    def exec(self, a, in_task=False, raw=False):
+        """one action of the person. An action done in an app (raw=False) becomes an app task: open the app, do it,
+        close the app; inside a rule it runs as a chain at its own seconds, elsewhere (checks, reverts) at once"""
+        if not raw:
+            events = self.app_events(a)
+            if events:
+                if in_task:
+                    self.advance_seconds()
+                    return dict(result="pending", block=dict(chain=events))
+                self.advance_seconds()
+                return self.run_events_now(events)
         args = a.get("args") or {}
         sim, ph, S = self.sim, self.phone, self.S
-        self.advance_seconds()
+        if not raw:  # inside an app task the chain has set the time
+            self.advance_seconds()
         t = self.now()
 
         def done(n):
@@ -514,11 +538,18 @@ class AgentRunner:
                 out = dict(result="no_change")  # already using the phone
             else:
                 plan = self.app_chain(args)
-                out = dict(result="done", block=dict(chain=plan)) if plan else dict(result="no_change")
+                ev = [[0 if i == 0 else int(plan[i - 1][1] * 1000), "open", p] for i, (p, _) in enumerate(plan)]
+                out = dict(result="done", block=dict(chain=ev + [[int(plan[-1][1] * 1000), "close", None]])) if plan else dict(result="no_change")
         elif do == "wait":
             out = dict(result="done", block=dict(until=t + js_round(self.num(args["minutes"])) * MIN_MS))
         else:
             out = refused("unknown action " + do)
+        if do in ("home.command", "home.record") and out["result"] == "done" and args.get("device"):
+            did = self.dev_id(args["device"])
+            if a.get("keepOn") and self.is_turn_on(a):
+                self.keep_on.add(did)
+            elif not self.is_turn_on(a):
+                self.keep_on.discard(did)
         if out["result"] in ("done", "no_change"):
             self.action_history.append((t, do, args))
         self.person_changes()
@@ -556,6 +587,18 @@ class AgentRunner:
             cur = self.pick(list(cand), list(cand.values()))
 
     # ----- a person does not switch on what they are about to leave or sleep away from -----
+    def revert_device(self, it):
+        dv = ((it.get("action") or {}).get("args") or {}).get("device")
+        return self.dev_id(dv) if dv else None
+
+    def is_turn_on(self, a):
+        args = a.get("args") or {}
+        if a["do"] == "home.record":
+            return args.get("value") == "open"
+        cmd, xs = args.get("command"), args.get("args") or []
+        return (cmd in ("on", "open", "start") or (cmd == "setThermostatMode" and bool(xs) and xs[0] in ("cool", "heat"))
+                or (cmd == "setPercent" and bool(xs) and isinstance(xs[0], (int, float)) and xs[0] > 0))
+
     def turn_on_minutes(self, a):
         """PLAN_MIN minutes for an action that switches on / opens a device of those types, else None"""
         args = a.get("args") or {}
@@ -600,6 +643,9 @@ class AgentRunner:
                 dl = st["daily"] = dict(dk=day_key(d0), day=d0, at=d0 + (f + int(self.rnd.random() * ln)) * MIN_MS)
             if dl["at"] >= this_minute and (best is None or dl["at"] < best):
                 best = max(dl["at"], t)
+        for x in self.scheduled:  # event rules with a delay: their time is already set
+            if x["kind"] == "eventCheck" and x["at"] >= this_minute and leaves(x["b"]["actions"]):
+                best = max(x["at"], t) if best is None else min(best, max(x["at"], t))
         for k in self.tasks:
             if k is task or k["finished"] or not leaves(k["actions"][k["i"]:]):
                 continue
@@ -610,6 +656,8 @@ class AgentRunner:
         return best
 
     def leaving_soon(self, a, task):
+        if a.get("keepOn"):  # meant to stay on while away or asleep
+            return False
         m = self.turn_on_minutes(a)
         if not m:
             return False
@@ -628,29 +676,134 @@ class AgentRunner:
         return self.day_mult
 
     def run_chain(self, task):
-        """run the apps of a phone.useApps step that fall inside this minute, at their own seconds"""
-        c, ph = task["chain"], self.phone
+        """run the timed events of a phone chain (phone.useApps, an app task) that fall inside this minute, at their own
+        seconds. events: [[ms after the previous event, kind, payload]], kind open / do / close / closeIf"""
+        c = task["chain"]
         end = self.minute_ms + MIN_MS
-        last = None
-        while c["at"] < end:
+        last = self.chain_events(c, end, task)
+        if last is not None:
+            self.sec = min(59, max(self.sec, (last - self.minute_ms) // 1000))
+        self.sim.clock.set_to(self.minute_ms + self.sec * 1000)
+        if c["i"] >= len(c["events"]):
+            task["chain"] = None
+
+    def chain_events(self, c, end, task):
+        ph, ev, last = self.phone, c["events"], None
+        while c["i"] < len(ev):
             c["at"] = max(c["at"], self.minute_ms + self.sec * 1000)  # never before what already happened this minute
             if c["at"] >= end:
                 break
             self.sim.clock.set_to(c["at"])
             last = c["at"]
-            if c["i"] < len(c["plan"]):
-                pkg, secs = c["plan"][c["i"]]
-                ph.open_app(pkg)
-                c["i"] += 1
-                c["at"] += int(secs * 1000)
-            else:
-                ph.in_chain = False
+            _, kind, p = ev[c["i"]]
+            final = c["i"] == len(ev) - 1
+            if final and not c.get("released"):
+                ph.chains -= 1
+                c["released"] = True
+            if kind == "open":
+                ph.open_app(p)
+            elif kind == "do":
+                r = self.exec(p, raw=True)
+                c["result"] = r
+                self.after_step(task, p, r)
+            elif kind == "close" or (kind == "closeIf" and self.S["foreground"] == p):
                 ph.close_app()
-                task["chain"] = None
-                break
-        if last is not None:
+            c["i"] += 1
+            if c["i"] < len(ev):
+                c["at"] += int(ev[c["i"]][0])
+        return last
+
+    def run_events_now(self, events):
+        """an app task outside a running rule (off checks, reverts): its events run now, one after another"""
+        self.phone.chains += 1
+        c = dict(events=events, i=0, at=self.now() + int(events[0][0]))
+        last = self.chain_events(c, float("inf"), None)
+        if last is not None and last < self.minute_ms + MIN_MS:
             self.sec = min(59, max(self.sec, (last - self.minute_ms) // 1000))
         self.sim.clock.set_to(self.minute_ms + self.sec * 1000)
+        return c.get("result") or dict(result="done")
+
+    # ----- apps that a task needs: the person opens the app, does the task, closes the app -----
+    def task_app(self, a):
+        """(package, kind) of the app an action is done in, or None. kind: tap / input / call / hangup"""
+        do, args = a["do"], a.get("args") or {}
+        if do == "home.command" and args.get("channel") == "mobile_app":
+            return APP_FOR["home"], "tap"
+        if do in ("phone.calendarAdd", "phone.calendarUpdate", "phone.calendarDelete"):
+            return APP_FOR["calendar"], "input"
+        if do == "phone.sms" and (args.get("direction") or "OUTGOING") == "OUTGOING":
+            return APP_FOR["sms"], "input"
+        if do == "phone.photo":
+            return APP_FOR["camera"], "tap"
+        if do == "phone.call":
+            return APP_FOR["call"], ("call" if args.get("state") == "OFFHOOK" else "hangup")
+        if do == "phone.appNotice" and isinstance(args.get("package"), str):
+            p = args["package"]
+            return p, args.get("task") or ("input" if p in INPUT_APPS else "tap")
+        return None
+
+    def app_events(self, a):
+        """the timed events of one app task, or None if the action needs no app (or cannot have one now)"""
+        spec = self.task_app(a)
+        S = self.S
+        if a["do"] in ("phone.screenshot", "phone.copyClipboard") and not S["foreground"]:
+            apps = [p for p in S["installed"] if p not in APP_FOR.values()] or list(S["installed"])
+            spec = (apps[int(self.rnd.random() * len(apps))], "tap")
+        if not spec or S["asleep"] or self.phone.driving or spec[0] not in S["installed"]:
+            return None
+        pkg, kind = spec
+        if kind == "call":
+            return [[0, "open", pkg], [int((2 + 4 * self.rnd.random()) * 1000), "do", a]]
+        if kind == "hangup":
+            return [[0, "do", a], [1000, "closeIf", pkg]]
+        d = TASK_SECONDS[kind]
+        dwell = max(d["min"], min(600, d["median"] * math.exp(d["sigma"] * self.gauss())))
+        delay = min(dwell - 1, 2 + 3 * self.rnd.random()) if kind == "tap" else max(1, dwell - (1 + 2 * self.rnd.random()))
+        if S["foreground"] == pkg:  # already in front: the task only (whoever opened the app closes it)
+            return [[int(delay * 1000), "do", a]]
+        return [[0, "open", pkg], [int(delay * 1000), "do", a], [int((dwell - delay) * 1000), "closeIf", pkg]]
+
+    def merge_app_steps(self, acts):
+        """phone.openApp P (+ wait) + a task done in P (+ wait) + phone.closeApp -> the task alone: the engine opens and
+        closes the app, with the same timing for every rule (written apart or not)"""
+        out, i, n = [], 0, 0
+        while i < len(acts):
+            a = acts[i]
+            if a["do"] == "phone.openApp" and isinstance((a.get("args") or {}).get("package"), str):
+                j = i + 1
+                while j < len(acts) and acts[j]["do"] == "wait":
+                    j += 1
+                spec = self.task_app(acts[j]) if j < len(acts) else None
+                if spec and spec[0] == a["args"]["package"]:
+                    out.append(acts[j])
+                    k = j + 1
+                    while k < len(acts) and acts[k]["do"] == "wait":
+                        k += 1
+                    i = k + 1 if k < len(acts) and acts[k]["do"] == "phone.closeApp" else j + 1
+                    n += 1
+                    continue
+            out.append(a)
+            i += 1
+        return out, n
+
+    def after_step(self, task, a, r):
+        """bookkeeping after a step ran: stats, cooking, reverts"""
+        if task is None:
+            return
+        s = self.stat(task["b"]["id"])
+        s["steps"][r["result"]] += 1
+        if a["do"] != "wait" and r["result"] in ("done", "no_change"):
+            task["did"] = True
+        if r.get("reason"):
+            k = r["reason"][:80]
+            s["refusals"][k] = s["refusals"].get(k, 0) + 1
+        task["steps"].append([a["do"], r["result"], r["reason"][:80]] if r.get("reason") else [a["do"], r["result"]])
+        ar = a.get("args") or {}
+        if r["result"] == "done" and a["do"] == "home.command" and self.dev_id(ar["device"]) == "kitchen.stove" and ar.get("command") == "on":
+            self.start_cooking(a, task["b"]["id"])
+        if a.get("revert") and r["result"] in ("done", "no_change"):
+            self.scheduled.append(dict(kind="revert", at=self.now() + js_round(self.num(a["revert"]["afterMinutes"])) * MIN_MS,
+                                       byDevice=bool(a["revert"].get("byDevice")), action=self.resolve(a["revert"]["action"]), owner=task["b"]["id"]))
 
     def maybe_glance(self, t):
         """a look at the lock screen (time, notifications) while awake and not using the phone"""
@@ -739,7 +892,13 @@ class AgentRunner:
         if S["place"] != "home" or S["trip"] or S["asleep"]:
             return []
         back, left, cs = S["room"], [], self.check_stats[moment]
-        for d, rule in self.on_devices(t, only):
+        on = self.on_devices(t, only)
+        if only is None:
+            self.keep_on &= {d.id for d, _ in on}  # a keepOn device switched off since is an ordinary device again
+        for d, rule in on:
+            if moment != "morning" and d.id in self.keep_on:  # meant to stay on while away / asleep
+                cs["keptOn"] = cs.get("keptOn", 0) + 1
+                continue
             cs["checked"] += 1
             if not self.chance(rule["p"][moment]):
                 left.append(d.id)
@@ -757,7 +916,8 @@ class AgentRunner:
                 cs["leftOn"] += 1
             self.trace(dict(t=iso_local(self.now()), check=moment, device=d.id, result=r["result"], reason=r.get("reason")))
         if moment != "morning":  # the check takes over what the person meant to switch off later
-            self.scheduled = [x for x in self.scheduled if not (x["kind"] == "revert" and not x["byDevice"] and not x.get("keep"))]
+            self.scheduled = [x for x in self.scheduled if not (x["kind"] == "revert" and not x["byDevice"] and not x.get("keep")
+                                                                 and self.revert_device(x) not in self.keep_on)]
         if back and S["room"] != back:
             self.phone.move_room(back)
             self.person_changes()
@@ -840,25 +1000,16 @@ class AgentRunner:
                 s["skippedPlan"] = s.get("skippedPlan", 0) + 1
                 task["steps"].append([a["do"], "skipped_plan"])
                 continue
-            r = self.exec(a)
-            s["steps"][r["result"]] += 1
-            if r.get("reason"):
-                k = r["reason"][:80]
-                s["refusals"][k] = s["refusals"].get(k, 0) + 1
-            task["steps"].append([a["do"], r["result"], r["reason"][:80]] if r.get("reason") else [a["do"], r["result"]])
-            ar = a.get("args") or {}
-            if r["result"] == "done" and a["do"] == "home.command" and self.dev_id(ar["device"]) == "kitchen.stove" and ar.get("command") == "on":
-                self.start_cooking(a, task["b"]["id"])
-            if a.get("revert") and r["result"] in ("done", "no_change"):
-                self.scheduled.append(dict(kind="revert", at=self.now() + js_round(self.num(a["revert"]["afterMinutes"])) * MIN_MS,
-                                           byDevice=bool(a["revert"].get("byDevice")), action=self.resolve(a["revert"]["action"]), owner=task["b"]["id"]))
+            r = self.exec(a, in_task=True)
+            blk = r.get("block") or {}
+            if r["result"] != "pending":
+                self.after_step(task, a, r)
             if a["do"] == "person.travel" and r["result"] == "refused":
                 task["i"] = len(acts)
                 break
-            blk = r.get("block") or {}
             if blk.get("chain"):
-                task["chain"] = dict(plan=blk["chain"], i=0, at=self.now())
-                self.phone.in_chain = True
+                task["chain"] = dict(events=blk["chain"], i=0, at=self.now() + int(blk["chain"][0][0]))
+                self.phone.chains += 1
                 continue
             if blk.get("until"):
                 task["until"] = blk["until"]
@@ -867,6 +1018,12 @@ class AgentRunner:
                 task["travelTo"] = blk["travelTo"]
                 return
         task["finished"] = True
+        if not task.get("did") and any(x[1] == "skipped_plan" for x in task["steps"]):
+            s["followed"] -= 1  # nothing was done (switching on skipped before a departure or sleep): not followed, as the log shows
+            s["notFollowed"] += 1
+            s["notFollowedPlan"] = s.get("notFollowedPlan", 0) + 1
+            self.trace(dict(t=iso_local(task["start"]), behaviour=task["b"]["id"], outcome="not_followed_plan", via=task["via"], steps=task["steps"]))
+            return
         if self.S["foreground"] and not self.phone.in_chain and self.S["screenOffAt"] is None and any(a["do"].startswith("phone.") for a in acts):
             self.phone.end_use(self.now(), force=True)  # an app left open: the screen goes off by hand or by time-out
         self.trace(dict(t=iso_local(task["start"]), behaviour=task["b"]["id"], outcome="followed", via=task["via"], steps=task["steps"]))
@@ -899,6 +1056,8 @@ class AgentRunner:
             guard += 1
             batch, self.happenings = self.happenings, []
             for src, h in batch:
+                if src == "person" and (h["what"] == "wake" or (h["what"] == "arrive" and h.get("place") == "home")):
+                    self.keep_on.clear()  # the reason to keep it on (away, asleep) is over: an ordinary device again
                 if src == "person" and h["what"] == "wake" and self.S["place"] == "home" and self.left_overnight:
                     self.scheduled.append(dict(kind="morning", at=self.now() + js_round(self.uni(0, self.OFF["morningWithinMinutes"])) * MIN_MS,
                                                devices=self.left_overnight))

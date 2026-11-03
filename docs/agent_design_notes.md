@@ -84,7 +84,21 @@ cooling); sleeping with cooling on conflicts with the bedtime off check.
   time the step is skipped, for patterns and routines alike. Minimum times [assume]: window / balcony door 10 min,
   heating / cooling 30, TV / purifier / humidifier 20; lights, lamps, stove not limited. Result [ours, 063 + appliance
   rules, one year]: on and then off by a check sooner than the minimum 19 -> 0; 132 steps skipped (heating 72, TV 27,
-  cooling 13, window 17, pattern p63_a 3). Departures from event rules cannot be known in advance.
+  cooling 13, window 17, pattern p63_a 3).
+- Event rules: once the event has happened and its delay is drawn, that time is used too (`eventCheck` items in
+  `scheduled`, 2026-11-03); departures and sleep from events that have not happened yet cannot be known. Rerun
+  [ours, same test profile, one year, 2026-11-03]: 0 short on->off by a check. The one case of the run before
+  (12-25 23:29 heating -> 23:48 bedtime check; sleep from the arrive-home event rule `r_bedtime_late`) did not recur
+  because the day went differently; not checked whether `eventCheck` would have stopped it.
+- **keepOn** (2026-11-03): a switch-on meant to stay on while away or asleep (e.g. cooling before leaving on a hot day)
+  carries `"keepOn": true`. Engine: not skipped by the rule above; the leaving and bedtime checks leave that device on
+  (the morning check does not); cleared on arriving home or waking. Prompt: so that keepOn is not a hint for patterns,
+  when a pattern uses keepOn one routine must use it too (decoy rule). `check_profile.py` warns when a rule switches on
+  without keepOn and a departure or sleep follows in the same rule, or the rule starts on a depart / fall-asleep event.
+  Test [ours, July, 2 weeks]: without keepOn, cooling just before leaving skipped 9 times; with it, cooling stayed on
+  (keptOn 10) and the bedtime check switched it off after the return.
+- Ground truth: a run of a pattern whose actions were all skipped by this rule (nothing in the log) is counted as not
+  followed (`notFollowed`, of these `notFollowedPlan`).
 - Very short uses made by the profile's own distributions (left tail of cooking time): almost none in 063 (shortest
   cooking 2.6 min). No engine rule; to be measured over many LLM-written profiles (on hold).
 
@@ -95,11 +109,11 @@ the engine adds it automatically (no probability); if there are several ways, th
 
 | Operation | Preceding step (log line) | Ways | Decision |
 |---|---|---|---|
-| home device from the app | SmartThings in front | one | automatic (not built yet) |
-| calendar add / change / delete | Calendar in front | one (other apps not considered) | automatic (not built) |
-| outgoing call / SMS / photo | Phone / Messages / Camera in front | one | automatic (not built) |
+| home device from the app | SmartThings in front | one | automatic, **done** (section 11, app tasks) |
+| calendar add / change / delete | Calendar in front | one (other apps not considered) | automatic, **done** |
+| outgoing call / SMS / photo | Phone / Messages / Camera in front | one | automatic, **done** |
 | health entry, exercise, music play/pause | app in front or none (device, watch, earbuds, notification) | several | probability (not built) |
-| screenshot, clipboard | some app in front | | the app in front, else a random installed one |
+| screenshot, clipboard | some app in front | | the app in front, else a random installed one, **done** |
 | install / uninstall | | | left out (not in any pattern) |
 | hand operation at home | person in that room (occupancy) | one | done (`go_to`) |
 | leaving / arriving | front door, lock | one | done |
@@ -119,7 +133,10 @@ Checked so far [ours, `tools/pattern_only_lines.py`]:
 - line kinds made only by the pattern in 063: purifier 60% by app, purifier 0% by device timer, SmartThings app opened;
 - the pattern's action always came within the same minute as its last condition turned true (26 of 26 evenings:
   21:00 window start 19, PM2.5 crossing 3, window closed 1, arriving home 3) because `time_window` fires on the edge.
-Agreed to be problems; not fixed yet: immediate response timing, pattern-only values, apps not opened before app use.
+After app tasks [ours, 063, one year, run before 2026-11-03]: all 58 app controls happen inside SmartThings (0
+outside); SmartThings foreground lines are pattern 25 / other 33, so no longer pattern-only. Still pattern-only:
+purifier 60% by app, purifier 0% by device timer, the sequence kind "bedtime, purifier on for 10-30 min" (2 cases).
+Agreed to be problems; not fixed yet: immediate response timing, pattern-only values.
 
 ## 9. Android Emulator (decided: not used)
 
@@ -150,6 +167,19 @@ Engine:
 - Glances: screen on without apps, off after a lognormal time (median 56 s, mean 88 s [src Hintze 2014]); the rate
   uses yesterday's idle waking minutes so that `glancesPerDay` is the real count.
 - Day-to-day: each day the rate of the phone-use rules is multiplied by a lognormal factor (mean 1, `dailySigma`).
+- App tasks (2026-11-03; user decision (1): the agent, not the simulator, opens and closes apps): an operation that
+  needs an app (home device from the app, calendar, outgoing call, SMS, photo, `phone.appNotice`) is open app -> task
+  -> close app, with one distribution for patterns and routines alike (agreed (a)). Written open (+wait) / task /
+  (wait) / close steps in a profile are merged into the task at load (`merge_app_steps`). Time in the app (lognormal,
+  cut at 600 s):
+
+| Kind | Apps | Median | sigma | Min | Source |
+|---|---|---|---|---|---|
+| tap | SmartThings, Camera, others | 12 s | 1.56 | 3 s | weather-app use 33% / 67% quantiles 6 s / 23 s [src Tian 2021]; borrowed, no home-app data [assume] |
+| input | Notes, Reminder, Calendar, Messages, KakaoTalk | 30 s | 0.7 | 5 s | PDA appointment entry 37.7 s [src Starner 2004]; phone typing 36.2 wpm [src Palin 2019] |
+
+  The tap distribution has a long tail (sigma 1.56): 90% under about 88 s, 99% under about 450 s [computed]. SmartThings
+  times seen in the year run: 4 s, 112 s, 599 s [ours].
 
 Per person (`pipeline/sample_phone_person.py`): the LLM chooses `phoneUseLevel` (light / medium / heavy = lower,
 middle, upper third) and the relative rules; the script draws the numbers and rescales the rules.
@@ -195,8 +225,7 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
 
 ## 13. Open tasks
 
-See `docs/open_tasks.md`: calendar events from persona, incoming phone events (messages, calls), opening apps
-before use, method choice for music/health/exercise, JS runner without the phone model, pattern-only cues and
+See `docs/open_tasks.md`: calendar events from persona, incoming phone events (messages, calls), method choice for music/health/exercise, JS runner without the phone model, pattern-only cues and
 immediate response timing, gap-dependent off probabilities, persona -> daily-life base list.
 
 ## References
@@ -222,6 +251,9 @@ immediate response timing, gap-dependent off probabilities, persona -> daily-lif
 | Gallup 2025 | Gallup Korea, kitchen/environment/health appliances ownership 2025. https://www.gallup.co.kr/gallupdb/reportContent.asp?seqNo=1595 | air conditioner 98%, purifier 66%, humidifier 39%, dishwasher 24%, oven 21% | web page |
 | Gallup 2023 | Gallup Korea, Market70 2023 (7). https://www.gallup.co.kr/gallupdb/reportContent.asp?seqNo=1439 | washers, dryer 35%, robot vacuum 15%, TV 99%, AI speaker 18% | web page |
 | AgentSense | AgentSense: Virtual Sensor Data Generation Using LLM Agents in Simulated Home Environments. AAAI. https://arxiv.org/abs/2506.11773 | related work: synthetic data validated on real HAR data | abstract |
+| Tian 2021 | Tian Y., Zhou K., Pelleg D. What and How long: Prediction of Mobile App Engagement. ACM TOIS, 2021. https://arxiv.org/abs/2106.01490 | tap task time: weather-app use 33% / 67% quantiles 6 s / 23 s (section 3.3) | web summary (first 100k chars) |
+| Starner 2004 | Starner T. E., Snoeck C. M., Wong B. A., McGuire R. M. Use of Mobile Appointment Scheduling Devices. CHI 2004 extended abstracts. https://faculty.cc.gatech.edu/~thad/p/030_20_DPP/chi04_use_of_mobile_appointment_scheduling_devices.pdf | input task time: PDA appointment total 37.7 s (Table 2) | web summary |
+| Palin 2019 | Palin K., Feit A. M., Kim S., Kristensson P. O., Oulasvirta A. How do People Type on Mobile Devices? Observations from a Study with 37,000 Volunteers. MobileHCI 2019. https://www.repository.cam.ac.uk/items/809c909b-9301-4cad-955d-998bdce7e0e0 | input task time: mean 36.2 wpm | abstract |
 | Android docs | Emulator console https://developer.android.com/studio/run/emulator-console ; netsim https://developer.android.com/studio/run/emulator-networking-advanced ; Android 10 privacy (clipboard) https://developer.android.com/about/versions/10/privacy/changes | emulator decision | web pages |
 
 Not read (could not open): Ferreira et al. 2014 micro-usage (41.5%, only as cited in arXiv 2609.24477; its threshold not checked);

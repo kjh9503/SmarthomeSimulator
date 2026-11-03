@@ -974,6 +974,10 @@
         "cookingMinutes": {
           "$ref": "#/$defs/cookingMinutes",
           "description": "Only on a step that turns the kitchen stove on: this step's cooking time, instead of the profile's cookingMinutes."
+        },
+        "keepOn": {
+          "type": "boolean",
+          "description": "true: this switch-on is meant to stay on while the person is away or asleep (e.g. cooling before leaving on a hot day, a pet at home, sleeping with cooling on). The engine then does not skip it when a departure or sleep is near, and leaves the device out of the leaving / bedtime off checks (the morning check still applies). Default false: the person's usual habit (switch off before leaving or sleep)."
         }
       }
     },

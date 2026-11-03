@@ -193,6 +193,31 @@ light 16.3 uses (17), 146 app min (155); medium 33.9 uses (35), 298 min (311); h
 in all levels about 47% of uses under 40 s, glances as drawn, day-to-day CV of uses 0.19-0.30. 063 itself is heavy
 (a university student).
 
+### Tasks done in apps
+
+Write a task done in an app as the task step alone: home.command with channel "mobile_app", phone.calendarAdd /
+Update / Delete, phone.sms (outgoing), phone.call (OFFHOOK, later IDLE), phone.photo, phone.appNotice (with
+`"task": "tap"` or `"input"`). The engine makes the person open the app (screen on), do the task and close it.
+Time in the app, the same for every rule [no direct measurement; borrowed]:
+- tap tasks (device control, timer, photo): lognormal median 12 s, sigma 1.56 (weather-app dwell terciles 6 s / 23 s,
+  arXiv 2106.01490, US 2017);
+- input tasks (note, checklist, calendar event, SMS): lognormal median 30 s, sigma 0.7 (an appointment on a PDA
+  37.7 s, Starner et al. 2004 CHI; typing 36.2 words per minute, Palin et al. 2019 MobileHCI).
+Do not write phone.openApp / wait / phone.closeApp around such a step; if a rule does, the engine merges them into
+the task step.
+
+### Leaving devices on: keepOn and its decoy
+
+People usually switch off before leaving and before sleep: the engine's checks do it (off_rules.json), and the person
+does not switch on a window, heating / cooling, TV, purifier or humidifier when a planned departure or sleep comes
+within 10 / 30 / 20 minutes. When a rule means to leave the device on while away or asleep, add `"keepOn": true` to
+that step (and a `revert`, e.g. a device timer, if it goes off later). The checker warns about a switch-on followed by
+travel or sleep in the same rule without keepOn.
+
+Decoy rule: if a PATTERN uses keepOn on a device type, also write an ordinary routine that leaves the same device type
+on while away or asleep for a reason unrelated to the pattern's conditions (a pet, drying laundry, a habit on some
+days), so that "switched on and left on" does not appear only on pattern days.
+
 ### Daily-life routines
 
 TODO (not agreed yet): the base list every profile needs (waking and sleeping, meals, commute or day place,

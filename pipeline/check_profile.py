@@ -28,6 +28,29 @@ def expand(obj):
     return [obj]
 
 
+KEEP_ON_TYPES = {"window_contact", "heating_cooling_unit", "tv", "air_purifier", "humidifier"}  # as PLAN_MIN in agent.py
+
+
+def keep_on_type(a):
+    dev = (a.get("args") or {}).get("device")
+    if a.get("do") not in ("home.command", "home.record") or not isinstance(dev, str):
+        return False
+    t = dev.rsplit(".", 1)[-1]
+    return t in KEEP_ON_TYPES or (t == "door_contact" and dev.startswith("balcony."))
+
+
+def switches_on(a):
+    args = a.get("args") or {}
+    if a["do"] == "home.record":
+        return args.get("value") == "open"
+    cmd, xs = args.get("command"), args.get("args") or []
+    first = xs[0] if xs else None
+    if isinstance(first, dict) and "choice" in first:
+        return True  # some options switch on
+    return (cmd in ("on", "open") or (cmd == "setThermostatMode" and first in ("cool", "heat"))
+            or (cmd == "setPercent" and isinstance(first, (int, float)) and first > 0))
+
+
 def main():
     path = sys.argv[1]
     prof = json.load(open(path, encoding="utf-8"))
@@ -67,6 +90,17 @@ def main():
             chk.pattern(p)
         if b["kind"] == "pattern" and "pattern" in b:
             chk.pattern(b["pattern"])
+        # a switch-on right before leaving / sleep in the same rule is skipped and switched off by the engine unless keepOn
+        acts = b["actions"]
+        ev = (b["trigger"].get("event") or {}) if b["trigger"]["kind"] == "event" else {}
+        starts_at_leave = ev.get("source") == "person" and ev.get("what") in ("depart", "fall_asleep")
+        for i, a in enumerate(acts):
+            if a.get("keepOn") or not keep_on_type(a) or not switches_on(a):
+                continue
+            later = any(x["do"] in ("person.travel", "phone.sleep") for x in acts[i + 1:])
+            if later or starts_at_leave:
+                out.append(("WARN", b["id"], f"actions[{i}] switches on {a['args']['device']} right before leaving or sleep: "
+                                             "add \"keepOn\": true if it is meant to stay on, else the engine skips it"))
     seen = set()
     for x in chk.out + out:
         if x in seen: continue

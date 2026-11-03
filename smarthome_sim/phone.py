@@ -241,12 +241,16 @@ class Phone:
         self.habits = dict(screenTimeoutSeconds=30, manualScreenOff=0.9, glancesPerDay=22)
         self.s["screenOffAt"] = None  # time the screen goes off (pending), None = no off planned
         self.rand = None              # the person's random source (set by the agent runner); None = always turn off by hand
-        self.in_chain = False         # a phone.useApps chain is running: a closed app is not the end of the use
+        self.chains = 0               # app chains running (phone.useApps, app tasks): a closed app is not the end of the use
         self.acc = None
         self.last_step_t = None
         self.timeline = []
         self.timeline_t = []
         self.on_emit = None  # hook: called with each event made by emit()
+
+    @property
+    def in_chain(self):
+        return self.chains > 0
 
     def now(self):
         return self.sim.clock.now() // 1000 * 1000

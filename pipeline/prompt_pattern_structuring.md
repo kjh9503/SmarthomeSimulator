@@ -70,10 +70,17 @@ rooms that have it.
 - Going somewhere: person.travel with a place and a travel mode. The trip itself takes time and produces the
   walking, riding, Bluetooth, Wi-Fi, front-door and occupancy logs; do not add them yourself.
 - Things done inside a phone app that the phone schema has no type for (start navigation, add a checklist or
-  to-do item, start a timer, set a reminder, book a taxi, change an app setting): phone.openApp with a fitting
-  app from VOCABULARY.apps or VOCABULARY.extraApps, followed by phone.appNotice from that app describing the
-  result (e.g. "Navigating to Office", "Checklist: umbrella added", "Timer 10:00 started"). Record it in
-  approximations.
+  to-do item, start a timer, set a reminder, book a taxi, change an app setting): one phone.appNotice from a
+  fitting app of VOCABULARY.apps or VOCABULARY.extraApps describing the result (e.g. "Navigating to Office",
+  "Checklist: umbrella added", "Timer 10:00 started"), with `"task": "input"` when it needs typing (note,
+  checklist, message) and `"task": "tap"` otherwise. Record it in approximations.
+- Do not write phone.openApp / wait / phone.closeApp around a task done in an app (appNotice, home.command with
+  channel "mobile_app", calendar changes, outgoing SMS or call, photo): the engine opens the app, does the task and
+  closes the app with the same timing for every rule. Write phone.openApp only when opening the app is itself the
+  behaviour (e.g. "opens the reading app").
+- Something switched on that should stay on while the person is away or asleep (cooling before leaving on a hot day,
+  a heater left on for a pet, sleeping with cooling on): add `"keepOn": true` to that step. Without it the person
+  does not switch it on just before leaving or sleep, and the leaving / bedtime check switches it off.
 - Something switched on that people switch off later (TV, speaker playing, lamp, purifier, humidifier,
   heater or cooler, stove) gets a `revert` with a plausible afterMinutes range, from the phone if the person
   may have left the room by then.

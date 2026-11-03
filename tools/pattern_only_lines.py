@@ -12,7 +12,9 @@ For each kind it counts lines made by pattern rules and by everything else, and 
 
 usage (from the repo root):
   python3 tools/pattern_only_lines.py --profile profiles/063.json --out out/063_lines [--days N] [--seed S]
-writes <out>/phone_log.jsonl (full format, with an extra "_cause" field per line) and <out>/pattern_line_kinds.csv
+writes <out>/phone_log.jsonl (full format, with an extra "_cause" field per line), <out>/pattern_line_kinds.csv and
+<out>/pattern_sequence_kinds.csv: devices that are on when the person leaves home or goes to sleep, grouped by
+moment, device type, how long they have been on and keepOn, with the number switched on by patterns and by others
 """
 import sys, os, json, argparse, collections, csv
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -48,8 +50,45 @@ def tag(fn):
 
 
 Phone.emit = tag(Phone.emit)
-Phone.to_smartthings = tag(Phone.to_smartthings)
 Phone.to_alert = tag(Phone.to_alert)
+
+LAST = {}        # deviceId -> (time switched on, cause) while on
+SEQUENCES = []   # (moment, device type, minutes since on, kept on, cause) for devices on when leaving / going to sleep
+ON_TYPES = {"window_contact", "door_contact", "heating_cooling_unit", "tv", "air_purifier", "humidifier", "light", "lamp", "speaker"}
+
+
+def is_on_value(attr, v):
+    return v in ("on", "open", "cool", "heat", "playing") or (attr == "percent" and isinstance(v, (int, float)) and v > 0)
+
+
+_to_st = tag(Phone.to_smartthings)
+
+
+def to_st(self, e):
+    c = _to_st(self, e)
+    dev = f"{e.get('roomId')}.{e.get('device')}" if e.get("roomId") and e.get("device") else None  # home line: device = type
+    if dev and e["device"] in ON_TYPES and e.get("attribute") in ("switch", "contact", "thermostatMode", "percent", "playbackStatus"):
+        if is_on_value(e["attribute"], e.get("value")):
+            LAST.setdefault(dev, (c["timestamp"], c["_cause"]))
+        else:
+            LAST.pop(dev, None)
+    return c
+
+
+Phone.to_smartthings = to_st
+_off_check = AgentRunner.off_check
+
+
+def off_check(self, moment, t, only=None):
+    if moment in ("leaving", "bedtime") and not self.S["asleep"] and self.S["place"] == "home":
+        for dev, (t_on, cause) in LAST.items():
+            m = (t - t_on) / 60000
+            SEQUENCES.append((moment, dev.split(".", 1)[1], "<10 min" if m < 10 else "10-30 min" if m < 30 else "30-120 min" if m < 120 else ">120 min",
+                              dev in self.keep_on, cause))
+    return _off_check(self, moment, t, only)
+
+
+AgentRunner.off_check = off_check
 
 
 def kind_of(e):
@@ -100,6 +139,23 @@ def main():
     for r in rows:
         print(f"  share {r[9]:.2f}  pattern {r[7]:>4}  other {r[8]:>6}  {' | '.join(str(x) for x in r[:7] if x not in ('', None))}")
     print("->", path)
+
+    seq = collections.defaultdict(lambda: [0, 0])
+    for moment, dtype, since, kept, c in SEQUENCES:
+        is_pat = c.startswith("rule:") and c[5:] in patterns
+        seq[(moment, dtype, since, "kept on" if kept else "-")][0 if is_pat else 1] += 1
+    path2 = os.path.join(o.out, "pattern_sequence_kinds.csv")
+    with open(path2, "w", newline="", encoding="utf-8") as f:
+        w = csv.writer(f)
+        w.writerow(["moment", "device_type", "on_for", "keepOn", "pattern", "other", "pattern_share"])
+        for k, (pn, on) in sorted(seq.items()):
+            w.writerow(list(k) + [pn, on, round(pn / (pn + on), 3)])
+    pat = [(k, v) for k, v in seq.items() if v[0]]
+    print(f"devices on at leaving / bedtime: {sum(sum(v) for v in seq.values())} cases in {len(seq)} kinds; "
+          f"{len(pat)} kinds with pattern cases, {sum(1 for k, v in pat if v[1] == 0)} only from patterns")
+    for k, (pn, on) in sorted(pat, key=lambda x: -x[1][0] / sum(x[1])):
+        print(f"  share {pn / (pn + on):.2f}  pattern {pn:>4}  other {on:>5}  {' | '.join(k)}")
+    print("->", path2)
 
 
 if __name__ == "__main__":

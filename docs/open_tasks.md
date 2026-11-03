@@ -35,15 +35,18 @@ Not done yet:
 - App time reaches 94-97% of the drawn target and uses 96-97% (sampler with the engine's 1-hour cap per app,
   2026-10-28). Not explained: the rest; the sampler counts all unlocks as phone.useApps uses, but other rules
   (music on the way, the pattern) also unlock the phone.
-- Opening the app before using it (SmartThings before app control, Calendar, Phone, Messages, Camera): agreed, not built.
+- Opening the app before using it: built 2026-11-03 (app tasks, tap / input times; see design notes section 11).
 - Music pause, health entry, exercise: the choice "with the app or without" (agreed to be a probability), not built.
 - Glances do not follow notifications yet (there are no incoming notifications, see below).
 
 ## Repeated operations on one device (2026-10-29)
 
 - Done: switching on just before a planned departure or sleep is skipped (`leaving_soon`, minimum times per device).
-- When a pattern's step is skipped this way (p63_a: 3 times a year), the summary still counts the pattern as followed
-  while the log has no action: decide how the ground truth records it.
+- Decided 2026-11-03: a run whose actions were all skipped this way counts as not followed (`notFollowedPlan`).
+- Done 2026-11-03: `keepOn` for switch-ons meant to stay on while away or asleep, with a decoy rule in the prompt and a
+  warning in `check_profile.py`.
+- Departures / sleep from event rules: known once the event happened (`eventCheck`); before that, not known.
+- Tap task time has a long tail (median 12 s, sigma 1.56; up to the 600 s cap): check whether it looks right.
 - On hold: very short uses from the profile's own distributions; measure per device over many LLM-written profiles.
 - On hold: a second action too soon from another path (not seen on its own in 063); reverts of one rule acting on a
   device another rule changed since (possible when several rules use one device).
