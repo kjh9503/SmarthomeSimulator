@@ -43,6 +43,8 @@ Not done yet:
 
 - Done: switching on just before a planned departure or sleep is skipped (`leaving_soon`, minimum times per device).
 - Decided 2026-11-03: a run whose actions were all skipped this way counts as not followed (`notFollowedPlan`).
+- Done 2026-11-03: `ground_truth.jsonl` written by the engine (if with observed values, then as done); the LLM-written
+  pattern JSON is no longer the answer. 063's embedded pattern still has openApp / wait / closeApp (harmless: merged).
 - Done 2026-11-03: `keepOn` for switch-ons meant to stay on while away or asleep, with a decoy rule in the prompt and a
   warning in `check_profile.py`.
 - Departures / sleep from event rules: known once the event happened (`eventCheck`); before that, not known.

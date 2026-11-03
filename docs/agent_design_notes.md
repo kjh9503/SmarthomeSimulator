@@ -138,6 +138,20 @@ outside); SmartThings foreground lines are pattern 25 / other 33, so no longer p
 purifier 60% by app, purifier 0% by device timer, the sequence kind "bedtime, purifier on for 10-30 min" (2 cases).
 Agreed to be problems; not fixed yet: immediate response timing, pattern-only values.
 
+### Ground truth file `ground_truth.jsonl` (agreed 2026-11-03)
+- The answer is what the engine recorded while running, not the LLM-written pattern JSON: the engine does not run
+  the pattern's actions as written (app steps merged, `wait` dropped, switch-on skipped before leaving or sleep, no
+  opening of an app already in front), and the LLM may write steps the source text does not have (063's `wait 0-1 min`).
+- One line per run of a `kind: pattern` behaviour whose conditions were true: `outcome` followed / not_followed
+  (probability) / not_followed_plan (leaving or sleep soon) / unfinished (running at the end of the year); `if`: the
+  trigger and each condition with the value seen then (`observed`; the engine judges conditions as written, so `if`
+  equals the JSON); `then`: the steps the person did (result done / no_change) with time and arguments: app opening
+  included (absent when the app was already in front), app closing, screen and `wait` left out; device-timer reverts
+  as the action's `revert`.
+- Check [ours, 063, one year]: 31 lines (followed 23, not_followed 4, not_followed_plan 4), as in the summary; all 46
+  `then` steps match a log line at the same time (SmartThings FOREGROUND, purifier line); SmartThings was never already
+  in front that year. Log line count unchanged by the recording (431,761).
+
 ## 9. Android Emulator (decided: not used)
 
 See `docs/android_emulator_review.md`. In short: the agent still has to open apps (it moves complexity, not removes

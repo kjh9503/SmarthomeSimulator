@@ -162,6 +162,9 @@ class AgentRunner:
         self.roles = profile.get("roomRoles") or {}
         os.makedirs(out_dir, exist_ok=True)
         self.trace_f = open(os.path.join(out_dir, "trace.jsonl"), "w", encoding="utf-8") if trace else None
+        # ground truth: one line per run of a kind 'pattern' behaviour whose conditions were true (if + what was done)
+        self.gt_f = open(os.path.join(out_dir, "ground_truth.jsonl"), "w", encoding="utf-8")
+        self.gt_open = []
         self.happenings, self.recent_phone, self.recent_weather, self.action_history = [], [], [], []
         self.scheduled, self.tasks = [], []
         self.minute_ms, self.sec = self.T0, 0
@@ -395,6 +398,53 @@ class AgentRunner:
                       for at, d, a in self.action_history)
             return not hit if c.get("negate") else hit
         raise ValueError("unknown condition kind " + k)
+
+    def observed(self, c, t):
+        """the value a condition looked at, at t (ground truth)"""
+        k, S = c["kind"], self.S
+        if k == "time":
+            return iso_local(t)[11:19]
+        if k == "day":
+            return ["mon", "tue", "wed", "thu", "fri", "sat", "sun"][((t - local_ms(2024, 0, 1)) // DAY_MS) % 7]
+        if k == "month":
+            return int(iso_local(t)[5:7])
+        if k == "place":
+            return "trip" if S["trip"] else S["place"]
+        if k == "room":
+            return S["room"] if S["place"] == "home" else None
+        if k == "device":
+            return self.device_value(c["device"], c["capability"], c["attribute"])
+        if k == "weather":
+            return outdoor_at(t)["weather"]
+        if k == "outdoor":
+            return outdoor_at(t).get(c["variable"])
+        if k == "phone_state":
+            return self.phone_field(c["field"])
+        if k == "health":
+            evs = [e for e in self.recent_phone if e["type"] == "HEALTH" and e["source"] == c["record"]]
+            return evs[-1]["payload"].get(c["field"]) if evs else None
+        return self.cond(c, t)  # calendar, phone_event, recent_action: true / false
+
+    def gt_start(self, b, t, how):
+        return dict(t=iso_local(t), behaviour=b["id"], outcome=None, via=how.get("via"),
+                    **{"if": dict(trigger=b["trigger"], conditions=[dict(c, observed=self.observed(c, t)) for c in (b.get("conditions") or [])])},
+                    then=[])
+
+    def gt_write(self, gt, outcome):
+        gt["outcome"] = outcome
+        self.gt_f.write(json.dumps(gt, ensure_ascii=False, default=str) + "\n")
+        if gt in self.gt_open:
+            self.gt_open.remove(gt)
+
+    def gt_step(self, task, a, result, do=None):
+        """a step the person did, for the ground truth: done or no_change; not wait, app closing or the screen"""
+        gt = task and task.get("gt")
+        if gt is None or a.get("do") == "wait" or result not in ("done", "no_change"):
+            return
+        x = dict(t=iso_local(self.now()), do=do or a["do"], args=a.get("args") or {}, result=result)
+        if a.get("revert"):
+            x["revert"] = a["revert"]
+        gt["then"].append(x)
 
     def all_conds(self, cs, t):
         return all(self.cond(c, t) for c in (cs or []))
@@ -701,7 +751,8 @@ class AgentRunner:
                 ph.chains -= 1
                 c["released"] = True
             if kind == "open":
-                ph.open_app(p)
+                if ph.open_app(p) > 0:
+                    self.gt_step(task, dict(do="phone.openApp", args=dict(package=p)), "done")
             elif kind == "do":
                 r = self.exec(p, raw=True)
                 c["result"] = r
@@ -798,6 +849,7 @@ class AgentRunner:
             k = r["reason"][:80]
             s["refusals"][k] = s["refusals"].get(k, 0) + 1
         task["steps"].append([a["do"], r["result"], r["reason"][:80]] if r.get("reason") else [a["do"], r["result"]])
+        self.gt_step(task, a, r["result"])
         ar = a.get("args") or {}
         if r["result"] == "done" and a["do"] == "home.command" and self.dev_id(ar["device"]) == "kitchen.stove" and ar.get("command") == "on":
             self.start_cooking(a, task["b"]["id"])
@@ -954,7 +1006,10 @@ class AgentRunner:
         if not self.all_conds(b.get("conditions"), t):
             return "conditions_false"
         s["conditionsTrue"] += 1
+        gt = self.gt_start(b, t, how) if b["kind"] == "pattern" else None
         if not self.chance(b["probability"]):
+            if gt:
+                self.gt_write(gt, "not_followed")
             s["notFollowed"] += 1
             self.trace(dict(t=iso_local(t), behaviour=b["id"], outcome="not_followed", via=how["via"]))
             return "not_followed"
@@ -962,7 +1017,9 @@ class AgentRunner:
         b["_st"]["count"][dk] = cnt + 1
         b["_firings"] += 1
         actions = self.resolve(self.shift_actions(b, t))
-        task = dict(b=b, actions=actions, i=0, until=0, travelTo=None, steps=[], start=t, via=how["via"], finished=False)
+        task = dict(b=b, actions=actions, i=0, until=0, travelTo=None, steps=[], start=t, via=how["via"], finished=False, gt=gt)
+        if gt:
+            self.gt_open.append(gt)
         if any(a["do"] == "phone.sleep" for a in actions):
             self.off_check("bedtime", t)
         self.tasks.append(task)
@@ -1023,10 +1080,14 @@ class AgentRunner:
             s["notFollowed"] += 1
             s["notFollowedPlan"] = s.get("notFollowedPlan", 0) + 1
             self.trace(dict(t=iso_local(task["start"]), behaviour=task["b"]["id"], outcome="not_followed_plan", via=task["via"], steps=task["steps"]))
+            if task.get("gt"):
+                self.gt_write(task["gt"], "not_followed_plan")
             return
         if self.S["foreground"] and not self.phone.in_chain and self.S["screenOffAt"] is None and any(a["do"].startswith("phone.") for a in acts):
             self.phone.end_use(self.now(), force=True)  # an app left open: the screen goes off by hand or by time-out
         self.trace(dict(t=iso_local(task["start"]), behaviour=task["b"]["id"], outcome="followed", via=task["via"], steps=task["steps"]))
+        if task.get("gt"):
+            self.gt_write(task["gt"], "followed")
 
     # ----- event triggers -----
     def event_matches(self, ev, src, h):
@@ -1233,6 +1294,9 @@ class AgentRunner:
         self.phone_f.close()
         if self.trace_f:
             self.trace_f.close()
+        for gt in list(self.gt_open):  # still running when the year ended
+            self.gt_write(gt, "unfinished")
+        self.gt_f.close()
         c = sorted(self.cook_times)
         q = lambda f: c[min(len(c) - 1, int(f * len(c)))] if c else None
         summary = dict(personaId=self.P["personaId"], houseId=self.sim.house_id, houseType=self.sim.type, variant=self.P["variant"], startDate=self.P["simulation"]["startDate"], days=self.days,
