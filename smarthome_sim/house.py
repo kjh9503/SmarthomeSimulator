@@ -59,7 +59,6 @@ PHYS = dict(
     indoorGainC=2, indoorSwing=0.25, indoorMinC=15, solarGainC=3,
     massToAir=0.05, airToMass=0.002, hvacMaxRate=0.5,
     moistureOffset=3, moisture=dict(person=0.0025, dryer=0.035, washer=0.007, humidifierMax=0.04),
-    acCoilC=13, acDryRate=0.03,
     report=dict(temperature=dict(th=0.5, dec=1), humidity=dict(th=2, dec=0), illuminance=dict(th=30, rel=0.1, dec=0),
                 pm25=dict(th=3, dec=0), co2=dict(th=50, dec=0), noise=dict(th=3, dec=0)),
     jitter=dict(temperature=0.05, humidity=0.3, illuminance=0.02, pm25=0.5, co2=4, noise=0.8),
@@ -104,6 +103,52 @@ CONNECTIONS = {
                         ("closed", "room1", "master_bathroom"), ("closed", "room1", "closet")],
 }
 CONNECTIONS["4room"] = CONNECTIONS["3room"] + [("room", "hallway", "room4")]
+
+
+# Air conditioning units (Korean home system air conditioning, Samsung WindFree 1Way, 2026-11-04):
+# rated cooling kW by place: rooms and the 4room kitchen 6-pyeong 2.3 kW (AJ023MB1PBC1, airflow 6.0 m3/min high);
+# living room 2room 8-pyeong 3.2 kW (AJ032MB1PBC1), 3room / 4room 18-pyeong 7.2 kW (AJ072MB1PBC1).
+# Airflow of the 3.2 / 7.2 kW units not found: taken in proportion to 2.3 kW (2.61 m3/min per kW) [our assumption].
+# Inverter range min / max = 0.79 / 3.70 of 2.30 kW (single 1Way AC023CN1PBH1), used for every size [our assumption].
+AC_KW = {"2room": dict(living_room=3.2), "3room": dict(living_room=7.2), "4room": dict(living_room=7.2)}
+AC_ROOM_KW, AC_M3MIN_PER_KW, AC_MIN, AC_MAX = 2.3, 6.0 / 2.3, 0.79 / 2.30, 3.70 / 2.30
+P_HPA = 1013.25
+
+
+def w_from_e(e):
+    """humidity ratio kg/kg from vapour pressure hPa"""
+    return 0.622 * e / (P_HPA - e)
+
+
+def e_from_w(w):
+    return w * P_HPA / (0.622 + w)
+
+
+def enthalpy(t, w):
+    """moist air kJ per kg dry air"""
+    return 1.006 * t + w * (2501 + 1.86 * t)
+
+
+def coil_outlet(t_in, e_in, kw, m3min):
+    """air through a cooling coil that removes kw: (t_out, e_out). Sensible cooling until the air reaches its dew point;
+    beyond that the outlet is saturated air with the remaining enthalpy, the excess vapour leaving as condensate
+    (ideal coil, no bypass)."""
+    rho = 1.2
+    m = rho * m3min / 60  # kg/s
+    w_in = w_from_e(e_in)
+    h_out = enthalpy(t_in, w_in) - kw / m
+    t_s = (h_out - w_in * 2501) / (1.006 + 1.86 * w_in)  # outlet with the same moisture
+    if e_in <= sat_vapor(t_s):
+        return t_s, e_in
+    lo, hi = -20.0, t_in
+    for _ in range(40):  # saturated outlet: h_sat(t) = h_out
+        mid = (lo + hi) / 2
+        if enthalpy(mid, w_from_e(sat_vapor(mid))) > h_out:
+            hi = mid
+        else:
+            lo = mid
+    t = (lo + hi) / 2
+    return t, sat_vapor(t)
 
 
 def opening_flow(width, height, dt, t_mean):
@@ -339,12 +384,24 @@ class Environment:
             hvac = devs.get("heating_cooling_unit")
             mode = hvac.state.get("thermostatMode.thermostatMode") if hvac else None
             if mode == "cool":
+                # capacity-based cooling (2026-11-04): the unit draws room air through its coil at its airflow and removes
+                # heat up to its capacity; how much goes to cooling and how much to condensing water follows from the
+                # coil (coil_outlet). Control: full output (max) at >= 1 K above the setpoint, in proportion below,
+                # off at or below the setpoint; never below the inverter's minimum while running.
                 target = hvac.state.get("thermostatCoolingSetpoint.coolingSetpoint")
-                coil = sat_vapor(PHYS["acCoilC"])
-                if e["temperature"] > target:
-                    e["temperature"] -= min(PHYS["hvacMaxRate"] * dt, e["temperature"] - target)
-                if e["vapor"] > coil:
-                    e["vapor"] -= (e["vapor"] - coil) * PHYS["acDryRate"] * dt
+                rated = AC_KW[H.type].get(r, AC_ROOM_KW)
+                m3 = AC_M3MIN_PER_KW * rated
+                n = 6  # 10 s sub-steps, so the room does not overshoot the setpoint within a minute
+                for _ in range(n):
+                    over = e["temperature"] - target
+                    if over <= 0:
+                        break
+                    kw = max(AC_MIN, min(1, over) * AC_MAX) * rated
+                    t_out, e_out = coil_outlet(e["temperature"], e["vapor"], kw, m3)
+                    f = min(1, m3 * dt / n / (p["areaM2"] * PHYS["ceilingM"]))  # share of the room's air through the coil
+                    w_room = w_from_e(e["vapor"])
+                    e["temperature"] += (t_out - e["temperature"]) * f
+                    e["vapor"] = e_from_w(w_room + (w_from_e(e_out) - w_room) * f)
             elif mode == "heat":
                 target = hvac.state.get("thermostatHeatingSetpoint.heatingSetpoint")
                 if e["temperature"] < target:
