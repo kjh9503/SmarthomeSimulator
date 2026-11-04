@@ -77,7 +77,10 @@ PHYS = dict(
     # of the floor (large / medium / small), each exterior wall sqrt(floor area) long, SHGC 0.5, daylight 110 lux per W/m2,
     # curtain passes the same share of solar heat as of light, internal gains (W): person 65 (Kim & Byun 2008 sensible),
     # ceiling light 10 W/m2 (ibid., bedroom), TV 100, stove 2000, oven 2000, dryer 300, washer 150, dishwasher 300.
-    # Party walls, floors and ceilings to the neighbours: no heat flow (neighbours at about the same temperature).
+    # Neighbours (2026-11-05): the flat is a middle floor; its floor and ceiling slabs (each the room's floor area) pass heat to
+    # the flats below and above at U 0.810 W/m2K (design standard, floor between storeys, notice 2025-738), into the mass node;
+    # side neighbours are left out (about 1% of the heat, Lee, Koo & Hong 2016). The neighbours are heated to 22 C while the
+    # outdoor daily mean is below 15 C [our assumption; Lee et al. 2016 used 20 and 24 C], otherwise no heat flows to them.
     envelope=dict(uWall=0.170, uWindow=1.0, windowShare=dict(large=0.40, medium=0.25, small=0.15, none=0.0), shgc=0.5,
                   luxPerW=110, ach=3.51 / 20, hIs=3.45, aTotPerFloor=4.5, hMs=9.1, aMassPerFloor=3.0, cMassPerFloor=260000,
                   # floor heating (ondol, 2026-11-05): heat into the slab (mass node) at 52 W/m2 of floor for 40 C supply water and a
@@ -87,8 +90,9 @@ PHYS = dict(
                   # layer" over 70 mm foamed concrete (Mun et al. 2016, KSNVE 26(2)); mortar 2000 kg/m3 x 1000 J/kgK [our
                   # assumption] -> 80 kJ/m2K. Floor to room 11.1 W/m2K (EN 1264, Danfoss guide); pipe to floor 4.72 W/m2K and the
                   # downward share 0.21 so that 40 C supply and a 22 C room give 52 W/m2 up and 10.8 down at a 26.7 C floor
-                  # (Jang et al. 2007: wood 52.0 up, 10.8 down, mean surface 26.8 C). Downward heat goes into the room's mass.
+                  # (Jang et al. 2007: wood 52.0 up, 10.8 down, mean surface 26.8 C). Downward heat goes to the flat below.
                   floor=dict(supplyC=40.0, bandK=0.5, cPerM2=80000, hUp=11.1, kPipe=4.72, downShare=10.8 / 52.0),
+                  uPartyFloor=0.810, neighbourC=22.0, neighbourHeatingBelowMeanC=15.0,
                   gains=dict(person=65, lightPerM2=10, tv=100, stove=2000, oven=2000, dryer=300, washer=150, dishwasher=300)),
     # air between rooms (2026-11-04). Open door / open plan: buoyancy flow through an opening, one direction
     # Q = Cd/3 * W * H * sqrt(g * H * dT / T) (Brown & Solvason 1962), Cd = 0.0835 * (dT/T)^-0.313 measured through a
@@ -441,7 +445,9 @@ class Environment:
             ts = (h_is * ta + h_ms * tm + h_win * t_out + phi_st) / (h_is + h_ms + h_win)
             sec = dt * 60
             e["temperature"] = ta + (h_ve * (t_out - ta) + h_is * (ts - ta) + phi_ia) * sec / c_air
-            e["mass"] = tm + (h_ms * (ts - tm) + h_em * (t_out - tm) + phi_m + phi_floor_down) * sec / c_m
+            # the downward share of the floor heating leaves to the flat below; the slabs exchange heat with heated neighbours
+            phi_nb = E["uPartyFloor"] * 2 * af * (E["neighbourC"] - tm) if out["meanTemperature"] < E["neighbourHeatingBelowMeanC"] else 0.0
+            e["mass"] = tm + (h_ms * (ts - tm) + h_em * (t_out - tm) + phi_m + phi_nb) * sec / c_m
             if e.get("vapor") is None:
                 e["vapor"] = vapor_from_rh(e["humidity"], e["temperature"])
             e["vapor"] += (vapor_from_rh(out["humidity"], out["temperature"]) + (0 if is_open else PHYS["moistureOffset"]) - e["vapor"]) * min(1, k * dt)
