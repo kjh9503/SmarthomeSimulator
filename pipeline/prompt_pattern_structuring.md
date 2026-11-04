@@ -83,7 +83,8 @@ rooms that have it.
   does not switch it on just before leaving or sleep, and the leaving / bedtime check switches it off.
 - Something switched on that people switch off later (TV, speaker playing, lamp, purifier, humidifier,
   heater or cooler, stove) gets a `revert` with a plausible afterMinutes range, from the phone if the person
-  may have left the room by then.
+  may have left the room by then. A stated duration ("for 30 minutes") becomes a range of 5 minutes either side
+  ({"min": 25, "max": 35}): the person switches it off, not a device timer (do not use `byDevice`).
 - Use `wait` for pauses between steps, and `probability` on a step that only sometimes happens.
 - Respect the simulator's limits: no phone use while driving (car, motorcycle), no actions while asleep,
   no hand actions on a home device unless the person is in its room, no IN_VEHICLE activity at home.

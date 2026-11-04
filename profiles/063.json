@@ -83,8 +83,10 @@
             "channel": "mobile_app"
           },
           "revert": {
-            "afterMinutes": 30,
-            "byDevice": true,
+            "afterMinutes": {
+              "min": 25,
+              "max": 35
+            },
             "action": {
               "do": "home.command",
               "args": {
@@ -173,8 +175,10 @@
               "channel": "mobile_app"
             },
             "revert": {
-              "afterMinutes": 30,
-              "byDevice": true,
+              "afterMinutes": {
+                "min": 25,
+                "max": 35
+              },
               "action": {
                 "do": "home.command",
                 "args": {
@@ -275,7 +279,7 @@
           },
           {
             "text": "for 30 minutes",
-            "mappedTo": "revert byDevice after 30 minutes: the purifier's own off-timer sets the fan to 0 %"
+            "mappedTo": "revert after 25-35 minutes (uniform): the person switches the fan to 0 % from the phone (no device timer: no SmartThings definition found)"
           },
           {
             "text": "set (from where)",

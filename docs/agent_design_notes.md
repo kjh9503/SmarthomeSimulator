@@ -90,6 +90,12 @@ cooling); sleeping with cooling on conflicts with the bedtime off check.
   [ours, same test profile, one year, 2026-11-03]: 0 short on->off by a check. The one case of the run before
   (12-25 23:29 heating -> 23:48 bedtime check; sleep from the arrive-home event rule `r_bedtime_late`) did not recur
   because the day went differently; not checked whether `eventCheck` would have stopped it.
+- Fixed 2026-11-04: planned rules were counted without their conditions [ours, 063, one year: all 10 skips of p63_a
+  were wrong]: 6 were "back home from the library / outside" rules (`r_library_home`, `r_weekend_back`) counted as a
+  departure while the person was at home, 4 were `r_bedtime_late` (condition 23:30-03:00) counted as sleep at 22:xx.
+  Now a planned rule's conditions are judged at its minute (place, devices etc. as now) and travel home is not a
+  departure. p63_a skips 10 -> 0; the test profile still has 0 short on->off by a check. Left: a planned rule with
+  `probability` < 1 still counts as certain.
 - **keepOn** (2026-11-03): a switch-on meant to stay on while away or asleep (e.g. cooling before leaving on a hot day)
   carries `"keepOn": true`. Engine: not skipped by the rule above; the leaving and bedtime checks leave that device on
   (the morning check does not); cleared on arriving home or waking. Prompt: so that keepOn is not a hint for patterns,
@@ -146,8 +152,17 @@ Agreed to be problems; not fixed yet: immediate response timing, pattern-only va
   (probability) / not_followed_plan (leaving or sleep soon) / unfinished (running at the end of the year); `if`: the
   trigger and each condition with the value seen then (`observed`; the engine judges conditions as written, so `if`
   equals the JSON); `then`: the steps the person did (result done / no_change) with time and arguments: app opening
-  included (absent when the app was already in front), app closing, screen and `wait` left out; device-timer reverts
-  as the action's `revert`.
+  included (absent when the app was already in front), app closing, screen and `wait` left out. A person revert
+  belongs to the same line (2026-11-04): the line is written when the revert ran or was dropped; `reverts` holds the
+  planned time and result (done / not_followed with a reason: `off_check:bedtime` when the check switched it off first,
+  or a refusal), and the app opening and switch-off it did are added to `then`.
+- Device timers (`byDevice`) are not used (2026-11-04): no device has a timer with a SmartThings definition yet. p63_a
+  "for 30 minutes": the person switches it off from the phone 25-35 minutes later (uniform [assume]). Prompts, schema
+  and `check_profile.py` (warning) updated. Person reverts now run at their planned second (before: next minute, 0 s).
+- Check [ours, 063, one year, 2026-11-04]: 31 lines (followed 28, not_followed 3); all 28 followed runs have then =
+  open app -> 60% -> open app -> 0%, 26.2-35.3 min from on to off. A test (063 with window 23:00-23:30, 120 days) showed
+  a bedtime check switching it off first, recorded as not_followed, `off_check:bedtime` (1 case, run before the
+  condition fix).
 - Check [ours, 063, one year]: 31 lines (followed 23, not_followed 4, not_followed_plan 4), as in the summary; all 46
   `then` steps match a log line at the same time (SmartThings FOREGROUND, purifier line); SmartThings was never already
   in front that year. Log line count unchanged by the recording (431,761).

@@ -95,6 +95,9 @@ def main():
         ev = (b["trigger"].get("event") or {}) if b["trigger"]["kind"] == "event" else {}
         starts_at_leave = ev.get("source") == "person" and ev.get("what") in ("depart", "fall_asleep")
         for i, a in enumerate(acts):
+            if (a.get("revert") or {}).get("byDevice"):
+                out.append(("WARN", b["id"], f"actions[{i}] revert byDevice: no device has a timer with a SmartThings definition yet; "
+                                             "let the person switch it off (drop byDevice)"))
             if a.get("keepOn") or not keep_on_type(a) or not switches_on(a):
                 continue
             later = any(x["do"] in ("person.travel", "phone.sleep") for x in acts[i + 1:])

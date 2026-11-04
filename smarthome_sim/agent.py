@@ -165,6 +165,7 @@ class AgentRunner:
         # ground truth: one line per run of a kind 'pattern' behaviour whose conditions were true (if + what was done)
         self.gt_f = open(os.path.join(out_dir, "ground_truth.jsonl"), "w", encoding="utf-8")
         self.gt_open = []
+        self.gt_ctx = None  # the ground-truth line a person revert outside its rule belongs to
         self.happenings, self.recent_phone, self.recent_weather, self.action_history = [], [], [], []
         self.scheduled, self.tasks = [], []
         self.minute_ms, self.sec = self.T0, 0
@@ -432,19 +433,40 @@ class AgentRunner:
 
     def gt_write(self, gt, outcome):
         gt["outcome"] = outcome
-        self.gt_f.write(json.dumps(gt, ensure_ascii=False, default=str) + "\n")
+        self.gt_f.write(json.dumps({k: v for k, v in gt.items() if not k.startswith("_")}, ensure_ascii=False, default=str) + "\n")
         if gt in self.gt_open:
             self.gt_open.remove(gt)
 
-    def gt_step(self, task, a, result, do=None):
+    def gt_finish(self, gt, outcome):
+        """the rule's own steps are over: write the line now, or when its person reverts are done or dropped"""
+        gt["_outcome"] = outcome
+        if not gt.get("_pending"):
+            self.gt_write(gt, outcome)
+
+    def gt_revert_done(self, it, result, reason=None):
+        """a person revert of a pattern ran (done / no_change), or will not run (not_followed: refused, or the leaving /
+        bedtime check switched the device off first)"""
+        gt, entry = it.get("gt"), it.get("gtRevert")
+        if gt is None:
+            return
+        entry["result"] = result
+        if reason:
+            entry["reason"] = reason
+        gt["_pending"] -= 1
+        if not gt["_pending"] and gt.get("_outcome"):
+            self.gt_write(gt, gt["_outcome"])
+
+    def gt_add(self, gt, a, result, do=None):
         """a step the person did, for the ground truth: done or no_change; not wait, app closing or the screen"""
-        gt = task and task.get("gt")
         if gt is None or a.get("do") == "wait" or result not in ("done", "no_change"):
             return
         x = dict(t=iso_local(self.now()), do=do or a["do"], args=a.get("args") or {}, result=result)
         if a.get("revert"):
             x["revert"] = a["revert"]
         gt["then"].append(x)
+
+    def gt_step(self, task, a, result, do=None):
+        self.gt_add(task.get("gt") if task else self.gt_ctx, a, result, do)
 
     def all_conds(self, cs, t):
         return all(self.cond(c, t) for c in (cs or []))
@@ -671,8 +693,8 @@ class AgentRunner:
         """earliest planned time >= t at which the person leaves home or goes to sleep: today's daily rules (their minute
         is drawn now if their window has not opened yet, the same way the trigger draws it) and running tasks"""
         S, best = self.S, None
-        leaves = lambda acts: any((x["do"] == "person.travel" and S["place"] == "home" and not S["trip"]) or x["do"] == "phone.sleep"
-                                  for x in acts)
+        leaves = lambda acts: any((x["do"] == "person.travel" and S["place"] == "home" and not S["trip"]
+                                   and (x.get("args") or {}).get("to") != "home") or x["do"] == "phone.sleep" for x in acts)
         d0 = start_of_day(t)
         this_minute = self.minute_ms  # a rule due in this minute counts, even if its second has passed
         for b in self.behaviours:
@@ -691,10 +713,12 @@ class AgentRunner:
                     continue  # not today
                 ln = (to - f + 1440) % 1440 + 1
                 dl = st["daily"] = dict(dk=day_key(d0), day=d0, at=d0 + (f + int(self.rnd.random() * ln)) * MIN_MS)
+            if not self.all_conds(b.get("conditions"), dl["at"]):
+                continue  # its conditions would be false then (judged now, at that minute): no departure or sleep from it
             if dl["at"] >= this_minute and (best is None or dl["at"] < best):
                 best = max(dl["at"], t)
         for x in self.scheduled:  # event rules with a delay: their time is already set
-            if x["kind"] == "eventCheck" and x["at"] >= this_minute and leaves(x["b"]["actions"]):
+            if x["kind"] == "eventCheck" and x["at"] >= this_minute and leaves(x["b"]["actions"]) and self.all_conds(x["b"].get("conditions"), x["at"]):
                 best = max(x["at"], t) if best is None else min(best, max(x["at"], t))
         for k in self.tasks:
             if k is task or k["finished"] or not leaves(k["actions"][k["i"]:]):
@@ -757,6 +781,8 @@ class AgentRunner:
                 r = self.exec(p, raw=True)
                 c["result"] = r
                 self.after_step(task, p, r)
+                if task is None:
+                    self.gt_step(None, p, r["result"])
             elif kind == "close" or (kind == "closeIf" and self.S["foreground"] == p):
                 ph.close_app()
             c["i"] += 1
@@ -854,8 +880,14 @@ class AgentRunner:
         if r["result"] == "done" and a["do"] == "home.command" and self.dev_id(ar["device"]) == "kitchen.stove" and ar.get("command") == "on":
             self.start_cooking(a, task["b"]["id"])
         if a.get("revert") and r["result"] in ("done", "no_change"):
-            self.scheduled.append(dict(kind="revert", at=self.now() + js_round(self.num(a["revert"]["afterMinutes"])) * MIN_MS,
-                                       byDevice=bool(a["revert"].get("byDevice")), action=self.resolve(a["revert"]["action"]), owner=task["b"]["id"]))
+            at = self.now() + js_round(self.num(a["revert"]["afterMinutes"])) * MIN_MS
+            it = dict(kind="revert", at=at, byDevice=bool(a["revert"].get("byDevice")), action=self.resolve(a["revert"]["action"]), owner=task["b"]["id"])
+            gt = task.get("gt")
+            if gt is not None:  # the ground-truth line stays open until this revert ran or was dropped
+                it["gt"], it["gtRevert"] = gt, dict(planned=iso_local(at), byDevice=it["byDevice"], action=it["action"], result=None)
+                gt.setdefault("reverts", []).append(it["gtRevert"])
+                gt["_pending"] = gt.get("_pending", 0) + 1
+            self.scheduled.append(it)
 
     def maybe_glance(self, t):
         """a look at the lock screen (time, notifications) while awake and not using the phone"""
@@ -968,8 +1000,11 @@ class AgentRunner:
                 cs["leftOn"] += 1
             self.trace(dict(t=iso_local(self.now()), check=moment, device=d.id, result=r["result"], reason=r.get("reason")))
         if moment != "morning":  # the check takes over what the person meant to switch off later
-            self.scheduled = [x for x in self.scheduled if not (x["kind"] == "revert" and not x["byDevice"] and not x.get("keep")
-                                                                 and self.revert_device(x) not in self.keep_on)]
+            drop = [x for x in self.scheduled if x["kind"] == "revert" and not x["byDevice"] and not x.get("keep")
+                    and self.revert_device(x) not in self.keep_on]
+            self.scheduled = [x for x in self.scheduled if x not in drop]
+            for x in drop:
+                self.gt_revert_done(x, "not_followed", "off_check:" + moment)
         if back and S["room"] != back:
             self.phone.move_room(back)
             self.person_changes()
@@ -1081,13 +1116,13 @@ class AgentRunner:
             s["notFollowedPlan"] = s.get("notFollowedPlan", 0) + 1
             self.trace(dict(t=iso_local(task["start"]), behaviour=task["b"]["id"], outcome="not_followed_plan", via=task["via"], steps=task["steps"]))
             if task.get("gt"):
-                self.gt_write(task["gt"], "not_followed_plan")
+                self.gt_finish(task["gt"], "not_followed_plan")
             return
         if self.S["foreground"] and not self.phone.in_chain and self.S["screenOffAt"] is None and any(a["do"].startswith("phone.") for a in acts):
             self.phone.end_use(self.now(), force=True)  # an app left open: the screen goes off by hand or by time-out
         self.trace(dict(t=iso_local(task["start"]), behaviour=task["b"]["id"], outcome="followed", via=task["via"], steps=task["steps"]))
         if task.get("gt"):
-            self.gt_write(task["gt"], "followed")
+            self.gt_finish(task["gt"], "followed")
 
     # ----- event triggers -----
     def event_matches(self, ev, src, h):
@@ -1206,14 +1241,27 @@ class AgentRunner:
 
     def run_scheduled(self, t):
         self.scheduled.sort(key=lambda x: x["at"])
-        while self.scheduled and self.scheduled[0]["at"] <= t:
+        while self.scheduled and self.scheduled[0]["at"] < t + MIN_MS:  # due in this minute: at its own second
             it = self.scheduled.pop(0)
+            if it["at"] > t:
+                self.sec = min(59, max(self.sec, (it["at"] - t) // 1000))
+                self.sim.clock.set_to(t + self.sec * 1000)
             if it["kind"] == "revert":
                 if it["byDevice"]:
                     self.sim.clock.set_to(it["at"])
                     self.device_revert(it["action"])
+                    self.gt_revert_done(it, "done_by_device")
                 else:
+                    gt = it.get("gt")
+                    n0 = len(gt["then"]) if gt else 0
+                    self.gt_ctx = gt
                     r = self.exec(it["action"])
+                    self.gt_ctx = None
+                    if gt is not None:
+                        if len(gt["then"]) == n0:  # not an app task: the step itself
+                            self.gt_add(gt, it["action"], r["result"])
+                        ok = r["result"] in ("done", "no_change")
+                        self.gt_revert_done(it, r["result"] if ok else "not_followed", None if ok else (r.get("reason") or r["result"])[:80])
                     s = self.stat(it["owner"])
                     s["steps"][r["result"]] += 1
                     if r.get("reason"):
@@ -1295,7 +1343,10 @@ class AgentRunner:
         if self.trace_f:
             self.trace_f.close()
         for gt in list(self.gt_open):  # still running when the year ended
-            self.gt_write(gt, "unfinished")
+            for e in gt.get("reverts", []):
+                if e["result"] is None:
+                    e["result"] = "unfinished"
+            self.gt_write(gt, gt.get("_outcome") or "unfinished")
         self.gt_f.close()
         c = sorted(self.cook_times)
         q = lambda f: c[min(len(c) - 1, int(f * len(c)))] if c else None

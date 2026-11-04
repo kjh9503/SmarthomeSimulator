@@ -211,7 +211,7 @@ the task step.
 People usually switch off before leaving and before sleep: the engine's checks do it (off_rules.json), and the person
 does not switch on a window, heating / cooling, TV, purifier or humidifier when a planned departure or sleep comes
 within 10 / 30 / 20 minutes. When a rule means to leave the device on while away or asleep, add `"keepOn": true` to
-that step (and a `revert`, e.g. a device timer, if it goes off later). The checker warns about a switch-on followed by
+that step (and a `revert` by the person, if they switch it off later; do not use `byDevice`). The checker warns about a switch-on followed by
 travel or sleep in the same rule without keepOn.
 
 Decoy rule: if a PATTERN uses keepOn on a device type, also write an ordinary routine that leaves the same device type

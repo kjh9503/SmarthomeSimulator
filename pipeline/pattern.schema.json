@@ -950,7 +950,7 @@
             "afterMinutes",
             "action"
           ],
-          "description": "Undo later, e.g. turn the TV off 30-120 minutes after turning it on, or a purifier's own 30-minute timer (byDevice).",
+          "description": "Undo later by the person, e.g. turn the TV off 30-120 minutes after turning it on, or the purifier off 25-35 minutes later for 'for 30 minutes'.",
           "properties": {
             "afterMinutes": {
               "$ref": "#/$defs/minutes"
@@ -960,7 +960,7 @@
             },
             "byDevice": {
               "type": "boolean",
-              "description": "true: the device's own timer does it (logged as the device's report, works while the person sleeps or is away). false/absent: the person does it."
+              "description": "Do not use for now: true would mean the device's own timer does it, and no device has a timer with a SmartThings definition yet. false/absent: the person does it."
             }
           }
         },
