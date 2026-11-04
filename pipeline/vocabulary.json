@@ -543,8 +543,7 @@
        "type": "enum",
        "values": [
         "off",
-        "cool",
-        "heat"
+        "cool"
        ]
       }
      ],
@@ -574,6 +573,49 @@
        ]
       }
      ]
+    }
+   ],
+   "notIn": {
+    "2room": [
+     "kitchen"
+    ],
+    "3room": [
+     "kitchen"
+    ]
+   },
+   "note": "system air conditioning, cooling only: living room and every room; kitchen only in 4room. Dining room, hallway and the 2room / 3room kitchen are open to the living room and use its unit. Heating is floor_heating."
+  },
+  "floor_heating": {
+   "label": "Floor heating",
+   "rooms": [
+    "kitchen",
+    "living_room",
+    "room1",
+    "room2",
+    "room3",
+    "room4"
+   ],
+   "capabilities": [
+    {
+     "capability": "thermostatMode",
+     "attributes": [
+      {
+       "name": "thermostatMode",
+       "type": "enum",
+       "values": [
+        "off",
+        "heat"
+       ]
+      }
+     ],
+     "commands": [
+      {
+       "name": "setThermostatMode",
+       "args": [
+        "mode"
+       ]
+      }
+     ]
     },
     {
      "capability": "thermostatHeatingSetpoint",
@@ -592,17 +634,56 @@
        ]
       }
      ]
+    },
+    {
+     "capability": "thermostatOperatingState",
+     "attributes": [
+      {
+       "name": "thermostatOperatingState",
+       "type": "enum",
+       "values": [
+        "idle",
+        "heating"
+       ]
+      }
+     ],
+     "commands": []
+    },
+    {
+     "capability": "sim.heatingTimer",
+     "attributes": [
+      {
+       "name": "onTimer",
+       "type": "integer",
+       "unit": "min"
+      },
+      {
+       "name": "offTimer",
+       "type": "integer",
+       "unit": "min"
+      }
+     ],
+     "commands": [
+      {
+       "name": "setOnTimer",
+       "args": [
+        "minutes"
+       ]
+      },
+      {
+       "name": "setOffTimer",
+       "args": [
+        "minutes"
+       ]
+      },
+      {
+       "name": "cancelTimer",
+       "args": []
+      }
+     ]
     }
    ],
-   "notIn": {
-    "2room": [
-     "kitchen"
-    ],
-    "3room": [
-     "kitchen"
-    ]
-   },
-   "note": "system air conditioning: living room and every room; kitchen only in 4room. Dining room, hallway and the 2room / 3room kitchen are open to the living room and use its unit"
+   "note": "ondol thermostat per room (kitchen, living room, room1-4; the hallway is heated with the living room). thermostatOperatingState is reported by the device. sim.heatingTimer is our own capability (no SmartThings definition): setOnTimer / setOffTimer minutes from now; the device switches at that minute (reason reservation)."
   },
   "humidifier": {
    "label": "Humidifier",

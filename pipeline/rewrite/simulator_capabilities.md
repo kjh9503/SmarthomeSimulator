@@ -19,7 +19,8 @@
 - wifi_router: living_room | connectedDevices.connectedDevices=integer
 - light: balcony, bathroom, master_bathroom, closet, dining_room, entryway, hallway, kitchen, laundry, living_room, room1, room2, room3, room4 | switch.switch=on|off; cmd on(), off()
 - lamp: living_room, room1, room2, room3, room4 | switch.switch=on|off; cmd on(), off(); switchLevel.level=integer 0-100; cmd setLevel(level); colorTemperature.colorTemperature=integer K 2700-6500; cmd setColorTemperature(K)
-- heating_cooling_unit: kitchen, living_room, room1, room2, room3, room4 | thermostatMode.thermostatMode=off|cool|heat; cmd setThermostatMode(mode); thermostatCoolingSetpoint.coolingSetpoint=number C; cmd setCoolingSetpoint(C); thermostatHeatingSetpoint.heatingSetpoint=number C; cmd setHeatingSetpoint(C)
+- heating_cooling_unit: kitchen, living_room, room1, room2, room3, room4 | thermostatMode.thermostatMode=off|cool; cmd setThermostatMode(mode); thermostatCoolingSetpoint.coolingSetpoint=number C; cmd setCoolingSetpoint(C)
+- floor_heating: kitchen, living_room, room1, room2, room3, room4 | thermostatMode.thermostatMode=off|heat; cmd setThermostatMode(mode); thermostatHeatingSetpoint.heatingSetpoint=number C; cmd setHeatingSetpoint(C); thermostatOperatingState.thermostatOperatingState=idle|heating; sim.heatingTimer.onTimer=integer min; sim.heatingTimer.offTimer=integer min; cmd setOnTimer(minutes), setOffTimer(minutes), cancelTimer()
 - humidifier: room1, room2, room3, room4 | switch.switch=on|off; cmd on(), off(); humiditySetpoint.humiditySetpoint=integer % 0-100; cmd setHumiditySetpoint(%)
 - air_purifier: living_room | fanSpeedPercent.percent=integer 0-100; cmd setPercent(percent)
 - curtain: living_room | windowShade.windowShade=open|closed|opening|closing|partially_open|unknown; cmd open(), close(), pause()

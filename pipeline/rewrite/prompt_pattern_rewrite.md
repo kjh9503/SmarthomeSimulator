@@ -33,7 +33,7 @@ Change only what the simulator cannot produce. Prefer the first option that fits
      if brightness or colour matters -> `lamp` (level 0-100, colorTemperature 2700-6500 K; warm/amber about
      2700 K, neutral about 4000 K, cool about 5500-6500 K); lamps exist only in living_room and room1-4.
    - motion sensor -> `occupancy_sensor` presence; yard or garden -> `balcony`.
-   - heater of any kind (floor, desk, bedroom heater) -> `heating_cooling_unit` heat with heatingSetpoint;
+   - heater of any kind (floor, desk, bedroom heater, boiler) -> `floor_heating` heat with heatingSetpoint (kitchen, living_room, room1-4; reservations setOnTimer / setOffTimer in minutes);
      air conditioner -> heating_cooling_unit cool with coolingSetpoint ("quiet mode" has no value: drop it).
    - dehumidifier -> heating_cooling_unit cool (cooling dries the air in the simulator) or opening a window.
    - ventilation fan, air circulator, drying fan -> `air_purifier` (living_room; fan speed percent 0-100, 0 = off) or

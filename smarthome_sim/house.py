@@ -23,7 +23,7 @@ DEVICE_LABEL = dict(temperature_sensor="Temperature", humidity_sensor="Humidity"
                     air_quality_sensor="Air quality", noise_sensor="Noise", door_contact="Door contact", window_contact="Window contact",
                     water_leak_sensor="Water leak", smoke_alarm="Smoke alarm", doorbell="Doorbell", wifi_router="Wi-Fi router", light="Light",
                     lamp="Lamp", heating_cooling_unit="Heating/cooling", humidifier="Humidifier", air_purifier="Air purifier", curtain="Curtain",
-                    tv="TV", robot_vacuum="Robot vacuum", dishwasher="Dishwasher", oven="Oven", stove="Stove", washer="Washer",
+                    tv="TV", floor_heating="Floor heating", robot_vacuum="Robot vacuum", dishwasher="Dishwasher", oven="Oven", stove="Stove", washer="Washer",
                     dryer="Dryer", lock="Lock")
 # initial values (simulator's choice)
 DEFAULTS = {
@@ -38,7 +38,8 @@ DEFAULTS = {
     "temperatureMeasurement.temperature": 22, "relativeHumidityMeasurement.humidity": 45, "illuminanceMeasurement.illuminance": 300,
     "fineDustSensor.fineDustLevel": 15, "carbonDioxideMeasurement.carbonDioxide": 600, "soundPressureLevel.soundPressureLevel": 35,
     "connectedDevices.connectedDevices": 8, "switchLevel.level": 100, "colorTemperature.colorTemperature": 4000,
-    "thermostatCoolingSetpoint.coolingSetpoint": 24, "thermostatHeatingSetpoint.heatingSetpoint": 22, "humiditySetpoint.humiditySetpoint": 50,
+    "thermostatCoolingSetpoint.coolingSetpoint": 24, "thermostatHeatingSetpoint.heatingSetpoint": 22, "thermostatOperatingState.thermostatOperatingState": "idle",
+    "sim.heatingTimer.onTimer": 0, "sim.heatingTimer.offTimer": 0, "humiditySetpoint.humiditySetpoint": 50,
     "fanSpeedPercent.percent": 0, "audioVolume.volume": 30, "battery.battery": 100,
     "temperatureSetpoint.temperatureSetpoint": 180,
 }
@@ -79,6 +80,10 @@ PHYS = dict(
     # Party walls, floors and ceilings to the neighbours: no heat flow (neighbours at about the same temperature).
     envelope=dict(uWall=0.170, uWindow=1.0, windowShare=dict(large=0.40, medium=0.25, small=0.15, none=0.0), shgc=0.5,
                   luxPerW=110, ach=3.51 / 20, hIs=3.45, aTotPerFloor=4.5, hMs=9.1, aMassPerFloor=3.0, cMassPerFloor=260000,
+                  # floor heating (ondol, 2026-11-05): heat into the slab (mass node) at 52 W/m2 of floor for 40 C supply water and a
+                  # 22 C room, wood finish (Jang, Yu & Cho 2007, SAREK winter conference: wood 52.0, vinyl 70.7, tile 79.3 W/m2),
+                  # in proportion to (supply - air); supply water 40 C and the thermostat's +-0.5 K band are our own assumptions
+                  floor=dict(wPerM2=52.0, supplyC=40.0, refSupplyC=40.0, refRoomC=22.0, bandK=0.5),
                   gains=dict(person=65, lightPerM2=10, tv=100, stove=2000, oven=2000, dryer=300, washer=150, dishwasher=300)),
     # air between rooms (2026-11-04). Open door / open plan: buoyancy flow through an opening, one direction
     # Q = Cd/3 * W * H * sqrt(g * H * dT / T) (Brown & Solvason 1962), Cd = 0.0835 * (dT/T)^-0.313 measured through a
@@ -235,6 +240,14 @@ class Device:
     def effects(self, cap_name, cmd, args):
         c = self.cap(cap_name)
         attr = c["attributes"][0]["name"]
+        if cap_name == "sim.heatingTimer":  # our own reservation capability (no SmartThings definition): minutes from now
+            if cmd == "setOnTimer":
+                return [(cap_name, "onTimer", int(args[0]))]
+            if cmd == "setOffTimer":
+                return [(cap_name, "offTimer", int(args[0]))]
+            if cmd == "cancelTimer":
+                return [(cap_name, "onTimer", 0), (cap_name, "offTimer", 0)]
+            raise ValueError(f"Unknown command: {cmd}")
         if self.type in OP_STATE and cmd == "setMachineState":
             cap, job, running, _ = OP_STATE[self.type]
             st = args[0] if args else None
@@ -406,6 +419,12 @@ class Environment:
             for t in ("dryer", "washer", "dishwasher"):
                 if t in OP_STATE and is_(t, OP_STATE[t][0], "machineState", "run"):
                     phi_int += G[t]
+            fh = devs.get("floor_heating")
+            phi_floor = 0.0
+            if fh is not None and fh.state.get("thermostatMode.thermostatMode") == "heat" \
+                    and fh.state.get("thermostatOperatingState.thermostatOperatingState") == "heating":
+                F = E["floor"]
+                phi_floor = F["wPerM2"] * af * max(0.0, F["supplyC"] - e["temperature"]) / (F["refSupplyC"] - F["refRoomC"])
             phi_ia = 0.5 * phi_int
             phi_m = a_m / a_tot * (0.5 * phi_int + phi_sol)
             phi_st = (1 - a_m / a_tot - h_win / (E["hMs"] * a_tot)) * (0.5 * phi_int + phi_sol)
@@ -413,7 +432,7 @@ class Environment:
             ts = (h_is * ta + h_ms * tm + h_win * t_out + phi_st) / (h_is + h_ms + h_win)
             sec = dt * 60
             e["temperature"] = ta + (h_ve * (t_out - ta) + h_is * (ts - ta) + phi_ia) * sec / c_air
-            e["mass"] = tm + (h_ms * (ts - tm) + h_em * (t_out - tm) + phi_m) * sec / c_m
+            e["mass"] = tm + (h_ms * (ts - tm) + h_em * (t_out - tm) + phi_m + phi_floor) * sec / c_m
             if e.get("vapor") is None:
                 e["vapor"] = vapor_from_rh(e["humidity"], e["temperature"])
             e["vapor"] += (vapor_from_rh(out["humidity"], out["temperature"]) + (0 if is_open else PHYS["moistureOffset"]) - e["vapor"]) * min(1, k * dt)
@@ -447,11 +466,6 @@ class Environment:
                     w_room = w_from_e(e["vapor"])
                     e["temperature"] += (t_out - e["temperature"]) * f
                     e["vapor"] = e_from_w(w_room + (w_from_e(e_out) - w_room) * f)
-            elif mode == "heat":  # stand-in until floor heating: heat to the air up to the unit's rated kW (no source)
-                target = hvac.state.get("thermostatHeatingSetpoint.heatingSetpoint")
-                if e["temperature"] < target:
-                    kw = AC_KW[H.type].get(r, AC_ROOM_KW) * min(1, target - e["temperature"])
-                    e["temperature"] = min(target, e["temperature"] + kw * 1000 * dt * 60 / (1206 * p["areaM2"] * PHYS["ceilingM"]))
             hum = devs.get("humidifier")
             hum_on = hum is not None and hum.state.get("switch.switch") == "on"
             if hum_on:

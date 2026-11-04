@@ -107,6 +107,7 @@ class Simulator:
         self.dryer_load = None  # {small, standard, large: weight}: the person's laundry habit (profile dryerLoad); None = standard
         self._robot = [d for d in devs if d.type == "robot_vacuum"]
         self._oven = [d for d in devs if d.type == "oven"]
+        self._floor = [d for d in devs if d.type == "floor_heating"]
         self._sensors = [(d, cap, attr, ek, f"{d.id}|{cap}.{attr}") for d in devs for cap, attr, ek in SENSOR_ATTRS.get(d.type, ())]
         self._sensor_keys = sorted(self._sensors, key=lambda s: _locale_key(s[4]))
 
@@ -231,16 +232,26 @@ class Simulator:
                 d.aux["remain"] = None
         for ch in changes:
             self.record(d, ch, "command", cmd, args, None, channel)
-        if d.type == "heating_cooling_unit" and any(ch["attribute"] == "thermostatMode" for ch in changes):
-            on, ps = d.get("thermostatMode", "thermostatMode") != "off", self.phone.s
-            was_on = any(ch["attribute"] == "thermostatMode" and ch["previousValue"] not in (None, "off") for ch in changes)
-            if not on:
-                self.house.door_closed[d.roomId] = False
-            elif not was_on:  # switched on: the person at home closes the door; switched on from outside by the app: open
-                self.house.door_closed[d.roomId] = ps["place"] == "home" and not ps["trip"]
+        if d.type in ("heating_cooling_unit", "floor_heating") and any(ch["attribute"] == "thermostatMode" for ch in changes):
+            self.door_after_mode(d, any(ch["attribute"] == "thermostatMode" and ch["previousValue"] not in (None, "off") for ch in changes))
+        if cap == "sim.heatingTimer":
+            now = self.clock.now()
+            for ch in changes:
+                d.aux[ch["attribute"]] = now + ch["value"] * MIN_MS if ch["value"] else None
         if d.type == "robot_vacuum" and cmd == "start":
             d.aux["run"] = 0
         return len(changes)
+
+    def door_after_mode(self, d, was_on):
+        """door rule (agreed 2026-11-04): a room's heating / cooling switched on at home closes its door; switched on from
+        outside (app or a reservation while away) leaves it open; the door opens when no unit of the room runs"""
+        units = [self.house.at(d.roomId, t) for t in ("heating_cooling_unit", "floor_heating")]
+        running = any(u is not None and u.get("thermostatMode", "thermostatMode") != "off" for u in units)
+        ps = self.phone.s
+        if not running:
+            self.house.door_closed[d.roomId] = False
+        elif d.get("thermostatMode", "thermostatMode") != "off" and not was_on and not self.house.door_closed.get(d.roomId):
+            self.house.door_closed[d.roomId] = ps["place"] == "home" and not ps["trip"]
 
     def cycle_minutes(self, d):
         """length of a washer / dryer / dishwasher job in minutes. Dryer: Samsung 9 kg dryer, standard course 1 h 40 min
@@ -432,7 +443,37 @@ class Simulator:
         self.report_sensors(t)
         self.phone.step(t)
 
+    def step_floor_heating(self, t):
+        """floor heating: reservations fire at their minute (source device, reason reservation); the room thermostat opens
+        the valve below setpoint - band and closes it at setpoint + band (thermostatOperatingState heating / idle)"""
+        band = PHYS["envelope"]["floor"]["bandK"]
+        for d in self._floor:
+            for timer, mode in (("onTimer", "heat"), ("offTimer", "off")):
+                at = d.aux.get(timer)
+                if at is not None and t >= at:
+                    d.aux[timer] = None
+                    was_on = d.get("thermostatMode", "thermostatMode") != "off"
+                    for c, a, v in (("sim.heatingTimer", timer, 0), ("thermostatMode", "thermostatMode", mode)):
+                        ch = d.set(c, a, v)
+                        if ch["changed"]:
+                            e = self.build(d, ch, "device", None, [], t, "reservation")
+                            self.log.add(e)
+                            self.phone.copy_home([e])
+                    self.door_after_mode(d, was_on)
+            st = d.get("thermostatOperatingState", "thermostatOperatingState")
+            if d.get("thermostatMode", "thermostatMode") != "heat":
+                new = "idle"
+            else:
+                air, sp = self.house.env.rooms[d.roomId]["temperature"], d.get("thermostatHeatingSetpoint", "heatingSetpoint")
+                new = "heating" if air < sp - band else ("idle" if air >= sp + band else st)
+            if new != st:
+                ch = d.set("thermostatOperatingState", "thermostatOperatingState", new)
+                e = self.build(d, ch, "device", None, [], t, None)
+                self.log.add(e)
+                self.phone.copy_home([e])
+
     def step_devices(self, t):
+        self.step_floor_heating(t)
         for d in self._auto_off:
             c, at, off_v = ("switch", "switch", "off") if d.type == "stove" else ("mode", "mode", "off")
             on = d.get(c, at) != off_v

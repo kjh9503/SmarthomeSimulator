@@ -28,7 +28,7 @@ def expand(obj):
     return [obj]
 
 
-KEEP_ON_TYPES = {"window_contact", "heating_cooling_unit", "tv", "air_purifier", "humidifier"}  # as PLAN_MIN in agent.py
+KEEP_ON_TYPES = {"window_contact", "heating_cooling_unit", "floor_heating", "tv", "air_purifier", "humidifier"}  # as PLAN_MIN in agent.py
 
 
 def keep_on_type(a):

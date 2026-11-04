@@ -24,7 +24,7 @@ BODY_DO = {"person.travel", "person.moveRoom", "home.record"}
 GLANCE = dict(median=56, sigma=0.95)
 # minimum minutes a person means to keep a device on: switching on / opening is skipped if a planned departure or
 # sleep comes sooner (assumption, agreed 2026-10-29). Lights, lamps, stove: not limited (short use is normal).
-PLAN_MIN = dict(window_contact=10, door_contact=10, heating_cooling_unit=30, tv=20, air_purifier=20, humidifier=20)
+PLAN_MIN = dict(window_contact=10, door_contact=10, heating_cooling_unit=30, floor_heating=30, tv=20, air_purifier=20, humidifier=20)
 # apps a task is done in; the person opens it, does the task and closes it (agreed 2026-11-03)
 APP_FOR = dict(home="com.samsung.android.oneconnect", calendar="com.samsung.android.calendar", sms="com.samsung.android.messaging",
                camera="com.sec.android.app.camera", call="com.samsung.android.dialer")
