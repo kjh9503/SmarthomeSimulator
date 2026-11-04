@@ -26,15 +26,15 @@
 - tv: living_room | switch.switch=on|off; cmd on(), off(); mediaPlayback.playbackStatus=playing|paused|stopped; cmd play(), pause(), stop()
 - speaker: living_room, room1, room2 | connection.connection=connected|disconnected; mediaPlayback.playbackStatus=playing|paused|stopped; cmd play(), stop(); audioVolume.volume=integer 0-100; cmd setVolume(volume)
 - robot_vacuum: living_room | robotCleanerOperatingState.operatingState=docked|running|seekingCharger|charging|paused|stopped; cmd start(), pause(), goHome(); battery.battery=integer % 0-100
-- dishwasher: kitchen | cycleState.cycleState=idle|running|finished; cmd start(), startHeatedDry(); remainingTime.remainingTime=integer min; contactSensor.contact=open|closed
-- oven: kitchen | mode.mode=off|bake|convection; cmd setMode(mode); temperatureSetpoint.temperatureSetpoint=number C; cmd setTemperatureSetpoint(C); temperatureMeasurement.temperature=number C; contactSensor.contact=open|closed; preheat.preheat=idle|preheating|ready
+- dishwasher: kitchen | dishwasherOperatingState.machineState=stop|run|pause; dishwasherOperatingState.dishwasherJobState=none|wash|finish; dishwasherOperatingState.completionTime=string; cmd setMachineState(state); contactSensor.contact=open|closed
+- oven: kitchen | mode.mode=off|bake|convection; cmd setMode(mode); temperatureSetpoint.temperatureSetpoint=number C; cmd setTemperatureSetpoint(C); temperatureMeasurement.temperature=number C; contactSensor.contact=open|closed; ovenOperatingState.machineState=ready|running|paused; ovenOperatingState.ovenJobState=ready|preheat|cooking
 - stove: kitchen | switch.switch=on|off; cmd on(), off()
-- washer: laundry | cycleState.cycleState=idle|running|finished; cmd start(mode); mode.mode=normal|quick|bedding; remainingTime.remainingTime=integer min | washer modes: normal, quick, bedding
-- dryer: laundry | cycleState.cycleState=idle|running|finished; cmd start(mode, minutes); mode.mode=normal|delicate|timeDry; remainingTime.remainingTime=integer min; errorCode.errorCode=string
+- washer: laundry | washerOperatingState.machineState=stop|run|pause; washerOperatingState.washerJobState=none|wash|finish; washerOperatingState.completionTime=string; cmd setMachineState(state); mode.mode=normal|quick|bedding; cmd setMode(mode) | washer modes: normal, quick, bedding
+- dryer: laundry | dryerOperatingState.machineState=stop|run|pause; dryerOperatingState.dryerJobState=none|drying|finished; dryerOperatingState.completionTime=string; cmd setMachineState(state); mode.mode=normal|delicate; cmd setMode(mode)
 - lock: entryway | lock.lock=locked|unlocked; cmd lock(), unlock()
 
 ## Home device alerts the phone receives (SmartThings app notifications)
-- doorbell (doorbell), smoke (smoke_alarm), water_leak (water_leak_sensor), cycle_finished (any device with cycleState), cleaning_finished (robot_vacuum), preheat_done (oven), device_error (any device with errorCode)
+- doorbell (doorbell), smoke (smoke_alarm), water_leak (water_leak_sensor), cycle_finished (washer, dryer, dishwasher), cleaning_finished (robot_vacuum), preheat_done (oven)
 
 ## Places outside home
 - Home: home

@@ -254,6 +254,28 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
 
 ## 12. Environment checks (simulator side)
 
+- Device definitions moved to SmartThings standard capabilities (2026-11-04). Checked against the 328 standard
+  capabilities in Flobul/smartthings-capabilities (definitions fetched from the SmartThings API with the CLI, 2026-05),
+  names only. Before: 37 of 48 standard names, 11 not in any definition, no Samsung extension.
+  - Washer, dryer, dishwasher: `cycleState`, `remainingTime` -> `washerOperatingState` / `dryerOperatingState` /
+    `dishwasherOperatingState` (live): `machineState` stop / run / pause, job state wash -> finish (dryer drying ->
+    finished; agreed: these two only), `completionTime` set at start. Start = `mode.setMode(course)` then
+    `setMachineState ["run"]`. The remaining-time lines every 5 min are gone.
+  - Dropped (no standard definition): dryer `errorCode` and its alert, dryer timeDry course, dishwasher `startHeatedDry`.
+  - Dryer time: delicate 80 + 0-20 min uniform [assume, no data]; normal course by the person's load shares (profile
+    `dryerLoad`, chosen by the LLM from the persona, no data): small 60-100 min uniform [assume] / standard 100 min /
+    large 100 + 16-50 min triangular, mode 16 [src Samsung service: 9 kg dryer standard 1 h 40 min for 4 kg, shorter when
+    small, +16-50 min near the end when large].
+  - Oven: `preheat` -> `ovenOperatingState` (`machineState` ready / running, `ovenJobState` ready / preheat / cooking);
+    the preheat alert fires on preheat -> cooking.
+  - Still without a real definition: humidifier `humiditySetpoint`, speaker `connection`, router `connectedDevices`
+    (closest `wifiMeshRouter`, deprecated).
+  - Check [ours, one year]: 063 dishwasher 36 runs, all run -> wash -> finish -> stop, 119-120 min, 36 alerts. Dryer test
+    (test profile + dry-after-wash rule, `dryerLoad` 0.3 / 0.4 / 0.3): dryer 45 runs 71-142 min, washer 50 runs 29-90 min.
+    `tests/test_port.py` passes (the JS dryer used the old 60-minute command, so the test pins the dryer to 60 min).
+  - Not changed: the browser JS simulator and `tools/physics_script.json`. `vocabulary.json` (normally extracted from the
+    JS) was edited from the Python device spec.
+
 - Python port equals the JS simulator: outdoor values within 1e-12, physics within 1e-15 (`tests/test_port.py`).
 - 2026 weather vs climate normals [ours]: monthly max/min temperature within 0.9 C, PM within 1.2 ug/m3, 86 wet days
   vs 79.3, 1,509 mm vs 1,418 mm.
@@ -269,8 +291,11 @@ immediate response timing, gap-dependent off probabilities, persona -> daily-lif
 
 ## References
 
+
 | Short name | Reference | Used for | Read |
 |---|---|---|---|
+| Samsung service dryer | [Samsung dryer] dryer course functions. https://www.samsungsvc.co.kr/solution/1052607 | dryer standard course time (9 kg) | web summary |
+| Flobul | Flobul/smartthings-capabilities (GitHub, 2026-05): 548 capability definitions fetched from the SmartThings API (328 standard) | device definition names | repository cloned and read |
 | Winbush 2025 | Winbush A., McDuff D., Hernandez J., et al. Smartphone use in a large US adult population: Temporal associations between objective measures of usage and mental well-being. PNAS 122(43) e2427311122, 2025. https://doi.org/10.1073/pnas.2427311122 | unlocks and app time per person | full PDF (user) |
 | Appiah 2026 | Appiah K. N., Adu N., Singh D. K. Using Fixed-Effects Panel Models to Assess Within-Person Variation in Smartphone Unlocks from Continuous Sensing. J. Technology in Behavioral Science, 2026. https://doi.org/10.1007/s41347-026-00691-7 | day-to-day variation (StudentLife 2013, 47 students); some internal inconsistencies noted | full PDF (user) |
 | arXiv 2609.24477 | Beyond Screen Time: Demonstrating the Value of App Activity Logs to Understand User Behavior Further. arXiv 2609.24477 (2026), https://arxiv.org/html/2609.24477v1 | share of sessions under 40 s (Denmark, 13-17, iOS, 2024) | web page |

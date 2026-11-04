@@ -52,6 +52,10 @@ Not done yet:
   the test profile.
 - Device reservations (timers): only with real SmartThings definitions; for AC / purifier / TV none found yet, so
   not built; 7 items without a definition listed in the conversation of 2026-11-04 (to search real device dumps).
+- Wrong skips from deferred departures: a daily departure rule deferred while the person is busy can leave later than
+  the device minimum (dryer test profile: 1 of 72, r_to_campus 08:21 planned, left 08:39) (2026-11-04).
+- Browser JS simulator: still the old appliance capabilities (cycleState etc.); vocabulary.json now follows the
+  Python device spec (2026-11-04).
 - Tap task time has a long tail (median 12 s, sigma 1.56; up to the 600 s cap): check whether it looks right.
 - On hold: very short uses from the profile's own distributions; measure per device over many LLM-written profiles.
 - On hold: a second action too soon from another path (not seen on its own in 063); reverts of one rule acting on a

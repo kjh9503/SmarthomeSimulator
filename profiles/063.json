@@ -1305,9 +1305,11 @@
           "do": "home.command",
           "args": {
             "device": "kitchen.dishwasher",
-            "capability": "cycleState",
-            "command": "start",
-            "args": [],
+            "capability": "dishwasherOperatingState",
+            "command": "setMachineState",
+            "args": [
+              "run"
+            ],
             "channel": "physical"
           },
           "probability": 0.3

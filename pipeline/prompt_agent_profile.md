@@ -57,9 +57,9 @@ ownership rate as the chance a household like this one has it, and write the rul
 |---|---|---|
 | air_purifier | 66% (Gallup Korea 2025) | On when PM2.5 is high or on dusty days |
 | humidifier | 39% (Gallup Korea 2025) | On in winter when bedroom humidity is low, often overnight |
-| dryer | 35% (Gallup Korea 2023) | After the washer finishes (event: washer cycleState finished) |
+| dryer | 35% (Gallup Korea 2023) | After the washer finishes (event: washer washerJobState finish); modes normal, delicate |
 | dishwasher | 24% (Gallup Korea 2025, "dishwasher/dish dryer") | After dinner on cooking days |
-| oven | 21% (Gallup Korea 2025) | Some cooking days, with preheat |
+| oven | 21% (Gallup Korea 2025) | Some cooking days: setMode bake / convection, then wait for preheat (ovenOperatingState.ovenJobState preheat -> cooking) |
 | speaker (AI speaker) | 18% (Gallup Korea 2023) | Music or radio at home |
 | robot_vacuum | 15% (Gallup Korea 2023) | Started when leaving home, or on a schedule |
 
@@ -111,19 +111,27 @@ Laundry:
     { "kind": "place", "op": "is", "place": "home" },
     { "kind": "phone_state", "field": "asleep", "op": "==", "value": false },
     { "kind": "recent_action", "withinMinutes": 5760, "negate": true,
-      "action": { "do": "home.command", "args": { "device": "laundry.washer", "capability": "cycleState",
-        "command": "start", "channel": "physical" } } }
+      "action": { "do": "home.command", "args": { "device": "laundry.washer", "capability": "washerOperatingState",
+        "command": "setMachineState", "args": ["run"], "channel": "physical" } } }
   ],
   "actions": [
     { "do": "person.moveRoom", "args": { "room": "laundry" } },
-    { "do": "home.command", "args": { "device": "laundry.washer", "capability": "cycleState", "command": "start",
-      "args": [{ "choice": ["normal", "quick", "bedding"], "weights": [7, 2, 1] }], "channel": "physical" } }
+    { "do": "home.command", "args": { "device": "laundry.washer", "capability": "mode", "command": "setMode",
+      "args": [{ "choice": ["normal", "quick", "bedding"], "weights": [7, 2, 1] }], "channel": "physical" } },
+    { "do": "home.command", "args": { "device": "laundry.washer", "capability": "washerOperatingState",
+      "command": "setMachineState", "args": ["run"], "channel": "physical" } }
   ],
   "probability": 0.7, "maxPerDay": 1
 }
 ```
 
 (The `recent_action` condition matches any washer start: the engine compares only the fields given.)
+
+Washer, dryer and dishwasher use the SmartThings standard capabilities: choose the course with `mode.setMode`
+(washer, dryer), then start with `<washer|dryer|dishwasher>OperatingState.setMachineState ["run"]`. The device ends the
+job by itself: the job state (`washerJobState` / `dishwasherJobState` `finish`, `dryerJobState` `finished`) and
+`machineState` `stop`; `completionTime` is set when it starts. If the person has a dryer, write `dryerLoad` (shares of
+small / standard / large loads, chosen from the persona; there is no data, so say so in `notes`).
 
 ### Phone use
 

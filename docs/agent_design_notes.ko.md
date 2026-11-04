@@ -231,6 +231,16 @@ LLM은 `phoneUseLevel`(light / medium / heavy = 하위·가운데·상위 3분�
 
 ## 12. 환경(시뮬레이터) 쪽 확인
 
+- 기기 정의를 SmartThings 표준 기능으로 (2026-11-04). 확인 범위: Flobul/smartthings-capabilities 저장소(SmartThings API에서 CLI로 받은 정의, 2026-05)의 표준 목록 328개, 이름만 비교.
+  - 바꾸기 전: 48개 중 37개가 표준 이름, 11개는 실제 정의에 없는 이름. 삼성 확장 기능은 쓰지 않았음.
+  - 세탁기·건조기·식기세척기: `cycleState`, `remainingTime` → `washerOperatingState` / `dryerOperatingState` / `dishwasherOperatingState` (live): `machineState` stop / run / pause, 작업 단계 wash → finish (건조기 drying → finished, 합의: 두 가지만), 시작할 때 `completionTime`(끝날 시각). 시작은 `mode.setMode(코스)` 다음 `setMachineState ["run"]` 두 단계. 5분마다 남던 남은 시간 줄은 없어짐.
+  - 빠진 것: 건조기 `errorCode`와 오류 알림, 건조기 timeDry 코스, 식기세척기 `startHeatedDry`(표준 정의 없음).
+  - 건조기 시간: 섬세 80분 + 0–20분 균등 [가정, 자료 없음]. 표준 코스는 사람마다의 세탁물 양 비율(프로필 `dryerLoad`, LLM이 페르소나로 정함, 자료 없음)로 적음 60–100분 균등 [가정] / 표준 100분 / 많음 100분 + 16–50분 삼각분포(최빈 16) [문헌 삼성전자서비스: 9kg 건조기 표준 1시간 40분(4kg 기준), 적으면 단축, 많으면 종료 1–2분 전 16–50분 증가].
+  - 오븐: `preheat` → `ovenOperatingState` (`machineState` ready / running, `ovenJobState` ready / preheat / cooking). 예열 완료 알림은 preheat → cooking일 때.
+  - 아직 실제 정의 없음: 가습기 `humiditySetpoint`, 스피커 `connection`, 공유기 `connectedDevices`(가장 가까운 것 `wifiMeshRouter`, deprecated).
+  - 확인 [측정, 1년]: 063 식기세척기 36번 모두 run → wash → finish → stop, 119–120분, 완료 알림 36번. 건조기 시험 프로필(시험 프로필 + 세탁 뒤 건조 규칙, `dryerLoad` 0.3 / 0.4 / 0.3): 건조기 45번 71–142분, 세탁기 50번 29–90분. 물리 시험(`tests/test_port.py`) 통과: JS 쪽 건조기는 예전 60분 명령이라 시험에서만 건조기를 60분으로 고정.
+  - 브라우저 JS 시뮬레이터와 `tools/physics_script.json`은 고치지 않았다. `vocabulary.json`은 JS에서 뽑던 것을 Python 기기 정의 기준으로 직접 고쳤다.
+
 - Python 포팅 = JS 시뮬레이터: 바깥 값 1e-12, 물리 1e-15 안에서 같음 (`tests/test_port.py`).
 - 2026년 날씨와 평년값 [측정]: 월별 최고·최저 기온 0.9°C 안, PM 1.2 µg/m³ 안, 비 온 날 86일(평년 79.3), 강수 1,509 mm(평년 1,418).
 - 냉난방 물리 [측정]:
@@ -251,8 +261,11 @@ LLM은 `phoneUseLevel`(light / medium / heavy = 하위·가운데·상위 3분�
 
 ## 참고 문헌
 
+
 | 줄임 | 문헌 | 쓴 곳 | 읽은 범위 |
 |---|---|---|---|
+| 삼성전자서비스 건조기 | [삼성 건조기] 건조기 코스 기능에 대해 알려주세요. https://www.samsungsvc.co.kr/solution/1052607 | 건조기 표준 코스 시간(9kg) | 웹 요약 |
+| Flobul | Flobul/smartthings-capabilities (GitHub, 2026-05). SmartThings API에서 CLI로 받은 기능 정의 548개(표준 328) | 기기 정의 이름 | 저장소 받아서 읽음 |
 | Winbush 2025 | Winbush A., McDuff D., Hernandez J., Barakat A., Jiang A., Heneghan C., Nelson B. W., Allen N. B. Smartphone use in a large US adult population: Temporal associations between objective measures of usage and mental well-being. PNAS 122(43) e2427311122, 2025. https://doi.org/10.1073/pnas.2427311122 | 사람별 잠금 해제, 앱 시간 (미국 성인 10,099명, Android) | PDF 전체 (사용자 제공) |
 | Appiah 2026 | Appiah K. N., Adu N., Singh D. K. Using Fixed-Effects Panel Models to Assess Within-Person Variation in Smartphone Unlocks from Continuous Sensing. Journal of Technology in Behavioral Science, 2026. https://doi.org/10.1007/s41347-026-00691-7 | 날마다 차이 (StudentLife 2013, 대학생 47명). 본문 숫자의 앞뒤가 맞지 않는 곳이 있음 | PDF 전체 (사용자 제공) |
 | arXiv 2609.24477 | Beyond Screen Time: Demonstrating the Value of App Activity Logs to Understand User Behavior Further. arXiv 2609.24477, 2026. https://arxiv.org/html/2609.24477v1 | 40초 미만 사용 41.4% (덴마크 13–17세, iOS, 2024) | 웹 페이지 |

@@ -25,21 +25,29 @@ DEVICE_LABEL = dict(temperature_sensor="Temperature", humidity_sensor="Humidity"
 DEFAULTS = {
     "switch.switch": "off", "presenceSensor.presence": "not present", "contactSensor.contact": "closed", "waterSensor.water": "dry",
     "smokeDetector.smoke": "clear", "button.button": None, "lock.lock": "locked", "windowShade.windowShade": "closed",
-    "mediaPlayback.playbackStatus": "stopped", "robotCleanerOperatingState.operatingState": "docked", "cycleState.cycleState": "idle",
-    "thermostatMode.thermostatMode": "off", "connection.connection": "disconnected", "preheat.preheat": "idle", "errorCode.errorCode": "none",
+    "mediaPlayback.playbackStatus": "stopped", "robotCleanerOperatingState.operatingState": "docked",
+    "thermostatMode.thermostatMode": "off", "connection.connection": "disconnected",
+    "washerOperatingState.machineState": "stop", "washerOperatingState.washerJobState": "none",
+    "dryerOperatingState.machineState": "stop", "dryerOperatingState.dryerJobState": "none",
+    "dishwasherOperatingState.machineState": "stop", "dishwasherOperatingState.dishwasherJobState": "none",
+    "ovenOperatingState.machineState": "ready", "ovenOperatingState.ovenJobState": "ready",
     "temperatureMeasurement.temperature": 22, "relativeHumidityMeasurement.humidity": 45, "illuminanceMeasurement.illuminance": 300,
     "fineDustSensor.fineDustLevel": 15, "carbonDioxideMeasurement.carbonDioxide": 600, "soundPressureLevel.soundPressureLevel": 35,
     "connectedDevices.connectedDevices": 8, "switchLevel.level": 100, "colorTemperature.colorTemperature": 4000,
     "thermostatCoolingSetpoint.coolingSetpoint": 24, "thermostatHeatingSetpoint.heatingSetpoint": 22, "humiditySetpoint.humiditySetpoint": 50,
-    "fanSpeedPercent.percent": 0, "audioVolume.volume": 30, "battery.battery": 100, "remainingTime.remainingTime": 0,
+    "fanSpeedPercent.percent": 0, "audioVolume.volume": 30, "battery.battery": 100,
     "temperatureSetpoint.temperatureSetpoint": 180,
 }
 OUTDOOR_DEFAULTS = {"temperatureMeasurement.temperature": 15, "relativeHumidityMeasurement.humidity": 60, "fineDustSensor.fineDustLevel": 30,
                     "carbonDioxideMeasurement.carbonDioxide": 420}
 CMD_VALUE = dict(on="on", off="off", lock="locked", unlock="unlocked", open="open", close="closed", play="playing", stop="stopped",
-                 start="running", goHome="seekingCharger", startHeatedDry="running")
+                 start="running", goHome="seekingCharger")
 PAUSE_VALUE = dict(windowShade="partially_open", playbackStatus="paused", operatingState="paused")
-CYCLE_MINUTES = dict(washer=dict(normal=60, quick=30, bedding=90), dishwasher=dict(start=120, startHeatedDry=150))
+CYCLE_MINUTES = dict(washer=dict(normal=60, quick=30, bedding=90), dishwasher=dict(normal=120))
+# SmartThings standard operating-state capabilities (live): machineState stop / run / pause, job state, completionTime
+OP_STATE = dict(washer=("washerOperatingState", "washerJobState", "wash", "finish"),
+                dryer=("dryerOperatingState", "dryerJobState", "drying", "finished"),
+                dishwasher=("dishwasherOperatingState", "dishwasherJobState", "wash", "finish"))
 
 PHYS = dict(
     stepMs=60000, heartbeatMin=30, maxCatchUpDays=7,
@@ -137,13 +145,17 @@ class Device:
     def effects(self, cap_name, cmd, args):
         c = self.cap(cap_name)
         attr = c["attributes"][0]["name"]
-        if self.type in ("washer", "dryer") and cmd == "start":
-            out = [(cap_name, attr, "running"), ("mode", "mode", args[0] if args else None)]
-            out.append(("remainingTime", "remainingTime", (args[1] if len(args) > 1 else None) if self.type == "dryer"
-                        else CYCLE_MINUTES["washer"].get(args[0] if args else None, 60)))
-            return out
-        if self.type == "dishwasher" and cmd in ("start", "startHeatedDry"):
-            return [(cap_name, attr, "running"), ("remainingTime", "remainingTime", CYCLE_MINUTES["dishwasher"][cmd])]
+        if self.type in OP_STATE and cmd == "setMachineState":
+            cap, job, running, _ = OP_STATE[self.type]
+            st = args[0] if args else None
+            was = self.get(cap, "machineState")
+            if st == "run":  # start, or resume after a pause (the job carries on)
+                return [(cap, "machineState", "run"), (cap, job, running)]
+            if st == "pause":
+                return [(cap, "machineState", "pause")] if was == "run" else []
+            if st == "stop":
+                return [(cap, "machineState", "stop"), (cap, job, "none")]
+            raise ValueError(f"Unknown machine state: {st}")
         if cmd.startswith("set"):
             return [(cap_name, attr, args[0] if args else None)]
         if cmd == "pause":
@@ -301,7 +313,7 @@ class Environment:
                 e["pm25"] -= e["pm25"] * min(0.5, P["mixingEff"] * P["cadrM3min"] * ap_share / (p["areaM2"] * PHYS["ceilingM"])) * dt
 
             def running(t):
-                return is_(t, "cycleState", "cycleState", "running")
+                return t in OP_STATE and is_(t, OP_STATE[t][0], "machineState", "run")
 
             stove_on = is_("stove", "switch", "switch", "on")
             oven = devs.get("oven")

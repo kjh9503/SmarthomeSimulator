@@ -38,6 +38,8 @@ class TestAgainstJS(unittest.TestCase):
         T0 = local_ms(2026, 0, 15)
         s = Simulator("3room-A", T0, seed=1)
         s.where_refusal = lambda d: None
+        # the JS fixture's dryer ran the old start(mode, 60 minutes); the standard command has no length, so 60 here
+        s.cycle_minutes = lambda d, f=s.cycle_minutes: 60 if d.type == "dryer" else f(d)
         s.jump_to(T0)
         s.phone.move_room("room1")
         ai, got = 0, {}

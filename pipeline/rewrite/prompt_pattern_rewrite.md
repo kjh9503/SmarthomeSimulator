@@ -42,12 +42,12 @@ Change only what the simulator cannot produce. Prefer the first option that fits
    - white-noise / sleep-sound / smart speaker -> `speaker` (living_room, room1, room2) play / volume;
      the sound itself (rain, brown noise...) can be named in the phone app that drives it.
    - kettle, coffee or espresso machine, rice cooker, cooktop -> `stove` (on/off) or `oven` (bake/convection,
-     temperatureSetpoint, preheat), or the matching phone app if nothing at home fits.
+     temperatureSetpoint, ovenOperatingState), or the matching phone app if nothing at home fits.
    - door camera, two-way talk, guest access code -> the SmartThings app on the phone (open it; it shows a
      notification) plus the `doorbell` / `lock` / `door_contact` that already exist.
-   - washer programs: washer modes are normal, quick, bedding; dryer modes normal, delicate, timeDry;
-     dishwasher start or startHeatedDry. Map fabric / load types onto these modes (towels, bedding -> bedding;
-     wool, delicates -> quick or dryer delicate; sportswear -> quick...). Only the dryer has errorCode.
+   - washer programs: washer modes are normal, quick, bedding; dryer modes normal, delicate;
+     dishwasher one course (setMachineState run). Map fabric / load types onto these modes (towels, bedding -> bedding;
+     wool, delicates -> quick or dryer delicate; sportswear -> quick...). No device reports error codes.
 2. **A device away from home (laptop dock, monitor, printer, scanner, tablet, pen, keyboard, webcam,
    projector, meeting-room display or sensor, desk fan or heater at the office, headphones)** -> what the
    phone itself can see: a Bluetooth connection (`Galaxy Buds` for headphones and headsets, `Car Audio` for a

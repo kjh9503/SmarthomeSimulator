@@ -157,6 +157,7 @@ class AgentRunner:
         self.phone = self.sim.phone
         self.S = self.phone.s
         self.phone.habits.update(profile.get("phoneHabits") or {})
+        self.sim.dryer_load = profile.get("dryerLoad")  # the person's laundry habit: shares of small / standard / large loads
         self.phone.rand = self.rnd.random
         self.glance_day, self.glance_idle, self.glance_idle_prev = -1, 0, GLANCE_AWAKE_MIN
         self.roles = profile.get("roomRoles") or {}
@@ -669,7 +670,7 @@ class AgentRunner:
         if a["do"] == "home.record":
             return args.get("value") == "open"
         cmd, xs = args.get("command"), args.get("args") or []
-        return (cmd in ("on", "open", "start") or (cmd == "setThermostatMode" and bool(xs) and xs[0] in ("cool", "heat"))
+        return (cmd in ("on", "open", "start") or (cmd == "setMachineState" and xs[:1] == ["run"]) or (cmd == "setThermostatMode" and bool(xs) and xs[0] in ("cool", "heat"))
                 or (cmd == "setPercent" and bool(xs) and isinstance(xs[0], (int, float)) and xs[0] > 0))
 
     def turn_on_minutes(self, a):

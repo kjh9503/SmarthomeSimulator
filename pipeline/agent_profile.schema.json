@@ -187,6 +187,16 @@
         }
       }
     },
+    "dryerLoad": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Only if the person has a dryer: shares of small / standard / large loads in the normal course (weights, any scale). The dryer then runs small 60-100 min (our choice), standard 100 min (Samsung 9 kg dryer, 4 kg load), large 100 + 16-50 min (triangular, mode 16; samsungsvc.co.kr/solution/1052607). A habit of the person, chosen from the persona (household size, how laundry is batched); no data. Absent: always standard.",
+      "properties": {
+        "small": {"type": "number", "minimum": 0},
+        "standard": {"type": "number", "minimum": 0},
+        "large": {"type": "number", "minimum": 0}
+      }
+    },
     "phoneUseLevel": {
       "enum": [
         "light",

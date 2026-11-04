@@ -893,39 +893,40 @@
    ],
    "capabilities": [
     {
-     "capability": "cycleState",
+     "capability": "dishwasherOperatingState",
      "attributes": [
       {
-       "name": "cycleState",
+       "name": "machineState",
        "type": "enum",
        "values": [
-        "idle",
-        "running",
-        "finished"
+        "stop",
+        "run",
+        "pause"
        ]
+      },
+      {
+       "name": "dishwasherJobState",
+       "type": "enum",
+       "values": [
+        "none",
+        "wash",
+        "finish"
+       ]
+      },
+      {
+       "name": "completionTime",
+       "type": "string",
+       "format": "ISO 8601 date-time"
       }
      ],
      "commands": [
       {
-       "name": "start",
-       "args": []
-      },
-      {
-       "name": "startHeatedDry",
-       "args": []
+       "name": "setMachineState",
+       "args": [
+        "state"
+       ]
       }
      ]
-    },
-    {
-     "capability": "remainingTime",
-     "attributes": [
-      {
-       "name": "remainingTime",
-       "type": "integer",
-       "unit": "min"
-      }
-     ],
-     "commands": []
     },
     {
      "capability": "contactSensor",
@@ -1015,15 +1016,24 @@
      "commands": []
     },
     {
-     "capability": "preheat",
+     "capability": "ovenOperatingState",
      "attributes": [
       {
-       "name": "preheat",
+       "name": "machineState",
        "type": "enum",
        "values": [
-        "idle",
-        "preheating",
-        "ready"
+        "ready",
+        "running",
+        "paused"
+       ]
+      },
+      {
+       "name": "ovenJobState",
+       "type": "enum",
+       "values": [
+        "ready",
+        "preheat",
+        "cooking"
        ]
       }
      ],
@@ -1069,23 +1079,37 @@
    ],
    "capabilities": [
     {
-     "capability": "cycleState",
+     "capability": "washerOperatingState",
      "attributes": [
       {
-       "name": "cycleState",
+       "name": "machineState",
        "type": "enum",
        "values": [
-        "idle",
-        "running",
-        "finished"
+        "stop",
+        "run",
+        "pause"
        ]
+      },
+      {
+       "name": "washerJobState",
+       "type": "enum",
+       "values": [
+        "none",
+        "wash",
+        "finish"
+       ]
+      },
+      {
+       "name": "completionTime",
+       "type": "string",
+       "format": "ISO 8601 date-time"
       }
      ],
      "commands": [
       {
-       "name": "start",
+       "name": "setMachineState",
        "args": [
-        "mode"
+        "state"
        ]
       }
      ]
@@ -1103,18 +1127,14 @@
        ]
       }
      ],
-     "commands": []
-    },
-    {
-     "capability": "remainingTime",
-     "attributes": [
+     "commands": [
       {
-       "name": "remainingTime",
-       "type": "integer",
-       "unit": "min"
+       "name": "setMode",
+       "args": [
+        "mode"
+       ]
       }
-     ],
-     "commands": []
+     ]
     }
    ],
    "modes": [
@@ -1130,24 +1150,37 @@
    ],
    "capabilities": [
     {
-     "capability": "cycleState",
+     "capability": "dryerOperatingState",
      "attributes": [
       {
-       "name": "cycleState",
+       "name": "machineState",
        "type": "enum",
        "values": [
-        "idle",
-        "running",
+        "stop",
+        "run",
+        "pause"
+       ]
+      },
+      {
+       "name": "dryerJobState",
+       "type": "enum",
+       "values": [
+        "none",
+        "drying",
         "finished"
        ]
+      },
+      {
+       "name": "completionTime",
+       "type": "string",
+       "format": "ISO 8601 date-time"
       }
      ],
      "commands": [
       {
-       "name": "start",
+       "name": "setMachineState",
        "args": [
-        "mode",
-        "minutes"
+        "state"
        ]
       }
      ]
@@ -1160,33 +1193,18 @@
        "type": "enum",
        "values": [
         "normal",
-        "delicate",
-        "timeDry"
+        "delicate"
        ]
       }
      ],
-     "commands": []
-    },
-    {
-     "capability": "remainingTime",
-     "attributes": [
+     "commands": [
       {
-       "name": "remainingTime",
-       "type": "integer",
-       "unit": "min"
+       "name": "setMode",
+       "args": [
+        "mode"
+       ]
       }
-     ],
-     "commands": []
-    },
-    {
-     "capability": "errorCode",
-     "attributes": [
-      {
-       "name": "errorCode",
-       "type": "string"
-      }
-     ],
-     "commands": []
+     ]
     }
    ]
   },
@@ -1605,8 +1623,8 @@
   },
   {
    "category": "cycle_finished",
-   "device": "any device with cycleState",
-   "attribute": "cycleState",
+   "device": "washer, dryer, dishwasher",
+   "attribute": "washerJobState finish / dryerJobState finished / dishwasherJobState finish",
    "severity": "info"
   },
   {
@@ -1618,14 +1636,8 @@
   {
    "category": "preheat_done",
    "device": "oven",
-   "attribute": "preheat",
+   "attribute": "ovenJobState preheat -> cooking",
    "severity": "info"
-  },
-  {
-   "category": "device_error",
-   "device": "any device with errorCode",
-   "attribute": "errorCode",
-   "severity": "warning"
   }
  ],
  "phoneEventTypes": [

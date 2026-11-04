@@ -1126,10 +1126,10 @@
         "message": "Washer cycle finished"
       },
       "trigger": {
-        "capability": "cycleState",
-        "attribute": "cycleState",
-        "value": "finished",
-        "previousValue": "running"
+        "capability": "washerOperatingState",
+        "attribute": "washerJobState",
+        "value": "finish",
+        "previousValue": "wash"
       }
     },
     "context": {

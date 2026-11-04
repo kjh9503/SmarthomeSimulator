@@ -6,7 +6,7 @@ import random
 
 from .timeutil import DAY_MS, MIN_MS, iso_local, start_of_day, js_round
 from .weather import outdoor_at
-from .house import (House, SPEC, ROOM_PROFILES, DEFAULT_VARIANT, PHYS, SENSOR_ATTRS, round_to, vapor_from_rh)
+from .house import (House, SPEC, ROOM_PROFILES, DEFAULT_VARIANT, PHYS, SENSOR_ATTRS, round_to, vapor_from_rh, OP_STATE, CYCLE_MINUTES)
 from .phone import Phone, PLACES
 
 DEFAULT_BACKGROUND_PER_DAY = 500
@@ -103,7 +103,8 @@ class Simulator:
         self.sync_router(True)
         devs = list(self.house.devices.values())
         self._auto_off = [d for d in devs if d.type in AUTO_OFF_MIN]
-        self._cycle = [d for d in devs if d.cap("cycleState")]
+        self._cycle = [d for d in devs if d.type in OP_STATE]
+        self.dryer_load = None  # {small, standard, large: weight}: the person's laundry habit (profile dryerLoad); None = standard
         self._robot = [d for d in devs if d.type == "robot_vacuum"]
         self._oven = [d for d in devs if d.type == "oven"]
         self._sensors = [(d, cap, attr, ek, f"{d.id}|{cap}.{attr}") for d in devs for cap, attr, ek in SENSOR_ATTRS.get(d.type, ())]
@@ -220,11 +221,45 @@ class Simulator:
                 self.last_refusal = why
                 return 0
         changes = [ch for ch in (d.set(c, a, v) for c, a, v in d.effects(cap, cmd, args)) if ch["changed"]]
+        if d.type in OP_STATE and cmd == "setMachineState" and any(ch["attribute"] == "machineState" for ch in changes):
+            st = args[0] if args else None
+            if st == "run":
+                if d.aux.get("remain") is None:  # a new job: the device sets its length
+                    d.aux["remain"] = self.cycle_minutes(d)
+                changes.append(d.set(OP_STATE[d.type][0], "completionTime", iso_local(self.clock.now() + d.aux["remain"] * MIN_MS)))
+            elif st == "stop":
+                d.aux["remain"] = None
         for ch in changes:
             self.record(d, ch, "command", cmd, args, None, channel)
         if d.type == "robot_vacuum" and cmd == "start":
             d.aux["run"] = 0
         return len(changes)
+
+    def cycle_minutes(self, d):
+        """length of a washer / dryer / dishwasher job in minutes. Dryer: Samsung 9 kg dryer, standard course 1 h 40 min
+        for 4 kg; a small load ends early when dry, a large one adds 16-50 min near the end (samsungsvc.co.kr/solution/1052607).
+        Small 60-100 min uniform and delicate 80 + 0-20 min are our own choices (no source); large: 16-50 min triangular,
+        mode 16 (longer additions rarer)."""
+        mode = d.get("mode", "mode")
+        if d.type == "washer":
+            return CYCLE_MINUTES["washer"].get(mode, 60)
+        if d.type == "dishwasher":
+            return CYCLE_MINUTES["dishwasher"]["normal"]
+        r = self.rng.random
+        if mode == "delicate":
+            return js_round(80 + 20 * r())
+        w = self.dryer_load or dict(standard=1)
+        x, load = r() * sum(w.values()), "standard"
+        for k, v in w.items():
+            x -= v
+            if x <= 0:
+                load = k
+                break
+        if load == "small":
+            return js_round(60 + 40 * r())
+        if load == "large":
+            return js_round(100 + 50 - 34 * math.sqrt(r()))
+        return 100
 
     def set_value(self, device_id, cap, attr, value):
         """a value set directly: hand-made states (windows, doors), a doorbell push, a manual sensor reading"""
@@ -407,11 +442,13 @@ class Simulator:
                 self.record(d, ch, "device", None, [], t)
 
         for d in self._cycle:
-            if d.get("cycleState", "cycleState") == "running":
-                rem = max(0, (d.get("remainingTime", "remainingTime") or 0) - 1)
-                log_if(d, "remainingTime", "remainingTime", rem, rem % 5 == 0)
-                if rem == 0:
-                    log_if(d, "cycleState", "cycleState", "finished", True)
+            cap, job, _, done = OP_STATE[d.type]
+            if d.get(cap, "machineState") == "run":
+                d.aux["remain"] = max(0, (d.aux.get("remain") or 0) - 1)
+                if d.aux["remain"] == 0:
+                    d.aux["remain"] = None
+                    log_if(d, cap, job, done, True)
+                    log_if(d, cap, "machineState", "stop", True)
         for d in self._robot:
             st, bat = d.get("robotCleanerOperatingState", "operatingState"), d.get("battery", "battery")
             nb = bat
@@ -433,12 +470,13 @@ class Simulator:
             room_t = js_round(self.house.env.rooms[d.roomId]["temperature"])
             if d.get("mode", "mode") != "off":
                 nxt = min(target, cur + 8)
-                pre = "ready" if nxt >= target - 5 else "preheating"
+                ms, job = "running", ("cooking" if nxt >= target - 5 else "preheat")
             else:
                 nxt = max(room_t, cur - 3)
-                pre = "idle"
+                ms, job = "ready", "ready"
             log_if(d, "temperatureMeasurement", "temperature", nxt, False)
-            log_if(d, "preheat", "preheat", pre, True)
+            log_if(d, "ovenOperatingState", "machineState", ms, True)
+            log_if(d, "ovenOperatingState", "ovenJobState", job, True)
 
     def report_sensors(self, t):
         rooms = self.house.env.rooms

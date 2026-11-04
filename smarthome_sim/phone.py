@@ -147,14 +147,12 @@ ST_ALERTS = [
          msg=lambda e, d: f"Smoke detected in {room_name(e['roomId'])}"),
     dict(device="water_leak_sensor", attr="water", when=lambda v, p: v == "wet", category="water_leak", severity="critical",
          msg=lambda e, d: f"Water leak detected in {room_name(e['roomId'])}"),
-    dict(device=None, attr="cycleState", when=lambda v, p: v == "finished", category="cycle_finished", severity="info",
-         msg=lambda e, d: f"{DEVICE_LABEL.get(e['device'], e['device'])} cycle finished"),
+    dict(device=None, attr=("washerJobState", "dishwasherJobState", "dryerJobState"), when=lambda v, p: v in ("finish", "finished"),
+         category="cycle_finished", severity="info", msg=lambda e, d: f"{DEVICE_LABEL.get(e['device'], e['device'])} cycle finished"),
     dict(device="robot_vacuum", attr="operatingState", when=lambda v, p: v == "docked" and p == "seekingCharger",
          category="cleaning_finished", severity="info", msg=lambda e, d: "Cleaning finished, back on the charger"),
-    dict(device="oven", attr="preheat", when=lambda v, p: v == "ready", category="preheat_done", severity="info",
+    dict(device="oven", attr="ovenJobState", when=lambda v, p: v == "cooking" and p == "preheat", category="preheat_done", severity="info",
          msg=lambda e, d: f"Oven preheated to {_num(d.get('temperatureSetpoint', 'temperatureSetpoint')) if d else '?'} C"),
-    dict(device=None, attr="errorCode", when=lambda v, p: v is not None and v != "none" and v != "", category="device_error",
-         severity="warning", msg=lambda e, d: f"{DEVICE_LABEL.get(e['device'], e['device'])} error: {e['value']}"),
 ]
 
 
@@ -862,7 +860,7 @@ class Phone:
         for e in entries:
             copies.append(self.to_smartthings(e))
             for a in ST_ALERTS:
-                if (not a["device"] or a["device"] == e["device"]) and a["attr"] == e["attribute"] and a["when"](e["value"], e["previousValue"]):
+                if (not a["device"] or a["device"] == e["device"]) and e["attribute"] in (a["attr"] if isinstance(a["attr"], tuple) else (a["attr"],)) and a["when"](e["value"], e["previousValue"]):
                     copies.append(self.to_alert(e, a))
         copies.sort(key=lambda c: c["timestamp"])
         self._insert(copies)
