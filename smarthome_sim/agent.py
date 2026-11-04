@@ -35,6 +35,11 @@ INPUT_APPS = {"com.samsung.android.app.notes", "com.samsung.android.app.reminder
 # input (note, checklist, event, SMS): an appointment on a PDA 37.7 s (Starner et al. 2004), typing 36.2 wpm (Palin et al. 2019)
 TASK_SECONDS = dict(tap=dict(median=12, sigma=1.56, min=3), input=dict(median=30, sigma=0.7, min=5))
 GLANCE_AWAKE_MIN = 16 * 60
+# heating habits (profile heatingHabits, drawn by pipeline/sample_heating_person.py; agreed 2026-11-05). Our assumptions:
+HEAT_SEASON_MEAN_C = 15.0  # people heat while the outdoor daily mean is below this (as the neighbours in house.py)
+HEAT_ON_BELOW_K = 1.0  # the person switches the floor heating on when the room is this far below the comfort temperature
+HEAT_UNUSED_MIN = 30  # a heated room left this long is switched off by people who switch off unused rooms
+HEAT_ROOM = dict(dining_room="living_room", hallway="living_room", entryway="living_room")  # open plan: the living room's
 DEFER_MAX_MIN = 180  # a daily behaviour waits at most this long after its minute
 
 
@@ -176,6 +181,8 @@ class AgentRunner:
         self.cook_default = cm or dict(dist="lognormal", median=15, sigma=0.6)
         self.plan_skips, self.plan_src = [], None  # switch-ons skipped by the plan rule, for the wrong-skip check
         self.keep_on = set()  # devices switched on with keepOn: left out of the leaving / bedtime checks
+        self.heat = profile.get("heatingHabits")  # None: no heating habits (heating only by the profile's rules)
+        self.heat_stats = dict(switchedOn=0, setpoint=0, sleepLower=0, sleepOff=0, leaveLower=0, leaveOff=0, keptOn=0, unusedOff=0)
         self.behaviours = []
         for b in profile["behaviours"]:
             acts, merged = self.merge_app_steps(b["actions"])
@@ -750,11 +757,85 @@ class AgentRunner:
         t = self.now()
         p = self.next_plan(t, task)
         skip = p is not None and p - t < m * MIN_MS
-        if skip:  # checked later: did the person really leave home or fall asleep within the device's minimum time?
-            ar = a.get("args") or {}
+        ar = a.get("args") or {}
+        dev = self.dev_id(ar["device"]) if ar.get("device") else a["do"]
+        last = self.plan_skips[-1] if self.plan_skips else None
+        if skip and last is not None and last["device"] == dev and last["plannedAt"] == p and last["confirmedAt"] is None:
+            skip_new = False  # the same skip again (the heating habit asks every minute): counted once
+        else:
+            skip_new = skip
+        if skip_new:  # checked later: did the person really leave home or fall asleep within the device's minimum time?
             self.plan_skips.append(dict(t=t, rule=task["b"]["id"] if task else None, device=self.dev_id(ar["device"]) if ar.get("device") else a["do"],
                                         minimum=m, plannedAt=p, source=self.plan_src, confirmedAt=None))
         return skip
+
+    # ----- heating habits -----
+    def heat_unit(self, room):
+        return self.sim.house.at(HEAT_ROOM.get(room, room), "floor_heating")
+
+    def heat_cmd(self, d, cmd, cap, args):
+        here = self.S["place"] == "home" and HEAT_ROOM.get(self.S["room"], self.S["room"]) == d.roomId
+        return self.exec(dict(do="home.command", args=dict(device=d.id, capability=cap, command=cmd, args=args,
+                                                          channel="physical" if here else "mobile_app")))
+
+    def heating_tick(self, t):
+        """awake at home in the heating season: the room the person is in is kept near their comfort temperature: switched
+        on when it is HEAT_ON_BELOW_K below it, its setpoint put back to the comfort temperature (after a night or a
+        departure that lowered it)"""
+        H, S = self.heat, self.S
+        if not H or S["place"] != "home" or S["trip"] or S["asleep"] or outdoor_at(t)["meanTemperature"] >= HEAT_SEASON_MEAN_C:
+            return
+        d = self.heat_unit(S["room"])
+        if d is None:
+            return
+        comfort, mode = H["comfortC"], d.get("thermostatMode", "thermostatMode")
+        sp = d.get("thermostatHeatingSetpoint", "heatingSetpoint")
+        if mode == "off" and self.sim.house.env.rooms[d.roomId]["temperature"] < comfort - HEAT_ON_BELOW_K:
+            on = dict(do="home.command", args=dict(device=d.id, capability="thermostatMode", command="setThermostatMode", args=["heat"]))
+            if self.leaving_soon(on, None):
+                return
+            if sp != comfort:
+                self.heat_cmd(d, "setHeatingSetpoint", "thermostatHeatingSetpoint", [comfort])
+            if self.heat_cmd(d, "setThermostatMode", "thermostatMode", ["heat"])["result"] == "done":
+                self.heat_stats["switchedOn"] += 1
+        elif mode == "heat" and sp != comfort:
+            if self.heat_cmd(d, "setHeatingSetpoint", "thermostatHeatingSetpoint", [comfort])["result"] == "done":
+                self.heat_stats["setpoint"] += 1
+
+    def heating_moment(self, moment, t):
+        """going to bed or leaving home: each heated room as the person's habit says: keep / lower / off (leaving: kept on
+        when it is colder outside than keepWhenOutdoorBelowC)"""
+        H = self.heat
+        if not H:
+            return
+        rule = H["sleep"] if moment == "bedtime" else H["leaving"]
+        act = rule["action"]
+        if moment == "leaving" and rule.get("keepWhenOutdoorBelowC") is not None and outdoor_at(t)["temperature"] < rule["keepWhenOutdoorBelowC"]:
+            act = "keep"
+        for d in self.sim.house.devices.values():
+            if d.type != "floor_heating" or d.get("thermostatMode", "thermostatMode") != "heat":
+                continue
+            key = ("sleep" if moment == "bedtime" else "leave")
+            if act == "keep":
+                self.heat_stats["keptOn"] += 1
+            elif act == "lower":
+                target = H["comfortC"] - rule["lowerC"]
+                if d.get("thermostatHeatingSetpoint", "heatingSetpoint") > target:
+                    if self.heat_cmd(d, "setHeatingSetpoint", "thermostatHeatingSetpoint", [target])["result"] == "done":
+                        self.heat_stats[key + "Lower"] += 1
+            elif self.heat_cmd(d, "setThermostatMode", "thermostatMode", ["off"])["result"] == "done":
+                self.heat_stats[key + "Off"] += 1
+
+    def heating_unused(self, did, t):
+        """a heated room left HEAT_UNUSED_MIN ago and not entered since: switched off from the phone"""
+        S = self.S
+        d = self.sim.house.device(did)
+        if d is None or S["place"] != "home" or S["trip"] or S["asleep"] or d.get("thermostatMode", "thermostatMode") != "heat":
+            return
+        if self.heat_unit(S["room"]) is d:
+            return
+        if self.heat_cmd(d, "setThermostatMode", "thermostatMode", ["off"])["result"] == "done":
+            self.heat_stats["unusedOff"] += 1
 
     def phone_day_mult(self, t):
         """today's factor on the rate of phone-use rules: lognormal with mean 1 and sigma phoneHabits.dailySigma
@@ -993,6 +1074,8 @@ class AgentRunner:
         if S["place"] != "home" or S["trip"] or S["asleep"]:
             return []
         back, left, cs = S["room"], [], self.check_stats[moment]
+        if moment in ("bedtime", "leaving"):
+            self.heating_moment(moment, t)
         on = self.on_devices(t, only)
         if only is None:
             self.keep_on &= {d.id for d, _ in on}  # a keepOn device switched off since is an ordinary device again
@@ -1183,6 +1266,12 @@ class AgentRunner:
                     self.scheduled.append(dict(kind="morning", at=self.now() + js_round(self.uni(0, self.OFF["morningWithinMinutes"])) * MIN_MS,
                                                devices=self.left_overnight))
                     self.left_overnight = []
+                if src == "person" and h["what"] == "enter_room" and self.heat and self.heat.get("unusedRooms") == "off":
+                    prev = getattr(self, "heat_prev_room", None)
+                    if prev and self.heat_unit(prev) is not None and self.heat_unit(prev) is not self.heat_unit(h["room"]):
+                        self.scheduled.append(dict(kind="heatUnused", at=self.now() + HEAT_UNUSED_MIN * MIN_MS, device=self.heat_unit(prev).id))
+                if src == "person" and h["what"] == "enter_room":
+                    self.heat_prev_room = h["room"]
                 if src == "person" and h["what"] == "fall_asleep":
                     self.left_overnight = [d.id for d, _ in self.on_devices(self.now())]
                 for b in self.behaviours:
@@ -1298,6 +1387,8 @@ class AgentRunner:
                 self.fire(it["b"], t, dict(via="event", follow=it.get("follow")))
             elif it["kind"] == "morning":
                 self.off_check("morning", t, it["devices"])
+            elif it["kind"] == "heatUnused":
+                self.heating_unused(it["device"], t)
             self.person_changes()
             self.process_happenings()
 
@@ -1350,6 +1441,7 @@ class AgentRunner:
                     self.run_task(task)
                     self.process_happenings()
             self.tasks = [k for k in self.tasks if not k["finished"]]
+            self.heating_tick(t)
             self.maybe_glance(t)
             self.sim.clock.set_to(t)
             if t % (6 * 3600000) == 0:
@@ -1392,7 +1484,8 @@ class AgentRunner:
         summary = dict(personaId=self.P["personaId"], houseId=self.sim.house_id, houseType=self.sim.type, variant=self.P["variant"], startDate=self.P["simulation"]["startDate"], days=self.days,
                        seed=self.seed, homeLines=self.n_home, phoneEvents=self.n_phone,
                        cooking=dict(times=len(c), minutesMedian=q(0.5), minutesP10=q(0.1), minutesP90=q(0.9), minutesMax=c[-1] if c else None),
-                       behaviours=self.stats, checks=self.check_stats, planSkips=plan_check, seconds=round(_time.time() - t0))
+                       behaviours=self.stats, checks=self.check_stats, planSkips=plan_check, heating=dict(self.heat_stats, kWh=round(sum(self.sim.house.env.heat_wh.values()) / 1000, 1),
+                                       kWhPerM2=round(sum(self.sim.house.env.heat_wh.values()) / 1000 / self.sim.house.profile["areaM2"], 1)), seconds=round(_time.time() - t0))
         with open(os.path.join(self.out_dir, "summary.json"), "w", encoding="utf-8") as f:
             json.dump(summary, f, indent=2, ensure_ascii=False)
             f.write("\n")

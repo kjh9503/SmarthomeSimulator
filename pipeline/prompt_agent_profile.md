@@ -29,7 +29,7 @@ log. So the appliance routines below are not optional extras.
 | Device | Why everyone (source) | Rule you must write |
 |---|---|---|
 | heating_cooling_unit, mode `cool` | 98% of households own an air conditioner (Gallup Korea, Market70 2025). Units (system air conditioning): living room and every room; kitchen only in 4room; none in the dining room or hallway (open to the living room) | For the bedroom and the living room (and any room where the person spends long hours, e.g. a study room): when the person is home, awake, in that room, the room's temperature_sensor >= COOL_ON and the unit is off -> set coolingSetpoint, then setThermostatMode cool. Probability 0.85-0.95. The person turns it off later (revert 60-240 min) |
-| floor_heating (ondol), mode `heat` | Korean flats are heated by floor heating (ondol); one thermostat each in the kitchen, living room and every room (the hallway is heated with the living room) | Same rooms as cooling: temperature_sensor <= HEAT_ON and floor_heating off -> setHeatingSetpoint, then setThermostatMode heat. Probability 0.85-0.95. Revert 120-360 min. The floor warms slowly (hours). Reservations: `sim.heatingTimer` setOnTimer / setOffTimer [minutes from now] (our own capability: no SmartThings definition); the device switches itself at that minute |
+| floor_heating (ondol) | Korean flats are heated by floor heating (ondol); one thermostat each in the kitchen, living room and every room (the hallway is heated with the living room) | Do not write heating routines. Write `heatingRanges` for the persona (see Heating habits below); the engine heats from the habits drawn in them |
 | washer | Drum washer 66% + top-loader 35% of households (Gallup Korea, Market70 2023) | A daily rule: when home and awake, and no washer start in the last N days (recent_action, negate), move to `laundry` and start the washer. N from the persona: 2-3 days for a family, 3-5 for one person. N must be <= 7 (the engine keeps 7 days of action history) |
 | light | Everyone | Lights on when entering a dark room, off when leaving or going to bed |
 | lock, door_contact | Everyone | Leaving and coming home (the engine writes these when the person travels) |
@@ -131,6 +131,25 @@ Washer, dryer and dishwasher use the SmartThings standard capabilities: choose t
 job by itself: the job state (`washerJobState` / `dishwasherJobState` `finish`, `dryerJobState` `finished`) and
 `machineState` `stop`; `completionTime` is set when it starts. If the person has a dryer, write `dryerLoad` (shares of
 small / standard / large loads, chosen from the persona; there is no data, so say so in `notes`).
+
+### Heating habits
+
+Heating is not written as rules. Write `heatingRanges` from the persona; `pipeline/sample_heating_person.py` draws the
+person's `heatingHabits` inside them, so that people differ. The engine keeps the room the person is in near the drawn
+comfort temperature while the outdoor daily mean is below 15 C, and applies the habits at bedtime, when leaving home and
+for rooms left unused. No population data was found: choose ranges and weights that fit the persona and say why in
+`notes` (e.g. feels the cold -> higher comfortC; keeps the bill low -> "off" when leaving; small child -> keeps it on
+at night; long days out on cold days -> keepWhenOutdoorBelowC).
+
+```json
+"heatingRanges": {
+  "comfortC": { "min": 21, "max": 24 },
+  "sleep": { "keep": 1, "lower": 2, "off": 1 }, "sleepLowerC": { "min": 1, "max": 3 },
+  "leaving": { "keep": 1, "lower": 1, "off": 2 }, "leavingLowerC": { "min": 2, "max": 5 },
+  "keepWhenOutdoorBelowC": { "min": -8, "max": 0 },
+  "unusedRooms": { "off": 2, "keep": 1 }
+}
+```
 
 ### Phone use
 

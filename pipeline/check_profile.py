@@ -90,6 +90,8 @@ def main():
             chk.pattern(p)
         if b["kind"] == "pattern" and "pattern" in b:
             chk.pattern(b["pattern"])
+        if b["kind"] != "pattern" and "floor_heating" in json.dumps(b["actions"]) and prof.get("heatingHabits"):
+            out.append(("WARN", b["id"], "a routine operates floor_heating although the engine heats from heatingHabits"))
         # a switch-on right before leaving / sleep in the same rule is skipped and switched off by the engine unless keepOn
         acts = b["actions"]
         ev = (b["trigger"].get("event") or {}) if b["trigger"]["kind"] == "event" else {}
@@ -104,6 +106,8 @@ def main():
             if later or starts_at_leave:
                 out.append(("WARN", b["id"], f"actions[{i}] switches on {a['args']['device']} right before leaving or sleep: "
                                              "add \"keepOn\": true if it is meant to stay on, else the engine skips it"))
+    if "heatingRanges" in prof and "heatingHabits" not in prof:
+        out.append(("WARN", "-", "heatingRanges without heatingHabits: run pipeline/sample_heating_person.py"))
     seen = set()
     for x in chk.out + out:
         if x in seen: continue

@@ -10,8 +10,6 @@
       "off": { "do": "home.command", "capability": "switch", "command": "off", "args": [], "channel": "physical" }, "p": { "bedtime": 0.95, "leaving": 0.99, "morning": 0.9 } },
     { "deviceType": "air_purifier",         "isOn": { "capability": "fanSpeedPercent", "attribute": "percent", "op": ">", "value": 0 },
       "off": { "do": "home.command", "capability": "fanSpeedPercent", "command": "setPercent", "args": [0], "channel": "mobile_app" }, "p": { "bedtime": 0.8, "leaving": 0.9, "morning": 0.8 } },
-    { "deviceType": "floor_heating",        "isOn": { "capability": "thermostatMode", "attribute": "thermostatMode", "op": "==", "value": "heat" },
-      "off": { "do": "home.command", "capability": "thermostatMode", "command": "setThermostatMode", "args": ["off"], "channel": "mobile_app" }, "p": { "bedtime": 0.8, "leaving": 0.9, "morning": 0.8 } },
     { "deviceType": "heating_cooling_unit", "isOn": { "capability": "thermostatMode", "attribute": "thermostatMode", "op": "==", "value": "cool" },
       "off": { "do": "home.command", "capability": "thermostatMode", "command": "setThermostatMode", "args": ["off"], "channel": "mobile_app" }, "p": { "bedtime": 0.8, "leaving": 0.92, "morning": 0.8 } },
     { "deviceType": "humidifier",           "isOn": { "capability": "switch", "attribute": "switch", "op": "==", "value": "on" },

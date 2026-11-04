@@ -1,6 +1,6 @@
 {
   "personaId": "063",
-  "notes": "University student living alone in a 3-room flat. Weekdays on Campus, evenings mostly at home. Only pattern p63_a is included; p63_b (Campus) is not in this profile.",
+  "notes": "University student living alone in a 3-room flat. Weekdays on Campus, evenings mostly at home. Only pattern p63_a is included; p63_b (Campus) is not in this profile. Heating ranges: a student living alone on a budget: off when leaving more often than kept, comfort 21-24 C.",
   "houseType": "3room",
   "variant": "3room-A",
   "roomRoles": {
@@ -1931,5 +1931,83 @@
       "screenTimeoutSeconds": "assumption; Galaxy default 30 s (Samsung support)",
       "dailySigma": "Appiah et al. 2026 (J Technol Behav Sci): within-person CV of daily unlocks mostly > 25%, examples 16% and 60%; StudentLife 2013"
     }
+  },
+  "heatingRanges": {
+    "comfortC": {
+      "min": 21,
+      "max": 24
+    },
+    "sleep": {
+      "keep": 1,
+      "lower": 2,
+      "off": 1
+    },
+    "sleepLowerC": {
+      "min": 1,
+      "max": 3
+    },
+    "leaving": {
+      "keep": 1,
+      "lower": 1,
+      "off": 2
+    },
+    "leavingLowerC": {
+      "min": 2,
+      "max": 5
+    },
+    "keepWhenOutdoorBelowC": {
+      "min": -8,
+      "max": 0
+    },
+    "unusedRooms": {
+      "off": 2,
+      "keep": 1
+    }
+  },
+  "heatingHabits": {
+    "comfortC": 24.0,
+    "sleep": {
+      "action": "keep"
+    },
+    "leaving": {
+      "action": "keep"
+    },
+    "unusedRooms": "off"
+  },
+  "heatingPerson": {
+    "seed": 63,
+    "ranges": {
+      "comfortC": {
+        "min": 21,
+        "max": 24
+      },
+      "sleep": {
+        "keep": 1,
+        "lower": 2,
+        "off": 1
+      },
+      "sleepLowerC": {
+        "min": 1,
+        "max": 3
+      },
+      "leaving": {
+        "keep": 1,
+        "lower": 1,
+        "off": 2
+      },
+      "leavingLowerC": {
+        "min": 2,
+        "max": 5
+      },
+      "keepWhenOutdoorBelowC": {
+        "min": -8,
+        "max": 0
+      },
+      "unusedRooms": {
+        "off": 2,
+        "keep": 1
+      }
+    },
+    "source": "ranges and weights chosen by the LLM for this persona (no population data)"
   }
 }

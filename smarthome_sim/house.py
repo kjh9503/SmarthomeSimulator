@@ -328,6 +328,7 @@ class Environment:
         self.house = house
         out = outdoor_at(ms)
         self.rooms = {}
+        self.heat_wh = {}  # floor heating heat delivered per room (Wh)
         for r in house.room_ids:
             self.rooms[r] = (dict(temperature=out["temperature"], humidity=out["humidity"], pm25=out["pm25"], co2=out["co2"],
                                   illuminance=out["daylight"], noise=out["noise"]) if r == "balcony"
@@ -438,6 +439,7 @@ class Environment:
                 phi_floor_up = F["hUp"] * af * (e["floor"] - e["temperature"])
                 phi_floor_down = F["downShare"] * max(0.0, phi_floor_up)
                 e["floor"] += (pipe - phi_floor_up - phi_floor_down) * dt * 60 / (F["cPerM2"] * af)
+                self.heat_wh[r] = self.heat_wh.get(r, 0.0) + pipe * dt / 60  # heat delivered by the pipes
             phi_ia = 0.5 * phi_int
             phi_m = a_m / a_tot * (0.5 * phi_int + phi_sol)
             phi_st = (1 - a_m / a_tot - h_win / (E["hMs"] * a_tot)) * (0.5 * phi_int + phi_sol) + phi_floor_up

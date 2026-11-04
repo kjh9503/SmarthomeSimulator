@@ -192,9 +192,18 @@
       "additionalProperties": false,
       "description": "Only if the person has a dryer: shares of small / standard / large loads in the normal course (weights, any scale). The dryer then runs small 60-100 min (our choice), standard 100 min (Samsung 9 kg dryer, 4 kg load), large 100 + 16-50 min (triangular, mode 16; samsungsvc.co.kr/solution/1052607). A habit of the person, chosen from the persona (household size, how laundry is batched); no data. Absent: always standard.",
       "properties": {
-        "small": {"type": "number", "minimum": 0},
-        "standard": {"type": "number", "minimum": 0},
-        "large": {"type": "number", "minimum": 0}
+        "small": {
+          "type": "number",
+          "minimum": 0
+        },
+        "standard": {
+          "type": "number",
+          "minimum": 0
+        },
+        "large": {
+          "type": "number",
+          "minimum": 0
+        }
       }
     },
     "phoneUseLevel": {
@@ -212,6 +221,137 @@
     "cookingMinutes": {
       "$ref": "pattern.schema.json#/$defs/cookingMinutes",
       "description": "This person's usual cooking time: every time the stove is turned on, a time is drawn and the person turns it off then (a step may override it). Default lognormal, median 15, sigma 0.6."
+    },
+    "heatingRanges": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Heating habits of this person as ranges and weights chosen from the persona (no population data); pipeline/sample_heating_person.py draws heatingHabits from them. The engine keeps the room the person is in near comfortC in the heating season and applies the sleep / leaving / unused-room habits. Do not write heating routines.",
+      "required": [
+        "comfortC",
+        "sleep",
+        "leaving",
+        "unusedRooms"
+      ],
+      "properties": {
+        "comfortC": {
+          "type": "object",
+          "properties": {
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "min",
+            "max"
+          ]
+        },
+        "sleep": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "keep": {
+              "type": "number",
+              "minimum": 0
+            },
+            "lower": {
+              "type": "number",
+              "minimum": 0
+            },
+            "off": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "sleepLowerC": {
+          "type": "object",
+          "properties": {
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "min",
+            "max"
+          ]
+        },
+        "leaving": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "keep": {
+              "type": "number",
+              "minimum": 0
+            },
+            "lower": {
+              "type": "number",
+              "minimum": 0
+            },
+            "off": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "leavingLowerC": {
+          "type": "object",
+          "properties": {
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "min",
+            "max"
+          ]
+        },
+        "keepWhenOutdoorBelowC": {
+          "type": "object",
+          "properties": {
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "min",
+            "max"
+          ]
+        },
+        "unusedRooms": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "off": {
+              "type": "number",
+              "minimum": 0
+            },
+            "keep": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    },
+    "heatingHabits": {
+      "type": "object",
+      "description": "Written by pipeline/sample_heating_person.py; read by the engine."
+    },
+    "heatingPerson": {
+      "type": "object",
+      "description": "Written by pipeline/sample_heating_person.py: seed and the ranges used. Not read by the engine."
     }
   }
 }
