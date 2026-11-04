@@ -231,6 +231,13 @@ class Simulator:
                 d.aux["remain"] = None
         for ch in changes:
             self.record(d, ch, "command", cmd, args, None, channel)
+        if d.type == "heating_cooling_unit" and any(ch["attribute"] == "thermostatMode" for ch in changes):
+            on, ps = d.get("thermostatMode", "thermostatMode") != "off", self.phone.s
+            was_on = any(ch["attribute"] == "thermostatMode" and ch["previousValue"] not in (None, "off") for ch in changes)
+            if not on:
+                self.house.door_closed[d.roomId] = False
+            elif not was_on:  # switched on: the person at home closes the door; switched on from outside by the app: open
+                self.house.door_closed[d.roomId] = ps["place"] == "home" and not ps["trip"]
         if d.type == "robot_vacuum" and cmd == "start":
             d.aux["run"] = 0
         return len(changes)

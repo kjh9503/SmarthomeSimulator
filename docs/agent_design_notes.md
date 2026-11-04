@@ -264,6 +264,20 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
 - Air conditioning (2026-11-04): system units in the living room and every room, kitchen only in 4room; none in the
   dining room, hallway or 2room / 3room kitchen (open to the living room, cooled by its unit).
 - Speaker device removed (2026-11-04).
+- Air between rooms (2026-11-04, house.py `CONNECTIONS`, `exchange`): before, each room mixed toward the house mean
+  at 4% / 0.5% a minute (open plan / other), temperature not mixed (no source). Now joined rooms swap air in m3/min, the
+  same air carrying heat, moisture, PM2.5 and CO2; no heat through walls (agreed). Joins [assume, flat-type layout]:
+  see CONNECTIONS. Flow: open door and open plan Q = Cd/3 W H sqrt(g H dT/T) [src Brown & Solvason 1962] with
+  Cd = 0.0835 (dT/T)^-0.313 [src Riffat 1989, measured through a doorway between floors], dT held at 0.5-13 K [src
+  Lidwell 1977: no fall to zero]; door 0.9 x 2.1 m; open widths [assume] living-kitchen / living-dining 3 m,
+  kitchen-dining 2 m, living-hallway / hallway-entryway / living-entryway 1.2 m, height 2.3 m; closed door 0.1 m3/h
+  [src NIST 2017: undercut, yearly mean 0.12 m3/h]. Each pair is solved with an exact exponential decay (no overshoot).
+  Door rule (agreed): a room's unit switched on at home closes its door (stays closed when the person leaves); switched on
+  from outside by the app leaves it open; switched off opens it. Bathrooms, closet, laundry: always closed.
+  Check [ours, Aug, 3room-A, 4 h]: only room1 cooled to 24 C, door closed -> room1 24.0 C, living room / room2 / kitchen
+  stay 27.4 C. Switched on from outside (door open) -> living 25.5, room2 26.3 C. Living room cooled -> kitchen / dining
+  24.2 C, open room1 24.9 C. Year (test profile): kitchen / dining median 25.1 / 25.2 C while the living room cools.
+  RH while cooling is still high (living median 74%, max 90%): the unit's dehumidifying (next step).
 - Physics test: compared with the Python simulator's own output (`tests/fixtures/physics_ref.json`), no longer the
   browser version; rewrite it after an intended physics change with `python3 tests/test_port.py --write-reference`.
   The browser version is not maintained until the user asks.

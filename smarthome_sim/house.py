@@ -70,7 +70,13 @@ PHYS = dict(
     # air purifier: CADR ~8.4 m3/min; the fan percent is the share of full CADR (0 = off); tuned to the 30-74% PM2.5 cut
     # measured in 10 homes (Public Health Research & Practice, 2024)
     purifier=dict(cadrM3min=8.4, mixingEff=0.4),
-    pmInfiltration=0.01, mixing=dict(open=0.04, closed=0.005),
+    pmInfiltration=0.01,
+    # air between rooms (2026-11-04). Open door / open plan: buoyancy flow through an opening, one direction
+    # Q = Cd/3 * W * H * sqrt(g * H * dT / T) (Brown & Solvason 1962), Cd = 0.0835 * (dT/T)^-0.313 measured through a
+    # doorway (Riffat 1989, ASHRAE Trans. 95(2); a doorway between floors), dT held within the measured 0.5-13 K (below 0.5 K
+    # the exchange does not fall to zero: Lidwell 1977). Closed door: 0.1 m3/h (NIST 2017, closed interior door with undercut,
+    # yearly mean 0.12 m3/h). Door 0.9 x 2.1 m; open-plan widths in CONNECTIONS are our own assumption, height = ceiling.
+    door=dict(widthM=0.9, heightM=2.1, closedM3h=0.1, dTmin=0.5, dTmax=13),
     curtain=dict(closed=.15, partially_open=.6, opening=.6, closing=.6, open=1, unknown=.6),
 )
 SENSOR_ATTRS = dict(
@@ -83,6 +89,30 @@ SENSOR_ATTRS = dict(
 AZIMUTH = dict(N=0, NE=45, E=90, SE=135, S=180, SW=225, W=270, NW=315)
 NO_PROFILE = dict(areaM2=10, window=None, windowSize="none", exteriorWalls=0)
 OPEN_PLAN = ["living_room", "kitchen", "dining_room", "hallway", "entryway"]
+# how the rooms join (our own layout for a flat-type Korean apartment, 2026-11-04):
+# ("open", a, b, width m): open plan, no door; widths are our own assumption (living-kitchen / living-dining 3 m,
+#   kitchen-dining 2 m, living-hallway / hallway-entryway / living-entryway 1.2 m)
+# ("room", a, room): the room's door, closed while its heating / cooling unit runs (see House.door_closed)
+# ("closed", a, b): a door kept closed (bathrooms, closet, laundry)
+_COMMON = [("open", "living_room", "kitchen", 3.0), ("open", "living_room", "dining_room", 3.0), ("open", "kitchen", "dining_room", 2.0),
+           ("closed", "kitchen", "laundry")]
+CONNECTIONS = {
+    "2room": _COMMON + [("open", "living_room", "entryway", 1.2), ("room", "living_room", "room1"), ("room", "living_room", "room2"),
+                        ("closed", "living_room", "bathroom"), ("closed", "room1", "closet")],
+    "3room": _COMMON + [("open", "living_room", "hallway", 1.2), ("open", "hallway", "entryway", 1.2), ("room", "living_room", "room1"),
+                        ("room", "hallway", "room2"), ("room", "hallway", "room3"), ("closed", "hallway", "bathroom"),
+                        ("closed", "room1", "master_bathroom"), ("closed", "room1", "closet")],
+}
+CONNECTIONS["4room"] = CONNECTIONS["3room"] + [("room", "hallway", "room4")]
+
+
+def opening_flow(width, height, dt, t_mean):
+    """m3 per minute one way through an open door or opening (Brown & Solvason 1962 with Riffat's 1989 Cd)"""
+    D = PHYS["door"]
+    dt = min(D["dTmax"], max(D["dTmin"], abs(dt)))
+    tk = t_mean + 273.15
+    cd = 0.0835 * (dt / tk) ** -0.313
+    return cd / 3 * width * height * math.sqrt(9.81 * height * dt / tk) * 60
 
 
 def round_to(v, dec):
@@ -192,6 +222,10 @@ class House:
             for d in by_room[r]:
                 self.devices[d.id] = d
         self.by_room = {r: {d.type: d for d in by_room[r]} for r in self.room_ids}
+        # door rule (agreed 2026-11-04): a room's door is closed while its heating / cooling unit runs, when the person
+        # switched it on at home (it stays closed if they leave); switched on from outside by the app it stays open.
+        # Switched off: open. Kitchen and dining room have no door (open plan).
+        self.door_closed = {r: False for r in self.room_ids}
         self.env = Environment(self, ms)
         self.sync_sensors()
 
@@ -231,22 +265,37 @@ class Environment:
             vapor = min(sat_vapor(t), vapor_from_rh(out["humidity"], out["temperature"]) + PHYS["moistureOffset"])
             e.update(temperature=t, mass=t, vapor=vapor, humidity=rh_from_vapor(vapor, t), pm25=out["pm25"], co2=out["co2"])
 
+    def exchange(self, dt):
+        """air between joined rooms: each pair swaps Q m3 a minute each way, carrying heat, moisture, PM2.5 and CO2.
+        Solved exactly per pair (the difference decays as exp(-Q dt (1/Va + 1/Vb))), so small rooms stay stable."""
+        H = self.house
+        for c in CONNECTIONS[H.type]:
+            kind, a, b = c[0], c[1], c[2]
+            if a not in self.rooms or b not in self.rooms:
+                continue
+            ea, eb = self.rooms[a], self.rooms[b]
+            if kind == "open":
+                q = opening_flow(c[3], PHYS["ceilingM"], ea["temperature"] - eb["temperature"], (ea["temperature"] + eb["temperature"]) / 2)
+            elif kind == "room" and not H.door_closed.get(b):
+                D = PHYS["door"]
+                q = opening_flow(D["widthM"], D["heightM"], ea["temperature"] - eb["temperature"], (ea["temperature"] + eb["temperature"]) / 2)
+            else:
+                q = PHYS["door"]["closedM3h"] / 60
+            va, vb = H.room_profile(a)["areaM2"] * PHYS["ceilingM"], H.room_profile(b)["areaM2"] * PHYS["ceilingM"]
+            f = math.exp(-q * dt * (1 / va + 1 / vb))
+            for k in ("temperature", "vapor", "pm25", "co2"):
+                xa, xb = ea[k], eb[k]
+                m, d = (va * xa + vb * xb) / (va + vb), (xa - xb) * f
+                ea[k], eb[k] = m + d * vb / (va + vb), m - d * va / (va + vb)
+
     def step(self, ms, dt):
         out = outdoor_at(ms)
         H = self.house
-        mp = mc = mv = vol = 0
         for r in H.room_ids:
-            if r == "balcony":
-                continue
             e = self.rooms[r]
-            a = H.room_profile(r)["areaM2"]
-            vol += a
-            mp += e["pm25"] * a
-            mc += e["co2"] * a
-            v = e.get("vapor")
-            mv += (v if v is not None else vapor_from_rh(e["humidity"], e["temperature"])) * a
-        vol = vol or 1
-        mp, mc, mv = mp / vol, mc / vol, mv / vol
+            if r != "balcony" and e.get("vapor") is None:
+                e["vapor"] = vapor_from_rh(e["humidity"], e["temperature"])
+        self.exchange(dt)
         balcony_door = H.at("balcony", "door_contact")
         for r in H.room_ids:
             e = self.rooms[r]
@@ -282,10 +331,6 @@ class Environment:
                 e["vapor"] = vapor_from_rh(e["humidity"], e["temperature"])
             e["vapor"] += (vapor_from_rh(out["humidity"], out["temperature"]) + (0 if is_open else PHYS["moistureOffset"]) - e["vapor"]) * k * dt
             e["pm25"] += (out["pm25"] - e["pm25"]) * (k_open if is_open else PHYS["pmInfiltration"] * wall_share) * dt
-            k_mix = PHYS["mixing"]["open"] if r in OPEN_PLAN else PHYS["mixing"]["closed"]
-            e["pm25"] += (mp - e["pm25"]) * k_mix * dt
-            e["co2"] += (mc - e["co2"]) * k_mix * dt
-            e["vapor"] += (mv - e["vapor"]) * k_mix * dt
             e["co2"] += (out["co2"] - e["co2"]) * (0.05 if is_open else 0.003) * dt
             if occ:
                 e["co2"] += 10 * sf * dt
