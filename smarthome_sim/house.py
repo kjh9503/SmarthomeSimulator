@@ -55,9 +55,7 @@ OP_STATE = dict(washer=("washerOperatingState", "washerJobState", "wash", "finis
 
 PHYS = dict(
     stepMs=60000, heartbeatMin=30, maxCatchUpDays=7,
-    closedByWalls=[0.0008, 0.0016, 0.0024],
     indoorGainC=2, indoorSwing=0.25, indoorMinC=15, solarGainC=3,
-    massToAir=0.05, airToMass=0.002, hvacMaxRate=0.5,
     moistureOffset=3, moisture=dict(person=0.0025, dryer=0.035, washer=0.007, humidifierMax=0.04),
     report=dict(temperature=dict(th=0.5, dec=1), humidity=dict(th=2, dec=0), illuminance=dict(th=30, rel=0.1, dec=0),
                 pm25=dict(th=3, dec=0), co2=dict(th=50, dec=0), noise=dict(th=3, dec=0)),
@@ -70,6 +68,18 @@ PHYS = dict(
     # measured in 10 homes (Public Health Research & Practice, 2024)
     purifier=dict(cadrM3min=8.4, mixingEff=0.4),
     pmInfiltration=0.01,
+    # heat balance of a room (2026-11-05): ISO 13790 5R1C (air, inner surface, mass; Modelica Buildings ISO13790.Zone5R1C):
+    # air-surface 3.45 W/m2K over 4.5 x floor area, surface-mass 9.1 W/m2K over 3.0 x floor area and 260 kJ/m2K per floor area
+    # ("heavy", ISO13790.Data.Heavy: concrete flats). U [W/m2K]: wall 0.170, window 1.0 (energy-saving design standard for
+    # flats, central region 2; wall: notice 2024-421, window: from 2018-09-01). Infiltration ACH50 3.51 (Yoon 2013, 27 new
+    # Korean flats) / 20 (Persily's rule; Sherman's N ~ 20) = 0.18 per hour. Our own assumptions: window area 40 / 25 / 15 %
+    # of the floor (large / medium / small), each exterior wall sqrt(floor area) long, SHGC 0.5, daylight 110 lux per W/m2,
+    # curtain passes the same share of solar heat as of light, internal gains (W): person 65 (Kim & Byun 2008 sensible),
+    # ceiling light 10 W/m2 (ibid., bedroom), TV 100, stove 2000, oven 2000, dryer 300, washer 150, dishwasher 300.
+    # Party walls, floors and ceilings to the neighbours: no heat flow (neighbours at about the same temperature).
+    envelope=dict(uWall=0.170, uWindow=1.0, windowShare=dict(large=0.40, medium=0.25, small=0.15, none=0.0), shgc=0.5,
+                  luxPerW=110, ach=3.51 / 20, hIs=3.45, aTotPerFloor=4.5, hMs=9.1, aMassPerFloor=3.0, cMassPerFloor=260000,
+                  gains=dict(person=65, lightPerM2=10, tv=100, stove=2000, oven=2000, dryer=300, washer=150, dishwasher=300)),
     # air between rooms (2026-11-04). Open door / open plan: buoyancy flow through an opening, one direction
     # Q = Cd/3 * W * H * sqrt(g * H * dT / T) (Brown & Solvason 1962), Cd = 0.0835 * (dT/T)^-0.313 measured through a
     # doorway (Riffat 1989, ASHRAE Trans. 95(2); a doorway between floors), dT held within the measured 0.5-13 K (below 0.5 K
@@ -172,6 +182,7 @@ def window_sun(profile, out):
 
 
 def free_indoor_temp(out, profile=NO_PROFILE):
+    """only the starting state of the rooms (Environment.settle); the rooms then follow the heat balance in step"""
     solar = PHYS["solarGainC"] * PHYS["windowHeat"][profile["windowSize"]] * window_sun(profile, out) * out["daylight"] / 20000
     return max(PHYS["indoorMinC"], out["meanTemperature"] + PHYS["indoorGainC"] + PHYS["indoorSwing"] * (out["temperature"] - out["meanTemperature"])) + solar
 
@@ -363,23 +374,53 @@ class Environment:
             is_open = win_open or door_open
             wind_k = WEATHER["windOpen"][0] + WEATHER["windOpen"][1] * out["windSpeed"] / WIND["mean"]
             k_open = max(PHYS["windowOpen"][p["windowSize"]] if win_open else 0, PHYS["windowOpen"]["large"] if door_open else 0) * wind_k
-            k_closed = PHYS["closedByWalls"][p["exteriorWalls"]]
             wall_share = (0.5 + p["exteriorWalls"]) / 1.5
-            k = k_open if is_open else k_closed
-            temp_target = out["temperature"] if is_open else free_indoor_temp(out, p)
+            E = PHYS["envelope"]
+            af = p["areaM2"]
+            vol = af * PHYS["ceilingM"]
+            k_inf = E["ach"] / 60  # per minute
+            k = k_open + k_inf  # outdoor air reaching the room, per minute
             if e.get("mass") is None:
                 e["mass"] = e["temperature"]
-            from_mass = PHYS["massToAir"] * (e["mass"] - e["temperature"]) * dt
-            e["mass"] += PHYS["airToMass"] * (e["temperature"] - e["mass"]) * dt
-            e["temperature"] += (temp_target - e["temperature"]) * k * dt + from_mass
+            # 5R1C heat balance, explicit in one-minute steps (air time constant about 3 min)
+            a_win = E["windowShare"][p["windowSize"]] * af if p["exteriorWalls"] else 0.0
+            a_wall = max(0.0, p["exteriorWalls"] * math.sqrt(af) * PHYS["ceilingM"] - a_win)
+            h_win, h_op = E["uWindow"] * a_win, E["uWall"] * a_wall
+            a_tot, a_m = E["aTotPerFloor"] * af, E["aMassPerFloor"] * af
+            h_is, h_ms = E["hIs"] * a_tot, E["hMs"] * a_m
+            h_em = 1 / (1 / h_op - 1 / h_ms) if h_op > 0 else 0.0
+            h_ve = 1206 * vol * k / 60  # W/K
+            c_air, c_m = 1206 * vol, E["cMassPerFloor"] * af
+            curtain_dev = devs.get("curtain")
+            shade = PHYS["curtain"].get(curtain_dev.state.get("windowShade.windowShade"), 0.6) if curtain_dev is not None else 1
+            phi_sol = E["shgc"] * a_win * out["daylight"] / E["luxPerW"] * window_sun(p, out) * shade
+            G = E["gains"]
+            phi_int = (G["person"] if occ else 0) + (G["lightPerM2"] * af if light_on else 0)
+            tv_dev = devs.get("tv")
+            if tv_dev is not None and tv_dev.state.get("switch.switch") == "on":
+                phi_int += G["tv"]
+            if is_("stove", "switch", "switch", "on"):
+                phi_int += G["stove"]
+            if devs.get("oven") is not None and devs["oven"].state.get("mode.mode") != "off":
+                phi_int += G["oven"]
+            for t in ("dryer", "washer", "dishwasher"):
+                if t in OP_STATE and is_(t, OP_STATE[t][0], "machineState", "run"):
+                    phi_int += G[t]
+            phi_ia = 0.5 * phi_int
+            phi_m = a_m / a_tot * (0.5 * phi_int + phi_sol)
+            phi_st = (1 - a_m / a_tot - h_win / (E["hMs"] * a_tot)) * (0.5 * phi_int + phi_sol)
+            t_out, ta, tm = out["temperature"], e["temperature"], e["mass"]
+            ts = (h_is * ta + h_ms * tm + h_win * t_out + phi_st) / (h_is + h_ms + h_win)
+            sec = dt * 60
+            e["temperature"] = ta + (h_ve * (t_out - ta) + h_is * (ts - ta) + phi_ia) * sec / c_air
+            e["mass"] = tm + (h_ms * (ts - tm) + h_em * (t_out - tm) + phi_m) * sec / c_m
             if e.get("vapor") is None:
                 e["vapor"] = vapor_from_rh(e["humidity"], e["temperature"])
-            e["vapor"] += (vapor_from_rh(out["humidity"], out["temperature"]) + (0 if is_open else PHYS["moistureOffset"]) - e["vapor"]) * k * dt
+            e["vapor"] += (vapor_from_rh(out["humidity"], out["temperature"]) + (0 if is_open else PHYS["moistureOffset"]) - e["vapor"]) * min(1, k * dt)
             e["pm25"] += (out["pm25"] - e["pm25"]) * (k_open if is_open else PHYS["pmInfiltration"] * wall_share) * dt
             e["co2"] += (out["co2"] - e["co2"]) * (0.05 if is_open else 0.003) * dt
             if occ:
                 e["co2"] += 10 * sf * dt
-                e["temperature"] += 0.003 * sf * dt
                 e["vapor"] += PHYS["moisture"]["person"] * sf * dt
             hvac = devs.get("heating_cooling_unit")
             mode = hvac.state.get("thermostatMode.thermostatMode") if hvac else None
@@ -406,10 +447,11 @@ class Environment:
                     w_room = w_from_e(e["vapor"])
                     e["temperature"] += (t_out - e["temperature"]) * f
                     e["vapor"] = e_from_w(w_room + (w_from_e(e_out) - w_room) * f)
-            elif mode == "heat":
+            elif mode == "heat":  # stand-in until floor heating: heat to the air up to the unit's rated kW (no source)
                 target = hvac.state.get("thermostatHeatingSetpoint.heatingSetpoint")
                 if e["temperature"] < target:
-                    e["temperature"] += min(PHYS["hvacMaxRate"] * dt, target - e["temperature"])
+                    kw = AC_KW[H.type].get(r, AC_ROOM_KW) * min(1, target - e["temperature"])
+                    e["temperature"] = min(target, e["temperature"] + kw * 1000 * dt * 60 / (1206 * p["areaM2"] * PHYS["ceilingM"]))
             hum = devs.get("humidifier")
             hum_on = hum is not None and hum.state.get("switch.switch") == "on"
             if hum_on:
@@ -430,14 +472,10 @@ class Environment:
             oven_on = oven is not None and oven.state.get("mode.mode") != "off"
             robot_on = is_("robot_vacuum", "robotCleanerOperatingState", "operatingState", "running")
             if stove_on:
-                e["temperature"] += 0.03 * sf * dt
                 e["pm25"] += 0.6 * sf * dt
                 e["co2"] += 5 * sf * dt
-            if oven_on:
-                e["temperature"] += 0.02 * sf * dt
             dryer_on, washer_on = running("dryer"), running("washer")
             if dryer_on:
-                e["temperature"] += 0.02 * sf * dt
                 e["vapor"] += PHYS["moisture"]["dryer"] * sf * dt
             if washer_on:
                 e["vapor"] += PHYS["moisture"]["washer"] * sf * dt

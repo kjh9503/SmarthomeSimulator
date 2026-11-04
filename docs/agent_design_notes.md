@@ -278,6 +278,20 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
   stay 27.4 C. Switched on from outside (door open) -> living 25.5, room2 26.3 C. Living room cooled -> kitchen / dining
   24.2 C, open room1 24.9 C. Year (test profile): kitchen / dining median 25.1 / 25.2 C while the living room cools.
   RH while cooling is still high (living median 74%, max 90%): the unit's dehumidifying (next step).
+- Cooling (2026-11-04/05): Korean home system air conditioning specs; see house.py AC_* comments (2.3 kW rooms and 4room
+  kitchen, living 3.2 / 7.2 / 7.2 kW; airflow proportional to 2.3 kW [assume]; inverter 0.34-1.61 [assume, from a 2.3 kW
+  single unit]; fan follows output [assume]; ideal coil, saturated outlet below the dew point).
+- Room heat (2026-11-05): ISO 13790 5R1C per room instead of the relaxation to a "free indoor temperature" (no source;
+  room1 1.0 W/K to outside). Values and sources in house.py PHYS["envelope"]: wall 0.170, window 1.0 W/m2K [src design
+  standard, central 2], ACH50 3.51 [src Yoon 2013] / 20 [src Persily; Sherman N ~ 20], heavy 260 kJ/m2K, mass area 3x
+  [src ISO 13790 via Modelica]. [assume]: window share 40/25/15%, wall length sqrt(area), SHGC 0.5, 110 lux per W/m2,
+  curtain shading as for light, internal gains (person 65 W and light 10 W/m2 [src Kim & Byun 2008], TV 100, stove 2000,
+  oven 2000, dryer 300, washer 150, dishwasher 300 W). No heat to the neighbours. The 15 C floor is gone. Heat mode is a
+  stand-in until floor heating (rated kW into the air, no source).
+  Check [ours]: Aug 3room-A 4 h at 24 C: living 71 -> 40%, room1 -> 52% (no rise at start); 16 C living 26%. Year (test
+  profile): RH while cooling living median 49% (p10-p90 35-69), room1 53%; living room with the unit off median Jan 18.0,
+  May 26.5, Aug 27.4, Oct 24.7 C; stove on for 240 min: kitchen 35.7 C in Aug (gains to check); Jan room1 with nothing on
+  15.0 -> 10.5 C in 72 h. Wrong skips 14 of 166, all daily bedtime / departures that came late (deferred; not a problem).
 - Physics test: compared with the Python simulator's own output (`tests/fixtures/physics_ref.json`), no longer the
   browser version; rewrite it after an intended physics change with `python3 tests/test_port.py --write-reference`.
   The browser version is not maintained until the user asks.
