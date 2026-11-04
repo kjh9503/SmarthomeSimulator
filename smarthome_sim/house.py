@@ -397,8 +397,12 @@ class Environment:
                     if over <= 0:
                         break
                     kw = max(AC_MIN, min(1, over) * AC_MAX) * rated
-                    t_out, e_out = coil_outlet(e["temperature"], e["vapor"], kw, m3)
-                    f = min(1, m3 * dt / n / (p["areaM2"] * PHYS["ceilingM"]))  # share of the room's air through the coil
+                    # fan speed follows the output: low (4.0 of 6.0 m3/min, AJ023MB1PBC1 high / mid / low 6.0 / 5.0 / 4.0) at the
+                    # inverter minimum, high at its maximum, in proportion between [our assumption, agreed 2026-11-05]
+                    share = (kw / rated - AC_MIN) / (AC_MAX - AC_MIN)
+                    fan = m3 * (4.0 / 6.0 + 2.0 / 6.0 * max(0.0, min(1.0, share)))
+                    t_out, e_out = coil_outlet(e["temperature"], e["vapor"], kw, fan)
+                    f = min(1, fan * dt / n / (p["areaM2"] * PHYS["ceilingM"]))  # share of the room's air through the coil
                     w_room = w_from_e(e["vapor"])
                     e["temperature"] += (t_out - e["temperature"]) * f
                     e["vapor"] = e_from_w(w_room + (w_from_e(e_out) - w_room) * f)
