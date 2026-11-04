@@ -228,5 +228,5 @@
   "SMARTTHINGS notification": "home device alert (see smartThingsAlerts)",
   "HEALTH HOURLY": "hourly steps / distance / kcal / heart rate"
  },
- "houseTypes._deviceIds": "A house has device '<room>.<deviceType>' for every deviceType whose rooms include a room of that house type (e.g. 3room has room1.lamp, kitchen.oven; 2room has no room3)."
+ "houseTypes._deviceIds": "A house has device '<room>.<deviceType>' for every deviceType whose rooms include a room of that house type (e.g. 3room has room1.lamp, kitchen.oven; 2room has no room3), except the rooms in the type's notIn (heating_cooling_unit: no kitchen unit in 2room / 3room)."
 }

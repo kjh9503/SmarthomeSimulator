@@ -46,8 +46,9 @@ class Checker:
         if not spec:
             self.err(p["patternId"], f"{where}: unknown device type '{dtype}'"); return None
         real = self.room(p, room, where)
-        if real and real not in spec["rooms"]:
-            self.err(p["patternId"], f"{where}: there is no {dtype} in {real} (it exists in: {', '.join(spec['rooms'])})"); return None
+        if real and (real not in spec["rooms"] or real in (spec.get("notIn") or {}).get(p["houseType"], [])):
+            self.err(p["patternId"], f"{where}: there is no {dtype} in {real} of a {p['houseType']} (it exists in: {', '.join(spec['rooms'])}"
+                                     f"{'; not in ' + ', '.join(spec['notIn'][p['houseType']]) + ' of a ' + p['houseType'] if (spec.get('notIn') or {}).get(p['houseType']) else ''})"); return None
         return spec
 
     def cap_attr(self, p, spec, cap, attr, where):

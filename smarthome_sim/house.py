@@ -13,6 +13,9 @@ DEFAULT_VARIANT = "3room-A"
 
 ALL_ROOMS = ["room1", "room2", "room3", "room4", "living_room", "kitchen", "dining_room", "bathroom", "laundry", "closet", "hallway", "entryway", "balcony"]
 HOUSE_EXCLUDE = {"2room": ["room3", "room4", "hallway"], "3room": ["room4"], "4room": []}
+# devices a house type does not have although their room exists: system air conditioning in the living room and every
+# room; a separate kitchen unit only in 4room (2room / 3room kitchens are open to the living room and use its unit)
+DEVICE_EXCLUDE = {"2room": {("heating_cooling_unit", "kitchen")}, "3room": {("heating_cooling_unit", "kitchen")}, "4room": set()}
 ROOM_LABEL = dict(room1="Room 1", room2="Room 2", room3="Room 3", room4="Room 4", living_room="Living room", kitchen="Kitchen",
                   dining_room="Dining room", bathroom="Bathroom", laundry="Laundry", closet="Closet", hallway="Hallway", entryway="Entryway", balcony="Balcony")
 DEVICE_LABEL = dict(temperature_sensor="Temperature", humidity_sensor="Humidity", light_sensor="Light level", occupancy_sensor="Occupancy",
@@ -181,7 +184,7 @@ class House:
         by_room = {r: [] for r in self.room_ids}
         for d in spec:
             for i, r in enumerate(d["rooms"]):
-                if r in by_room:
+                if r in by_room and (d["device"], r) not in DEVICE_EXCLUDE[self.type]:
                     by_room[r].append(Device(d["deviceIds"][i], d["device"], r, d["capabilities"]))
         self.devices = {}
         for r in self.room_ids:

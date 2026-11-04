@@ -63,7 +63,7 @@
     "4room-C"
    ]
   },
-  "_deviceIds": "A house has device '<room>.<deviceType>' for every deviceType whose rooms include a room of that house type (e.g. 3room has room1.lamp, kitchen.oven; 2room has no room3)."
+  "_deviceIds": "A house has device '<room>.<deviceType>' for every deviceType whose rooms include a room of that house type (e.g. 3room has room1.lamp, kitchen.oven; 2room has no room3), except the rooms in the type's notIn (heating_cooling_unit: no kitchen unit in 2room / 3room)."
  },
  "deviceTypes": {
   "temperature_sensor": {
@@ -518,8 +518,6 @@
   "heating_cooling_unit": {
    "label": "Heating/cooling",
    "rooms": [
-    "dining_room",
-    "hallway",
     "kitchen",
     "living_room",
     "room1",
@@ -586,7 +584,16 @@
       }
      ]
     }
-   ]
+   ],
+   "notIn": {
+    "2room": [
+     "kitchen"
+    ],
+    "3room": [
+     "kitchen"
+    ]
+   },
+   "note": "system air conditioning: living room and every room; kitchen only in 4room. Dining room, hallway and the 2room / 3room kitchen are open to the living room and use its unit"
   },
   "humidifier": {
    "label": "Humidifier",
