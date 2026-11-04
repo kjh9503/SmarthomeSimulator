@@ -714,14 +714,18 @@ class AgentRunner:
                 if d0 + f * MIN_MS <= t or not day_ok(tr.get("days"), d0) or not month_ok(tr.get("months"), d0):
                     continue  # not today
                 ln = (to - f + 1440) % 1440 + 1
-                dl = st["daily"] = dict(dk=day_key(d0), day=d0, at=d0 + (f + int(self.rnd.random() * ln)) * MIN_MS)
+                dl = st["daily"] = dict(dk=day_key(d0), day=d0, at=d0 + (f + int(self.rnd.random() * ln)) * MIN_MS,
+                                        follow=self.chance(b["probability"]))
+            if dl.get("follow") is False:
+                continue  # already decided: the person will not follow it today
             if not self.all_conds(b.get("conditions"), dl["at"]):
                 continue  # its conditions would be false then (judged now, at that minute): no departure or sleep from it
             if dl["at"] >= this_minute and (best is None or dl["at"] < best):
                 best = max(dl["at"], t)
                 self.plan_src = dict(kind="daily", rule=b["id"], probability=b.get("probability"))
         for x in self.scheduled:  # event rules with a delay: their time is already set
-            if x["kind"] == "eventCheck" and x["at"] >= this_minute and leaves(x["b"]["actions"]) and self.all_conds(x["b"].get("conditions"), x["at"]):
+            if (x["kind"] == "eventCheck" and x["at"] >= this_minute and x.get("follow", True) and leaves(x["b"]["actions"])
+                    and self.all_conds(x["b"].get("conditions"), x["at"])):
                 if best is None or max(x["at"], t) < best:
                     best = max(x["at"], t)
                     self.plan_src = dict(kind="eventCheck", rule=x["b"]["id"], probability=x["b"].get("probability"))
@@ -1054,7 +1058,9 @@ class AgentRunner:
             return "conditions_false"
         s["conditionsTrue"] += 1
         gt = self.gt_start(b, t, how) if b["kind"] == "pattern" else None
-        if not self.chance(b["probability"]):
+        # daily rules and delayed event rules decided whether to follow when their minute was drawn (the plan rule sees it)
+        pre = how.get("follow") if how.get("follow") is not None else (how.get("daily") or {}).get("follow")
+        if not (pre if pre is not None else self.chance(b["probability"])):
             if gt:
                 self.gt_write(gt, "not_followed")
             s["notFollowed"] += 1
@@ -1183,7 +1189,8 @@ class AgentRunner:
                     if tr["kind"] != "event" or not self.event_matches(tr["event"], src, h):
                         continue
                     if tr.get("delayMinutes") is not None:
-                        self.scheduled.append(dict(kind="eventCheck", at=self.now() + js_round(self.num(tr["delayMinutes"])) * MIN_MS, b=b))
+                        self.scheduled.append(dict(kind="eventCheck", at=self.now() + js_round(self.num(tr["delayMinutes"])) * MIN_MS, b=b,
+                                                   follow=self.chance(b["probability"])))  # decided now, so plans can see it
                     else:
                         self.fire(b, self.now(), dict(via="event"))
 
@@ -1233,7 +1240,8 @@ class AgentRunner:
                 if not dl or dl["dk"] != dk:
                     f, to = hhmm(tr["window"]["from"]), hhmm(tr["window"]["to"])
                     ln = (to - f + 1440) % 1440 + 1
-                    dl = st["daily"] = dict(dk=dk, day=day, at=day + (f + int(self.rnd.random() * ln)) * MIN_MS)
+                    dl = st["daily"] = dict(dk=dk, day=day, at=day + (f + int(self.rnd.random() * ln)) * MIN_MS,
+                                            follow=self.chance(b["probability"]))
                 if dl["at"] == t:
                     lst.append((b, dict(day=day, via="daily", daily=dl)))
             elif tr["kind"] == "rate":
@@ -1286,7 +1294,7 @@ class AgentRunner:
                         k = "revert: " + r["reason"][:70]
                         s["refusals"][k] = s["refusals"].get(k, 0) + 1
             elif it["kind"] == "eventCheck":
-                self.fire(it["b"], t, dict(via="event"))
+                self.fire(it["b"], t, dict(via="event", follow=it.get("follow")))
             elif it["kind"] == "morning":
                 self.off_check("morning", t, it["devices"])
             self.person_changes()

@@ -48,8 +48,8 @@ Not done yet:
 - Done 2026-11-03: `keepOn` for switch-ons meant to stay on while away or asleep, with a decoy rule in the prompt and a
   warning in `check_profile.py`.
 - Departures / sleep from event rules: known once the event happened (`eventCheck`); before that, not known.
-- Plan rule: planned rules with probability < 1 still count as certain departures / sleep (2026-11-04). Measured by
-  the wrong-skip check (`planSkips`): 063 2 of 11 skips wrong, test profile 5 of 87, all from such rules.
+- Plan rule and probability < 1: done 2026-11-04 (follow decided when the minute is drawn); wrong skips 0 in 063 and
+  the test profile.
 - Device reservations (timers): only with real SmartThings definitions; for AC / purifier / TV none found yet, so
   not built; 7 items without a definition listed in the conversation of 2026-11-04 (to search real device dumps).
 - Tap task time has a long tail (median 12 s, sigma 1.56; up to the 600 s cap): check whether it looks right.

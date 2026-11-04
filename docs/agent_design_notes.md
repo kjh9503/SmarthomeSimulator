@@ -101,6 +101,11 @@ cooling); sleeping with cooling on conflicts with the bedtime off check.
   (one skip a line, `wrong`) and `planSkips` in the summary (by kind of source). Result [ours, one year]: 063 2 wrong of
   11, test profile 5 wrong of 87; all wrong ones came from daily rules with probability < 1 (`r_to_campus` 0.92,
   `r_weekend_out`, `r_sunday_run`).
+- Fixed 2026-11-04 (agreed (a)): daily rules and delayed event rules draw whether they will be followed
+  (`probability`) when their minute is drawn, and use that decision when they run; plans leave out rules decided "not
+  followed". Result [ours, one year]: wrong skips 063 0 of 13, test profile 0 of 69; follow rates match the
+  probabilities (`r_to_campus` 0.92 -> 0.91, `r_weekend_out` 0.55 -> 0.52 / 0.61, `r_sunday_run` 0.4 -> 0.39 / 0.47);
+  still 0 short on->off by a check in the test profile. The random order changed: the same seed gives a different year.
 - **keepOn** (2026-11-03): a switch-on meant to stay on while away or asleep (e.g. cooling before leaving on a hot day)
   carries `"keepOn": true`. Engine: not skipped by the rule above; the leaving and bedtime checks leave that device on
   (the morning check does not); cleared on arriving home or waking. Prompt: so that keepOn is not a hint for patterns,
