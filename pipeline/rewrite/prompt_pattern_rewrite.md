@@ -39,8 +39,7 @@ Change only what the simulator cannot produce. Prefer the first option that fits
    - ventilation fan, air circulator, drying fan -> `air_purifier` (living_room; fan speed percent 0-100, 0 = off) or
      opening a window (`window_contact`, living_room and room1-4).
    - humidifier settings -> `humidifier` (room1-4) switch + humiditySetpoint.
-   - white-noise / sleep-sound / smart speaker -> `speaker` (living_room, room1, room2) play / volume;
-     the sound itself (rain, brown noise...) can be named in the phone app that drives it.
+   - white-noise / sleep-sound / smart speaker -> the phone's music app (Spotify) playing; there is no home speaker device.
    - kettle, coffee or espresso machine, rice cooker, cooktop -> `stove` (on/off) or `oven` (bake/convection,
      temperatureSetpoint, ovenOperatingState), or the matching phone app if nothing at home fits.
    - door camera, two-way talk, guest access code -> the SmartThings app on the phone (open it; it shows a

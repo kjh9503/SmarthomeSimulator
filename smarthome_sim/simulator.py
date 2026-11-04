@@ -11,7 +11,7 @@ from .phone import Phone, PLACES
 
 DEFAULT_BACKGROUND_PER_DAY = 500
 # minutes [before, after] an action whose room's sensor reports are all kept
-ACTION_WINDOWS = dict(light=[5, 10], lamp=[5, 10], curtain=[5, 10], tv=[5, 30], speaker=[5, 30], air_purifier=[5, 30],
+ACTION_WINDOWS = dict(light=[5, 10], lamp=[5, 10], curtain=[5, 10], tv=[5, 30], air_purifier=[5, 30],
                       heating_cooling_unit=[10, 60], humidifier=[10, 60], window_contact=[10, 60], door_contact=[10, 60],
                       stove=[10, 60], oven=[10, 60], occupancy_sensor=[10, 60], washer=[5, 30], dryer=[5, 30], dishwasher=[5, 30],
                       robot_vacuum=[5, 30])

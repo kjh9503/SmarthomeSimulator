@@ -29,6 +29,7 @@
     "kitchen",
     "dining_room",
     "bathroom",
+    "master_bathroom",
     "laundry",
     "closet",
     "hallway",
@@ -51,6 +52,7 @@
     "kitchen",
     "dining_room",
     "bathroom",
+    "master_bathroom",
     "laundry",
     "closet",
     "hallway",
@@ -71,6 +73,7 @@
    "rooms": [
     "balcony",
     "bathroom",
+    "master_bathroom",
     "closet",
     "dining_room",
     "entryway",
@@ -102,6 +105,7 @@
    "rooms": [
     "balcony",
     "bathroom",
+    "master_bathroom",
     "closet",
     "dining_room",
     "hallway",
@@ -133,6 +137,7 @@
    "label": "Light level",
    "rooms": [
     "bathroom",
+    "master_bathroom",
     "closet",
     "dining_room",
     "entryway",
@@ -164,6 +169,7 @@
    "rooms": [
     "balcony",
     "bathroom",
+    "master_bathroom",
     "closet",
     "dining_room",
     "entryway",
@@ -238,6 +244,7 @@
    "rooms": [
     "balcony",
     "bathroom",
+    "master_bathroom",
     "closet",
     "dining_room",
     "entryway",
@@ -317,6 +324,7 @@
    "label": "Water leak",
    "rooms": [
     "bathroom",
+    "master_bathroom",
     "kitchen",
     "laundry"
    ],
@@ -403,6 +411,7 @@
    "rooms": [
     "balcony",
     "bathroom",
+    "master_bathroom",
     "closet",
     "dining_room",
     "entryway",
@@ -769,73 +778,6 @@
       {
        "name": "stop",
        "args": []
-      }
-     ]
-    }
-   ]
-  },
-  "speaker": {
-   "label": "Speaker",
-   "rooms": [
-    "living_room",
-    "room1",
-    "room2"
-   ],
-   "capabilities": [
-    {
-     "capability": "connection",
-     "attributes": [
-      {
-       "name": "connection",
-       "type": "enum",
-       "values": [
-        "connected",
-        "disconnected"
-       ]
-      }
-     ],
-     "commands": []
-    },
-    {
-     "capability": "mediaPlayback",
-     "attributes": [
-      {
-       "name": "playbackStatus",
-       "type": "enum",
-       "values": [
-        "playing",
-        "paused",
-        "stopped"
-       ]
-      }
-     ],
-     "commands": [
-      {
-       "name": "play",
-       "args": []
-      },
-      {
-       "name": "stop",
-       "args": []
-      }
-     ]
-    },
-    {
-     "capability": "audioVolume",
-     "attributes": [
-      {
-       "name": "volume",
-       "type": "integer",
-       "min": 0,
-       "max": 100
-      }
-     ],
-     "commands": [
-      {
-       "name": "setVolume",
-       "args": [
-        "volume"
-       ]
       }
      ]
     }
@@ -1260,7 +1202,8 @@
   "closet": "Closet",
   "hallway": "Hallway",
   "entryway": "Entryway",
-  "balcony": "Balcony"
+  "balcony": "Balcony",
+  "master_bathroom": "Master bathroom"
  },
  "places": {
   "home": {

@@ -81,7 +81,7 @@ rooms that have it.
 - Something switched on that should stay on while the person is away or asleep (cooling before leaving on a hot day,
   a heater left on for a pet, sleeping with cooling on): add `"keepOn": true` to that step. Without it the person
   does not switch it on just before leaving or sleep, and the leaving / bedtime check switches it off.
-- Something switched on that people switch off later (TV, speaker playing, lamp, purifier, humidifier,
+- Something switched on that people switch off later (TV, lamp, purifier, humidifier,
   heater or cooler, stove) gets a `revert` with a plausible afterMinutes range, from the phone if the person
   may have left the room by then. A stated duration ("for 30 minutes") becomes a range of 5 minutes either side
   ({"min": 25, "max": 35}): the person switches it off, not a device timer (do not use `byDevice`).

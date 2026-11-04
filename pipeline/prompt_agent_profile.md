@@ -60,7 +60,6 @@ ownership rate as the chance a household like this one has it, and write the rul
 | dryer | 35% (Gallup Korea 2023) | After the washer finishes (event: washer washerJobState finish); modes normal, delicate |
 | dishwasher | 24% (Gallup Korea 2025, "dishwasher/dish dryer") | After dinner on cooking days |
 | oven | 21% (Gallup Korea 2025) | Some cooking days: setMode bake / convection, then wait for preheat (ovenOperatingState.ovenJobState preheat -> cooking) |
-| speaker (AI speaker) | 18% (Gallup Korea 2023) | Music or radio at home |
 | robot_vacuum | 15% (Gallup Korea 2023) | Started when leaving home, or on a schedule |
 
 Write the owned Group C devices in `notes`, e.g. `Optional appliances owned: dryer, humidifier.`

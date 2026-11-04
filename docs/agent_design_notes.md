@@ -254,6 +254,20 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
 
 ## 12. Environment checks (simulator side)
 
+- House and room areas (2026-11-04) [src: MOLIT statistics (stat.molit.go.kr) housing survey, ranges given by the user,
+  original not checked]: 2room living+kitchen 18-22, master 11-13, small 7-9, other 8-10 m2; 3room 25-35, 12-14, 9-11,
+  7-9, other 10-15; 4room 35-45, 14-16, 10-12, 9-11, 6-8, other 15-22. Each house takes the same position in every range
+  (where its floor area lies in the range sum); the house area becomes that sum: 2room 54 / 49 / 54, 3room 84 / 84 / 74,
+  4room 114 / 101 / 114 m2. Living / kitchen / dining split as before. Bathrooms: 3room and 4room have two (`bathroom`,
+  `master_bathroom`), 4.3 / 2.6 m2 at 84 m2 scaled with the house area; 2room one. Both bathrooms have the same devices.
+  Laundry, closet, hallway, entryway share the rest of "other" as before.
+- Air conditioning (2026-11-04): system units in the living room and every room, kitchen only in 4room; none in the
+  dining room, hallway or 2room / 3room kitchen (open to the living room, cooled by its unit).
+- Speaker device removed (2026-11-04).
+- Physics test: compared with the Python simulator's own output (`tests/fixtures/physics_ref.json`), no longer the
+  browser version; rewrite it after an intended physics change with `python3 tests/test_port.py --write-reference`.
+  The browser version is not maintained until the user asks.
+
 - Device definitions moved to SmartThings standard capabilities (2026-11-04). Checked against the 328 standard
   capabilities in Flobul/smartthings-capabilities (definitions fetched from the SmartThings API with the CLI, 2026-05),
   names only. Before: 37 of 48 standard names, 11 not in any definition, no Samsung extension.

@@ -30,38 +30,47 @@ class TestAgainstJS(unittest.TestCase):
                 else:
                     self.assertEqual(v, p[k], (t, k))
 
-    def test_physics_matches_js(self):
+    def test_physics_matches_reference(self):
         """every room's true values every 6 h over a scripted 3 days (windows, stove, purifier, TV, lights, heating,
-        cooling, humidifier, washer, dryer, dishwasher, robot vacuum, oven, balcony door, speaker, a person moving)"""
-        script = json.load(open(os.path.join(FIX, "physics_script.json")))
-        js = json.load(open(os.path.join(FIX, "physics_js.json")))
-        T0 = local_ms(2026, 0, 15)
-        s = Simulator("3room-A", T0, seed=1)
-        s.where_refusal = lambda d: None
-        # the JS fixture's dryer ran the old start(mode, 60 minutes); the standard command has no length, so 60 here
-        s.cycle_minutes = lambda d, f=s.cycle_minutes: 60 if d.type == "dryer" else f(d)
-        s.jump_to(T0)
-        s.phone.move_room("room1")
-        ai, got = 0, {}
-        for m in range(1, 3 * 1440 + 1):
-            while ai < len(script) and script[ai][0] <= m:
-                a = script[ai]
-                ai += 1
-                s.clock.set_to(T0 + a[0] * MIN_MS - MIN_MS + 1000)
-                if a[1] == "run":
-                    s.run(a[2], a[3], a[4], a[5] if len(a) > 5 else [], "mobile_app")
-                elif a[1] == "set":
-                    s.set_value(a[2], a[3], a[4], a[5])
-                else:
-                    s.phone.move_room(a[2])
-            s.clock.set_to(T0 + m * MIN_MS)
-            s.tick()
-            if m % 360 == 0:
-                got[m] = json.loads(json.dumps(s.house.env.rooms))
-        for m, rooms in js:
+        cooling, humidifier, washer, dryer, dishwasher, robot vacuum, oven, balcony door, speaker, a person moving).
+        The reference is the Python simulator's own output (fixtures/physics_ref.json), no longer the browser version:
+        after an intended physics change, rewrite it with  python3 tests/test_port.py --write-reference"""
+        got = physics_run()
+        ref = json.load(open(os.path.join(FIX, "physics_ref.json")))
+        self.assertEqual(sorted(ref), sorted(got))
+        for m, rooms in ref.items():
             for room, vals in rooms.items():
                 for k, v in vals.items():
                     self.assertLess(rel(v, got[m][room][k]), 1e-9, (m, room, k))
+
+
+def physics_run():
+    script = json.load(open(os.path.join(FIX, "physics_script.json")))
+    T0 = local_ms(2026, 0, 15)
+    s = Simulator("3room-A", T0, seed=1)
+    s.where_refusal = lambda d: None
+    s.cycle_minutes = lambda d, f=s.cycle_minutes: 60 if d.type == "dryer" else f(d)  # fixed length: no drawn dryer time
+    s.jump_to(T0)
+    s.phone.move_room("room1")
+    ai, got = 0, {}
+    for m in range(1, 3 * 1440 + 1):
+        while ai < len(script) and script[ai][0] <= m:
+            a = script[ai]
+            ai += 1
+            s.clock.set_to(T0 + a[0] * MIN_MS - MIN_MS + 1000)
+            if a[1] == "run":
+                if s.house.device(a[2]) is None:
+                    continue  # a device this house no longer has
+                s.run(a[2], a[3], a[4], a[5] if len(a) > 5 else [], "mobile_app")
+            elif a[1] == "set":
+                s.set_value(a[2], a[3], a[4], a[5])
+            else:
+                s.phone.move_room(a[2])
+        s.clock.set_to(T0 + m * MIN_MS)
+        s.tick()
+        if m % 360 == 0:
+            got[str(m)] = json.loads(json.dumps(s.house.env.rooms))
+    return got
 
 
 class TestRunner(unittest.TestCase):
@@ -92,5 +101,9 @@ class TestStoredForm(unittest.TestCase):
         self.assertEqual([dumps(expand(json.loads(l))) for l in stored], full)
 
 
+if __name__ == "__main__" and "--write-reference" in sys.argv:
+    json.dump(physics_run(), open(os.path.join(FIX, "physics_ref.json"), "w"), indent=0)
+    print("physics_ref.json written")
+    sys.exit(0)
 if __name__ == "__main__":
     unittest.main()

@@ -11,18 +11,19 @@ SPEC = [json.loads(l) for l in open(os.path.join(DATA, "device_spec.jsonl"), enc
 ROOM_PROFILES = json.load(open(os.path.join(DATA, "room_profiles.json"), encoding="utf-8"))
 DEFAULT_VARIANT = "3room-A"
 
-ALL_ROOMS = ["room1", "room2", "room3", "room4", "living_room", "kitchen", "dining_room", "bathroom", "laundry", "closet", "hallway", "entryway", "balcony"]
-HOUSE_EXCLUDE = {"2room": ["room3", "room4", "hallway"], "3room": ["room4"], "4room": []}
+ALL_ROOMS = ["room1", "room2", "room3", "room4", "living_room", "kitchen", "dining_room", "bathroom", "master_bathroom", "laundry", "closet", "hallway",
+             "entryway", "balcony"]
+HOUSE_EXCLUDE = {"2room": ["room3", "room4", "hallway", "master_bathroom"], "3room": ["room4"], "4room": []}
 # devices a house type does not have although their room exists: system air conditioning in the living room and every
 # room; a separate kitchen unit only in 4room (2room / 3room kitchens are open to the living room and use its unit)
 DEVICE_EXCLUDE = {"2room": {("heating_cooling_unit", "kitchen")}, "3room": {("heating_cooling_unit", "kitchen")}, "4room": set()}
 ROOM_LABEL = dict(room1="Room 1", room2="Room 2", room3="Room 3", room4="Room 4", living_room="Living room", kitchen="Kitchen",
-                  dining_room="Dining room", bathroom="Bathroom", laundry="Laundry", closet="Closet", hallway="Hallway", entryway="Entryway", balcony="Balcony")
+                  dining_room="Dining room", bathroom="Bathroom", master_bathroom="Master bathroom", laundry="Laundry", closet="Closet", hallway="Hallway", entryway="Entryway", balcony="Balcony")
 DEVICE_LABEL = dict(temperature_sensor="Temperature", humidity_sensor="Humidity", light_sensor="Light level", occupancy_sensor="Occupancy",
                     air_quality_sensor="Air quality", noise_sensor="Noise", door_contact="Door contact", window_contact="Window contact",
                     water_leak_sensor="Water leak", smoke_alarm="Smoke alarm", doorbell="Doorbell", wifi_router="Wi-Fi router", light="Light",
                     lamp="Lamp", heating_cooling_unit="Heating/cooling", humidifier="Humidifier", air_purifier="Air purifier", curtain="Curtain",
-                    tv="TV", speaker="Speaker", robot_vacuum="Robot vacuum", dishwasher="Dishwasher", oven="Oven", stove="Stove", washer="Washer",
+                    tv="TV", robot_vacuum="Robot vacuum", dishwasher="Dishwasher", oven="Oven", stove="Stove", washer="Washer",
                     dryer="Dryer", lock="Lock")
 # initial values (simulator's choice)
 DEFAULTS = {
@@ -359,9 +360,6 @@ class Environment:
             tv = devs.get("tv")
             if tv is not None and tv.state.get("switch.switch") == "on":
                 L.append(55 if tv.state.get("mediaPlayback.playbackStatus") == "playing" else 45)
-            spk = devs.get("speaker")
-            if spk is not None and spk.state.get("mediaPlayback.playbackStatus") == "playing":
-                L.append(40 + 0.4 * spk.state.get("audioVolume.volume"))
             if robot_on:
                 L.append(65)
             if washer_on:

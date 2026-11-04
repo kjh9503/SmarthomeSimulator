@@ -231,6 +231,11 @@ LLM은 `phoneUseLevel`(light / medium / heavy = 하위·가운데·상위 3분�
 
 ## 12. 환경(시뮬레이터) 쪽 확인
 
+- 집·방 면적 (2026-11-04) [문헌: 국토교통 통계누리 주거실태조사(사용자가 준 범위, 원문 확인 안 함)]: 2룸 거실·주방 18–22, 안방 11–13, 작은방 7–9, 기타 8–10 m² / 3룸 25–35, 12–14, 9–11, 7–9, 기타 10–15 / 4룸 35–45, 14–16, 10–12, 9–11, 6–8, 기타 15–22. 집마다 범위 안의 같은 위치(전용면적이 그 범위 합의 어디쯤인지)로 정하고, 집 전체 면적은 그 합으로 바꿈: 2room 54 / 49 / 54, 3room 84 / 84 / 74, 4room 114 / 101 / 114 m². 거실·주방·식당은 예전 비율로 나눔. 욕실: 3룸·4룸은 2개(공용 `bathroom`, 안방 욕실 `master_bathroom`), 84 m² 기준 4.3 / 2.6 m²를 집 면적에 비례해 정함, 2룸은 공용 1개. 두 욕실의 기기는 같음. 나머지(세탁실·드레스룸·복도·현관)는 기타에서 욕실을 뺀 면적을 예전 비율로 나눔.
+- 에어컨 배치 (2026-11-04): 시스템 에어컨, 거실과 모든 방, 주방은 4룸만. 식당·복도·2룸/3룸 주방은 없음(트인 공간, 거실 에어컨에 의존).
+- 스피커 기기 뺌 (2026-11-04).
+- 물리 시험: 브라우저판과의 비교를 그만두고 Python판의 결과(`tests/fixtures/physics_ref.json`)와 비교한다. 의도한 물리 변경 뒤 `python3 tests/test_port.py --write-reference`로 다시 쓴다. 브라우저판은 사용자가 요청할 때까지 고치지 않는다.
+
 - 기기 정의를 SmartThings 표준 기능으로 (2026-11-04). 확인 범위: Flobul/smartthings-capabilities 저장소(SmartThings API에서 CLI로 받은 정의, 2026-05)의 표준 목록 328개, 이름만 비교.
   - 바꾸기 전: 48개 중 37개가 표준 이름, 11개는 실제 정의에 없는 이름. 삼성 확장 기능은 쓰지 않았음.
   - 세탁기·건조기·식기세척기: `cycleState`, `remainingTime` → `washerOperatingState` / `dryerOperatingState` / `dishwasherOperatingState` (live): `machineState` stop / run / pause, 작업 단계 wash → finish (건조기 drying → finished, 합의: 두 가지만), 시작할 때 `completionTime`(끝날 시각). 시작은 `mode.setMode(코스)` 다음 `setMachineState ["run"]` 두 단계. 5분마다 남던 남은 시간 줄은 없어짐.

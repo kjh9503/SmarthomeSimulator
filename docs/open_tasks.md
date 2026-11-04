@@ -52,7 +52,16 @@ Not done yet:
   the test profile.
 - Device reservations (timers): only with real SmartThings definitions; for AC / purifier / TV none found yet, so
   not built; 7 items without a definition listed in the conversation of 2026-11-04 (to search real device dumps).
-- Wrong skips from deferred departures: a daily departure rule deferred while the person is busy can leave later than
+- Air exchange and air conditioning (agreed 2026-11-04, in this order): (1) rooms exchange air with their neighbours in
+  m3/h (open plan, open door, closed door; heat, moisture, PM, CO2 together; no heat through walls), with the door rule:
+  a room's door is closed while its unit cools or heats (also when the person left it on and went out), open otherwise
+  (also when switched on from outside by app); kitchen and dining room are always open to the living room; (2) units by
+  real specs (cooling capacity W shared between cooling and dehumidifying); (3) check: cooling RH, and that a closed
+  cooled room1 does not end at the living room's temperature.
+- Humidifier: `humidifierMode` auto / low / medium / high instead of `humiditySetpoint` (agreed); effect of each mode
+  on room humidity still to decide.
+- Master bathroom: no rule in 063 uses it yet (only sensor lines).
+- Wrong skips from deferred departures (not a problem, agreed 2026-11-04): a daily departure rule deferred while the person is busy can leave later than
   the device minimum (dryer test profile: 1 of 72, r_to_campus 08:21 planned, left 08:39) (2026-11-04).
 - Browser JS simulator: still the old appliance capabilities (cycleState etc.); vocabulary.json now follows the
   Python device spec (2026-11-04).
