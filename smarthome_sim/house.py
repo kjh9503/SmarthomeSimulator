@@ -83,7 +83,12 @@ PHYS = dict(
                   # floor heating (ondol, 2026-11-05): heat into the slab (mass node) at 52 W/m2 of floor for 40 C supply water and a
                   # 22 C room, wood finish (Jang, Yu & Cho 2007, SAREK winter conference: wood 52.0, vinyl 70.7, tile 79.3 W/m2),
                   # in proportion to (supply - air); supply water 40 C and the thermostat's +-0.5 K band are our own assumptions
-                  floor=dict(wPerM2=52.0, supplyC=40.0, refSupplyC=40.0, refRoomC=22.0, bandK=0.5),
+                  # The heat goes through a floor layer of its own (2026-11-05): the 40 mm finishing mortar, the "ondol heat-storage
+                  # layer" over 70 mm foamed concrete (Mun et al. 2016, KSNVE 26(2)); mortar 2000 kg/m3 x 1000 J/kgK [our
+                  # assumption] -> 80 kJ/m2K. Floor to room 11.1 W/m2K (EN 1264, Danfoss guide); pipe to floor 4.72 W/m2K and the
+                  # downward share 0.21 so that 40 C supply and a 22 C room give 52 W/m2 up and 10.8 down at a 26.7 C floor
+                  # (Jang et al. 2007: wood 52.0 up, 10.8 down, mean surface 26.8 C). Downward heat goes into the room's mass.
+                  floor=dict(supplyC=40.0, bandK=0.5, cPerM2=80000, hUp=11.1, kPipe=4.72, downShare=10.8 / 52.0),
                   gains=dict(person=65, lightPerM2=10, tv=100, stove=2000, oven=2000, dryer=300, washer=150, dishwasher=300)),
     # air between rooms (2026-11-04). Open door / open plan: buoyancy flow through an opening, one direction
     # Q = Cd/3 * W * H * sqrt(g * H * dT / T) (Brown & Solvason 1962), Cd = 0.0835 * (dT/T)^-0.313 measured through a
@@ -420,19 +425,23 @@ class Environment:
                 if t in OP_STATE and is_(t, OP_STATE[t][0], "machineState", "run"):
                     phi_int += G[t]
             fh = devs.get("floor_heating")
-            phi_floor = 0.0
-            if fh is not None and fh.state.get("thermostatMode.thermostatMode") == "heat" \
-                    and fh.state.get("thermostatOperatingState.thermostatOperatingState") == "heating":
+            phi_floor_up = phi_floor_down = 0.0
+            if fh is not None:  # the heated floor layer: warmed by the pipes while the valve is open, gives heat to the room
                 F = E["floor"]
-                phi_floor = F["wPerM2"] * af * max(0.0, F["supplyC"] - e["temperature"]) / (F["refSupplyC"] - F["refRoomC"])
+                if e.get("floor") is None:
+                    e["floor"] = e["temperature"]
+                pipe = F["kPipe"] * af * (F["supplyC"] - e["floor"]) if fh.state.get("thermostatOperatingState.thermostatOperatingState") == "heating" else 0.0
+                phi_floor_up = F["hUp"] * af * (e["floor"] - e["temperature"])
+                phi_floor_down = F["downShare"] * max(0.0, phi_floor_up)
+                e["floor"] += (pipe - phi_floor_up - phi_floor_down) * dt * 60 / (F["cPerM2"] * af)
             phi_ia = 0.5 * phi_int
             phi_m = a_m / a_tot * (0.5 * phi_int + phi_sol)
-            phi_st = (1 - a_m / a_tot - h_win / (E["hMs"] * a_tot)) * (0.5 * phi_int + phi_sol)
+            phi_st = (1 - a_m / a_tot - h_win / (E["hMs"] * a_tot)) * (0.5 * phi_int + phi_sol) + phi_floor_up
             t_out, ta, tm = out["temperature"], e["temperature"], e["mass"]
             ts = (h_is * ta + h_ms * tm + h_win * t_out + phi_st) / (h_is + h_ms + h_win)
             sec = dt * 60
             e["temperature"] = ta + (h_ve * (t_out - ta) + h_is * (ts - ta) + phi_ia) * sec / c_air
-            e["mass"] = tm + (h_ms * (ts - tm) + h_em * (t_out - tm) + phi_m + phi_floor) * sec / c_m
+            e["mass"] = tm + (h_ms * (ts - tm) + h_em * (t_out - tm) + phi_m + phi_floor_down) * sec / c_m
             if e.get("vapor") is None:
                 e["vapor"] = vapor_from_rh(e["humidity"], e["temperature"])
             e["vapor"] += (vapor_from_rh(out["humidity"], out["temperature"]) + (0 if is_open else PHYS["moistureOffset"]) - e["vapor"]) * min(1, k * dt)
