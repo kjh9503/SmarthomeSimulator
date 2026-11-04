@@ -96,6 +96,11 @@ cooling); sleeping with cooling on conflicts with the bedtime off check.
   Now a planned rule's conditions are judged at its minute (place, devices etc. as now) and travel home is not a
   departure. p63_a skips 10 -> 0; the test profile still has 0 short on->off by a check. Left: a planned rule with
   `probability` < 1 still counts as certain.
+- Wrong-skip check (2026-11-04): every skip is recorded and checked: did the person leave home (the trip's start) or
+  fall asleep (seen up to a minute late, so one minute of grace) within the device's minimum time? `plan_skips.jsonl`
+  (one skip a line, `wrong`) and `planSkips` in the summary (by kind of source). Result [ours, one year]: 063 2 wrong of
+  11, test profile 5 wrong of 87; all wrong ones came from daily rules with probability < 1 (`r_to_campus` 0.92,
+  `r_weekend_out`, `r_sunday_run`).
 - **keepOn** (2026-11-03): a switch-on meant to stay on while away or asleep (e.g. cooling before leaving on a hot day)
   carries `"keepOn": true`. Engine: not skipped by the rule above; the leaving and bedtime checks leave that device on
   (the morning check does not); cleared on arriving home or waking. Prompt: so that keepOn is not a hint for patterns,

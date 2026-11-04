@@ -173,6 +173,7 @@ class AgentRunner:
         self.check_stats = {k: dict(checked=0, turnedOff=0, leftOn=0) for k in ("bedtime", "leaving", "morning")}
         cm = profile.get("cookingMinutes")
         self.cook_default = cm or dict(dist="lognormal", median=15, sigma=0.6)
+        self.plan_skips, self.plan_src = [], None  # switch-ons skipped by the plan rule, for the wrong-skip check
         self.keep_on = set()  # devices switched on with keepOn: left out of the leaving / bedtime checks
         self.behaviours = []
         for b in profile["behaviours"]:
@@ -298,7 +299,7 @@ class AgentRunner:
         self.prev_person = b
         H = self.happenings
         if not a["trip"] and b["trip"]:
-            H.append(("person", dict(what="depart", place=b["trip"]["frm"])))
+            H.append(("person", dict(what="depart", place=b["trip"]["frm"], at=b["trip"].get("start"))))
         if a["trip"] and not b["trip"]:
             H.append(("person", dict(what="arrive", place=b["place"])))
         if b["room"] and b["room"] != a["room"]:
@@ -693,6 +694,7 @@ class AgentRunner:
         """earliest planned time >= t at which the person leaves home or goes to sleep: today's daily rules (their minute
         is drawn now if their window has not opened yet, the same way the trigger draws it) and running tasks"""
         S, best = self.S, None
+        self.plan_src = None
         leaves = lambda acts: any((x["do"] == "person.travel" and S["place"] == "home" and not S["trip"]
                                    and (x.get("args") or {}).get("to") != "home") or x["do"] == "phone.sleep" for x in acts)
         d0 = start_of_day(t)
@@ -717,16 +719,21 @@ class AgentRunner:
                 continue  # its conditions would be false then (judged now, at that minute): no departure or sleep from it
             if dl["at"] >= this_minute and (best is None or dl["at"] < best):
                 best = max(dl["at"], t)
+                self.plan_src = dict(kind="daily", rule=b["id"], probability=b.get("probability"))
         for x in self.scheduled:  # event rules with a delay: their time is already set
             if x["kind"] == "eventCheck" and x["at"] >= this_minute and leaves(x["b"]["actions"]) and self.all_conds(x["b"].get("conditions"), x["at"]):
-                best = max(x["at"], t) if best is None else min(best, max(x["at"], t))
+                if best is None or max(x["at"], t) < best:
+                    best = max(x["at"], t)
+                    self.plan_src = dict(kind="eventCheck", rule=x["b"]["id"], probability=x["b"].get("probability"))
         for k in self.tasks:
             if k is task or k["finished"] or not leaves(k["actions"][k["i"]:]):
                 continue
             at = max(t, k["until"] or t)
-            best = at if best is None else min(best, at)
+            if best is None or at < best:
+                best, self.plan_src = at, dict(kind="runningTask", rule=k["b"]["id"])
         if task is not None and leaves(task["actions"][task["i"]:]):
-            best = t if best is None else min(best, t)
+            if best is None or t < best:
+                best, self.plan_src = t, dict(kind="sameRule", rule=task["b"]["id"])
         return best
 
     def leaving_soon(self, a, task):
@@ -737,7 +744,12 @@ class AgentRunner:
             return False
         t = self.now()
         p = self.next_plan(t, task)
-        return p is not None and p - t < m * MIN_MS
+        skip = p is not None and p - t < m * MIN_MS
+        if skip:  # checked later: did the person really leave home or fall asleep within the device's minimum time?
+            ar = a.get("args") or {}
+            self.plan_skips.append(dict(t=t, rule=task["b"]["id"] if task else None, device=self.dev_id(ar["device"]) if ar.get("device") else a["do"],
+                                        minimum=m, plannedAt=p, source=self.plan_src, confirmedAt=None))
+        return skip
 
     def phone_day_mult(self, t):
         """today's factor on the rate of phone-use rules: lognormal with mean 1 and sigma phoneHabits.dailySigma
@@ -1152,6 +1164,12 @@ class AgentRunner:
             guard += 1
             batch, self.happenings = self.happenings, []
             for src, h in batch:
+                if src == "person" and ((h["what"] == "depart" and h.get("place") == "home") or (h["what"] == "fall_asleep" and h.get("place") == "home")):
+                    # when it happened: a trip's own start; sleep is seen up to a minute late (person_changes runs per minute)
+                    now, grace = (h["at"], 0) if h.get("at") else (self.now(), MIN_MS)
+                    for k in self.plan_skips:
+                        if k["confirmedAt"] is None and k["t"] <= now <= k["t"] + k["minimum"] * MIN_MS + grace:
+                            k["confirmedAt"], k["by"] = now, h["what"]
                 if src == "person" and (h["what"] == "wake" or (h["what"] == "arrive" and h.get("place") == "home")):
                     self.keep_on.clear()  # the reason to keep it on (away, asleep) is over: an ordinary device again
                 if src == "person" and h["what"] == "wake" and self.S["place"] == "home" and self.left_overnight:
@@ -1342,6 +1360,18 @@ class AgentRunner:
         self.phone_f.close()
         if self.trace_f:
             self.trace_f.close()
+        with open(os.path.join(self.out_dir, "plan_skips.jsonl"), "w", encoding="utf-8") as f:
+            for k in self.plan_skips:
+                f.write(json.dumps(dict(k, t=iso_local(k["t"]), plannedAt=iso_local(k["plannedAt"]), wrong=k["confirmedAt"] is None,
+                                        confirmedAt=iso_local(k["confirmedAt"]) if k["confirmedAt"] else None), ensure_ascii=False) + "\n")
+        n_wrong = sum(1 for k in self.plan_skips if k["confirmedAt"] is None)
+        plan_check = dict(skips=len(self.plan_skips), wrong=n_wrong, bySource={})
+        for k in self.plan_skips:
+            src = k["source"] or {}
+            key = src.get("kind", "?") + ("" if src.get("probability") in (None, 1) else ", probability < 1")
+            e = plan_check["bySource"].setdefault(key, dict(skips=0, wrong=0))
+            e["skips"] += 1
+            e["wrong"] += k["confirmedAt"] is None
         for gt in list(self.gt_open):  # still running when the year ended
             for e in gt.get("reverts", []):
                 if e["result"] is None:
@@ -1353,7 +1383,7 @@ class AgentRunner:
         summary = dict(personaId=self.P["personaId"], houseId=self.sim.house_id, houseType=self.sim.type, variant=self.P["variant"], startDate=self.P["simulation"]["startDate"], days=self.days,
                        seed=self.seed, homeLines=self.n_home, phoneEvents=self.n_phone,
                        cooking=dict(times=len(c), minutesMedian=q(0.5), minutesP10=q(0.1), minutesP90=q(0.9), minutesMax=c[-1] if c else None),
-                       behaviours=self.stats, checks=self.check_stats, seconds=round(_time.time() - t0))
+                       behaviours=self.stats, checks=self.check_stats, planSkips=plan_check, seconds=round(_time.time() - t0))
         with open(os.path.join(self.out_dir, "summary.json"), "w", encoding="utf-8") as f:
             json.dump(summary, f, indent=2, ensure_ascii=False)
             f.write("\n")
