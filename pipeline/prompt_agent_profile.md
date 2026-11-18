@@ -151,6 +151,23 @@ at night; long days out on cold days -> keepWhenOutdoorBelowC).
 }
 ```
 
+### Ventilation habits
+
+New flats have a ventilation unit (0.5 air changes per hour). It is not a SmartThings device: it writes no lines and is
+never written as rules. Write `ventilationRanges` from the persona; `pipeline/sample_ventilation_person.py` draws the
+person's `ventilationHabits`. About half of households use the unit at all (47.5%, survey 2011); people who do not use
+it give the electricity bill, the noise and cold draught in winter as reasons. Nothing is known about hours of use:
+choose `when` and `winter` from the persona and say why in `notes` (e.g. sensitive to dust or smells -> uses it, runs it
+always; careful with the bill -> no, or only while home; feels the cold -> "off" in winter).
+
+```json
+"ventilationRanges": {
+  "uses": { "yes": 1, "no": 1 },
+  "when": { "always": 1, "home": 2, "awake": 2 },
+  "winter": { "run": 2, "off": 1 }
+}
+```
+
 ### Phone use
 
 Write everyday phone use with `phone.useApps`, not with phone.openApp / wait / phone.closeApp. One `phone.useApps`

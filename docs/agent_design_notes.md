@@ -318,6 +318,24 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
   - Not changed: the browser JS simulator and `tools/physics_script.json`. `vocabulary.json` (normally extracted from the
     JS) was edited from the Python device spec.
 
+- Heating energy vs measured (2026-11-18). Lee et al. 2014 (104.6-107.7 kWh/m2 a) is heating plus hot water ("not
+  separated") in flats built 1991-2008. Seoul end-use metering (Jin et al. 2019): heating 83.5, hot water 24.8 kWh/m2 a,
+  so heating alone in Lee's figure is about 81. 063 with older U-values (wall 0.47, window 3.84): 72.9; plus 0.5 air
+  changes/h: 79.5 [ours, one year]. So the gap is mostly the envelope standard and the hot water. Neighbours at 22 C are
+  not the cause: 063 heats above 23 C and loses heat to them (-5.0); without them 21.7. No measured figure found for flats
+  built to the 2018+ standard. Heating-season balance (063, kWh/m2): windows -17.6, ventilation/infiltration -10.9,
+  floor heating downwards -5.2, neighbours -5.0, walls -4.1, sun +9.8, internal +4.5, floor heating 29.2.
+- Ventilation habits (2026-11-18; agreed: a per-person habit, effect only when SmartThings has no device for it). Flats of
+  30+ households since 2006-02 must be able to ventilate 0.5/h (Rules on Building Equipment Standards art. 11, annex 1-5;
+  checked through commentary pages, not the statute text). No ventilator / ERV capability among the 328 standard and 182
+  extension capabilities (Flobul), so there is no device and no line: `house.py` `envelope.ventilator` 0.5/h, 46% heat and
+  moisture recovery (winter measurement, Kim, Park & Sohn 2005), 60% outdoor-air filter on PM2.5 (annex 1-5, KS B 6141),
+  the same in every room [assume]. The LLM writes `ventilationRanges` (uses yes/no, when always/home/awake, winter run/off);
+  `pipeline/sample_ventilation_person.py` draws `ventilationHabits`. 47.5% of households use the unit (Gallup 2011 for
+  Samsung C&T, cited by Lee 2016; reasons for not using it: bill, noise, cold draught). No data on hours of use.
+  - Check [ours, one year, 063 with the habit varied]: heating 29.2 (not used) -> 29.7 (always, off in winter) / 35.7
+    (awake) / 40.4 (home) / 45.2 (always) kWh/m2 a. Winter room1 CO2 (median of report lines) 903 -> 611 ppm (always),
+    PM2.5 21 -> 15. Winter humidity 23-24% either way (looks low; to check). 063 drew always, running in winter.
 - Python port equals the JS simulator: outdoor values within 1e-12, physics within 1e-15 (`tests/test_port.py`).
 - 2026 weather vs climate normals [ours]: monthly max/min temperature within 0.9 C, PM within 1.2 ug/m3, 86 wet days
   vs 79.3, 1,509 mm vs 1,418 mm.
@@ -336,6 +354,11 @@ immediate response timing, gap-dependent off probabilities, persona -> daily-lif
 
 | Short name | Reference | Used for | Read |
 |---|---|---|---|
+| Lee 2014 | Lee W.-J., Kang E.-C., Lee E.-J., Shin U.-C. A Study on the Calculation of Thermal Consumption Unit of Apartment. KJACR 26(8) 388-393, 2014. https://koreascience.kr/article/JAKO201428854482525.pdf | measured comparison (heating + hot water, built 1991-2008) | web summary |
+| Jin 2019 | Jin H. S. et al. Analysis of annual EUIs by end-use in apartment units (2017-2018). E3S Web Conf. 111, 04013 (CLIMA 2019). https://www.e3s-conferences.org/articles/e3sconf/pdf/2019/37/e3sconf_clima2019_04013.pdf | heating / hot water split (71 Seoul flats) | web summary |
+| Kim 2005 | Kim S.-M., Park B.-Y., Sohn J.-Y. Evaluation of the Performance and the Energy Consumption Characteristics of Heat Recovery Ventilators in Apartments, 2005. https://koreascience.or.kr/article/JAKO200520828120913.page | ventilator heat recovery 46% | abstract |
+| Lee 2016 (vent.) | Lee E.-T. Regulations and Technology Trends of Ventilation Systems in Apartment Housing. Air Cleaning Technology 29(1) 32-42, 2016. https://koreascience.kr/article/JAKO201654942433481.pdf | 47.5% use the unit (Gallup 2011), reasons | web summary |
+| Equipment rules art. 11 | Rules on Building Equipment Standards art. 11, annex 1-5 (commentary: nepla.ai, yugacrew.com) | 0.5/h ventilation, 60% filter | commentary pages, not the statute |
 | Samsung service dryer | [Samsung dryer] dryer course functions. https://www.samsungsvc.co.kr/solution/1052607 | dryer standard course time (9 kg) | web summary |
 | Flobul | Flobul/smartthings-capabilities (GitHub, 2026-05): 548 capability definitions fetched from the SmartThings API (328 standard) | device definition names | repository cloned and read |
 | Winbush 2025 | Winbush A., McDuff D., Hernandez J., et al. Smartphone use in a large US adult population: Temporal associations between objective measures of usage and mental well-being. PNAS 122(43) e2427311122, 2025. https://doi.org/10.1073/pnas.2427311122 | unlocks and app time per person | full PDF (user) |

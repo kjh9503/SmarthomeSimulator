@@ -41,6 +41,10 @@ HEAT_ON_BELOW_K = 1.0  # the person switches the floor heating on when the room 
 HEAT_UNUSED_MIN = 30  # a heated room left this long is switched off by people who switch off unused rooms
 HEAT_ROOM = dict(dining_room="living_room", hallway="living_room", entryway="living_room")  # open plan: the living room's
 DEFER_MAX_MIN = 180  # a daily behaviour waits at most this long after its minute
+# ventilation habits (profile ventilationHabits, drawn by pipeline/sample_ventilation_person.py; agreed 2026-11-18): the
+# flat's ventilation unit (house.py PHYS envelope.ventilator) runs always / while someone is home / while the person is
+# home and awake; "winter": "off" stops it while the outdoor daily mean is below HEAT_SEASON_MEAN_C (cold draught is one of
+# the reasons people give for not using it). No device and no log lines (no SmartThings capability for it).
 
 
 def _norm(v):
@@ -183,6 +187,8 @@ class AgentRunner:
         self.keep_on = set()  # devices switched on with keepOn: left out of the leaving / bedtime checks
         self.heat = profile.get("heatingHabits")  # None: no heating habits (heating only by the profile's rules)
         self.heat_stats = dict(switchedOn=0, setpoint=0, sleepLower=0, sleepOff=0, leaveLower=0, leaveOff=0, keptOn=0, unusedOff=0)
+        self.vent = profile.get("ventilationHabits")  # None: no ventilation unit running
+        self.vent_minutes = dict(season=0, other=0)
         self.behaviours = []
         for b in profile["behaviours"]:
             acts, merged = self.merge_app_steps(b["actions"])
@@ -837,6 +843,19 @@ class AgentRunner:
         if self.heat_cmd(d, "setThermostatMode", "thermostatMode", ["off"])["result"] == "done":
             self.heat_stats["unusedOff"] += 1
 
+    # ----- ventilation habits -----
+    def ventilation_tick(self, t):
+        """the ventilation unit runs or not this minute, as the person's ventilationHabits say (effect only, no lines)"""
+        V, S = self.vent, self.S
+        on = False
+        season = outdoor_at(t)["meanTemperature"] < HEAT_SEASON_MEAN_C
+        if V and V.get("uses") and not (season and V.get("winter") == "off"):
+            home = S["place"] == "home" and not S["trip"]
+            on = V["when"] == "always" or (V["when"] == "home" and home) or (V["when"] == "awake" and home and not S["asleep"])
+        self.sim.house.env.ventilator = on
+        if on:
+            self.vent_minutes["season" if season else "other"] += 1
+
     def phone_day_mult(self, t):
         """today's factor on the rate of phone-use rules: lognormal with mean 1 and sigma phoneHabits.dailySigma
         (within-person day-to-day variation; Appiah et al. 2026: unlock CV mostly above 25%, examples 16% and 60%)"""
@@ -1442,6 +1461,7 @@ class AgentRunner:
                     self.process_happenings()
             self.tasks = [k for k in self.tasks if not k["finished"]]
             self.heating_tick(t)
+            self.ventilation_tick(t)
             self.maybe_glance(t)
             self.sim.clock.set_to(t)
             if t % (6 * 3600000) == 0:
@@ -1485,7 +1505,9 @@ class AgentRunner:
                        seed=self.seed, homeLines=self.n_home, phoneEvents=self.n_phone,
                        cooking=dict(times=len(c), minutesMedian=q(0.5), minutesP10=q(0.1), minutesP90=q(0.9), minutesMax=c[-1] if c else None),
                        behaviours=self.stats, checks=self.check_stats, planSkips=plan_check, heating=dict(self.heat_stats, kWh=round(sum(self.sim.house.env.heat_wh.values()) / 1000, 1),
-                                       kWhPerM2=round(sum(self.sim.house.env.heat_wh.values()) / 1000 / self.sim.house.profile["areaM2"], 1)), seconds=round(_time.time() - t0))
+                                       kWhPerM2=round(sum(self.sim.house.env.heat_wh.values()) / 1000 / self.sim.house.profile["areaM2"], 1)),
+                       ventilation=dict(habits=self.vent, hoursInHeatingSeason=round(self.vent_minutes["season"] / 60), hoursOtherwise=round(self.vent_minutes["other"] / 60)),
+                       seconds=round(_time.time() - t0))
         with open(os.path.join(self.out_dir, "summary.json"), "w", encoding="utf-8") as f:
             json.dump(summary, f, indent=2, ensure_ascii=False)
             f.write("\n")

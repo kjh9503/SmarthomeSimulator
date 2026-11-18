@@ -352,6 +352,72 @@
     "heatingPerson": {
       "type": "object",
       "description": "Written by pipeline/sample_heating_person.py: seed and the ranges used. Not read by the engine."
+    },
+    "ventilationRanges": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Use of the flat's ventilation unit as weights chosen from the persona; pipeline/sample_ventilation_person.py draws ventilationHabits from them. The unit has no SmartThings capability: it writes no lines, only its effect on the rooms. Do not write ventilation routines.",
+      "required": [
+        "uses",
+        "when",
+        "winter"
+      ],
+      "properties": {
+        "uses": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "yes": {
+              "type": "number",
+              "minimum": 0
+            },
+            "no": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "when": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "always": {
+              "type": "number",
+              "minimum": 0
+            },
+            "home": {
+              "type": "number",
+              "minimum": 0
+            },
+            "awake": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "winter": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "run": {
+              "type": "number",
+              "minimum": 0
+            },
+            "off": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    },
+    "ventilationHabits": {
+      "type": "object",
+      "description": "Written by pipeline/sample_ventilation_person.py; read by the engine."
+    },
+    "ventilationPerson": {
+      "type": "object",
+      "description": "Written by pipeline/sample_ventilation_person.py: seed and the weights used. Not read by the engine."
     }
   }
 }

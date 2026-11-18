@@ -61,6 +61,17 @@ Not done yet:
 - Humidifier: `humidifierMode` auto / low / medium / high instead of `humiditySetpoint` (agreed); effect of each mode
   on room humidity still to decide.
 - Master bathroom: no rule in 063 uses it yet (only sensor lines).
+- Heating energy vs measured (2026-11-18): explained mostly by hot water in the measured figure and older envelopes (design
+  notes section 12). Ventilation unit added as a per-person habit (effect only, no device).
+- Winter window airing: 75% of households open windows 1-2 times a day, under 10 min (Cho & Choi 2013, 20 flats in
+  Cheongju); 063 opens a window about 0.2 times a day in Nov-Mar. Not decided whether it becomes a habit too.
+- Winter indoor humidity: report lines in Dec-Feb show 23-24% in 063 (with or without the ventilation unit); to check
+  against measurements.
+- Stove gain 2000 W (2026-11-18): every switch-on adds 2000 W to the kitchen air, no range hood. Gas range: 30% of the gas
+  becomes room heat (Building America benchmark); a 3-burner range uses 8.84 kW in all (Rinnai RBR-S3000), one burner not
+  found. 063: 240 uses, median 9 min, max 54 min; a 240-minute test takes the kitchen to 36 C. To decide.
+- Cooling RH 100% (seen earlier): not reproduced in a 4-hour test on commits 318b564 / a3c4d77 / 8eb2550 (85-90% at
+  16 C); where it came from is not found.
 - Wrong skips from deferred departures (not a problem, agreed 2026-11-04): a daily departure rule deferred while the person is busy can leave later than
   the device minimum (dryer test profile: 1 of 72, r_to_campus 08:21 planned, left 08:39) (2026-11-04).
 - Browser JS simulator: still the old appliance capabilities (cycleState etc.); vocabulary.json now follows the

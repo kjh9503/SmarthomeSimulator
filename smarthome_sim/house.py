@@ -93,7 +93,14 @@ PHYS = dict(
                   # (Jang et al. 2007: wood 52.0 up, 10.8 down, mean surface 26.8 C). Downward heat goes to the flat below.
                   floor=dict(supplyC=40.0, bandK=0.5, cPerM2=80000, hUp=11.1, kPipe=4.72, downShare=10.8 / 52.0),
                   uPartyFloor=0.810, neighbourC=22.0, neighbourHeatingBelowMeanC=15.0,
-                  gains=dict(person=65, lightPerM2=10, tv=100, stove=2000, oven=2000, dryer=300, washer=150, dishwasher=300)),
+                  gains=dict(person=65, lightPerM2=10, tv=100, stove=2000, oven=2000, dryer=300, washer=150, dishwasher=300),
+                  # ventilation unit (2026-11-18): flats of 30+ households built or remodelled since 2006-02 must be able to
+                  # ventilate 0.5 air changes per hour (natural or mechanical; Rules on Building Equipment Standards art. 11,
+                  # annex 1-5: the "proper" fan step gives 0.5/h). It runs when the person's ventilationHabits say so; it has
+                  # no SmartThings capability, so it is not a device and writes no lines, only its effect on every room.
+                  # Heat recovery: 46% total heat recovery measured in winter in Korean flats (Kim, Park & Sohn 2005),
+                  # applied to heat and moisture; outdoor-air filter 60% (annex 1-5, KS B 6141), applied to PM2.5.
+                  ventilator=dict(ach=0.5, recovery=0.46, filter=0.60)),
     # air between rooms (2026-11-04). Open door / open plan: buoyancy flow through an opening, one direction
     # Q = Cd/3 * W * H * sqrt(g * H * dT / T) (Brown & Solvason 1962), Cd = 0.0835 * (dT/T)^-0.313 measured through a
     # doorway (Riffat 1989, ASHRAE Trans. 95(2); a doorway between floors), dT held within the measured 0.5-13 K (below 0.5 K
@@ -329,6 +336,7 @@ class Environment:
         out = outdoor_at(ms)
         self.rooms = {}
         self.heat_wh = {}  # floor heating heat delivered per room (Wh)
+        self.ventilator = False  # the flat's ventilation unit running (set by the agent from ventilationHabits; no device)
         for r in house.room_ids:
             self.rooms[r] = (dict(temperature=out["temperature"], humidity=out["humidity"], pm25=out["pm25"], co2=out["co2"],
                                   illuminance=out["daylight"], noise=out["noise"]) if r == "balcony"
@@ -402,7 +410,9 @@ class Environment:
             af = p["areaM2"]
             vol = af * PHYS["ceilingM"]
             k_inf = E["ach"] / 60  # per minute
-            k = k_open + k_inf  # outdoor air reaching the room, per minute
+            V = E["ventilator"]
+            k_vent = V["ach"] / 60 if self.ventilator else 0.0  # outdoor air brought in by the ventilation unit, per minute
+            k = k_open + k_inf + k_vent * (1 - V["recovery"])  # outdoor air reaching the room, per minute (heat and moisture)
             if e.get("mass") is None:
                 e["mass"] = e["temperature"]
             # 5R1C heat balance, explicit in one-minute steps (air time constant about 3 min)
@@ -455,6 +465,9 @@ class Environment:
             e["vapor"] += (vapor_from_rh(out["humidity"], out["temperature"]) + (0 if is_open else PHYS["moistureOffset"]) - e["vapor"]) * min(1, k * dt)
             e["pm25"] += (out["pm25"] - e["pm25"]) * (k_open if is_open else PHYS["pmInfiltration"] * wall_share) * dt
             e["co2"] += (out["co2"] - e["co2"]) * (0.05 if is_open else 0.003) * dt
+            if k_vent:
+                e["pm25"] += (out["pm25"] * (1 - V["filter"]) - e["pm25"]) * k_vent * dt
+                e["co2"] += (out["co2"] - e["co2"]) * k_vent * dt
             if occ:
                 e["co2"] += 10 * sf * dt
                 e["vapor"] += PHYS["moisture"]["person"] * sf * dt
