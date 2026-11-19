@@ -328,14 +328,17 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
 - Ventilation habits (2026-11-18; agreed: a per-person habit, effect only when SmartThings has no device for it). Flats of
   30+ households since 2006-02 must be able to ventilate 0.5/h (Rules on Building Equipment Standards art. 11, annex 1-5;
   checked through commentary pages, not the statute text). No ventilator / ERV capability among the 328 standard and 182
-  extension capabilities (Flobul), so there is no device and no line: `house.py` `envelope.ventilator` 0.5/h, 46% heat and
-  moisture recovery (winter measurement, Kim, Park & Sohn 2005), 60% outdoor-air filter on PM2.5 (annex 1-5, KS B 6141),
+  extension capabilities (Flobul), so there is no device and no line: `house.py` `envelope.ventilator` 0.5/h, heat and moisture
+  recovery 46% when outdoor air is colder than the room and 27% when warmer (field means for winter and summer, Kim, Park &
+  Sohn 2005; agreed 2026-11-19: chosen each minute, so spring and autumn switch within a day; using them between seasons
+  and for moisture is [assume]; certified lab ratings are higher, Shin et al. 2014), 60% outdoor-air filter on PM2.5 (annex 1-5, KS B 6141),
   the same in every room [assume]. The LLM writes `ventilationRanges` (uses yes/no, when always/home/awake, winter run/off);
   `pipeline/sample_ventilation_person.py` draws `ventilationHabits`. 47.5% of households use the unit (Gallup 2011 for
   Samsung C&T, cited by Lee 2016; reasons for not using it: bill, noise, cold draught). No data on hours of use.
   - Check [ours, one year, 063 with the habit varied]: heating 29.2 (not used) -> 29.7 (always, off in winter) / 35.7
     (awake) / 40.4 (home) / 45.2 (always) kWh/m2 a. Winter room1 CO2 (median of report lines) 903 -> 611 ppm (always),
-    PM2.5 21 -> 15. Winter humidity 23-24% either way (looks low; to check). 063 drew always, running in winter.
+    PM2.5 21 -> 15. Winter humidity 23-24% either way (looks low; to check). 063 drew always, running in winter. With 27% added (2026-11-19) the run is unchanged:
+    in Jul-Aug the 063 living room is always warmer than outdoors (hourly median 32.2 C vs 25.6 C), so 46% applies.
 - Python port equals the JS simulator: outdoor values within 1e-12, physics within 1e-15 (`tests/test_port.py`).
 - 2026 weather vs climate normals [ours]: monthly max/min temperature within 0.9 C, PM within 1.2 ug/m3, 86 wet days
   vs 79.3, 1,509 mm vs 1,418 mm.

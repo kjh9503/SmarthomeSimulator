@@ -98,9 +98,14 @@ PHYS = dict(
                   # ventilate 0.5 air changes per hour (natural or mechanical; Rules on Building Equipment Standards art. 11,
                   # annex 1-5: the "proper" fan step gives 0.5/h). It runs when the person's ventilationHabits say so; it has
                   # no SmartThings capability, so it is not a device and writes no lines, only its effect on every room.
-                  # Heat recovery: 46% total heat recovery measured in winter in Korean flats (Kim, Park & Sohn 2005),
-                  # applied to heat and moisture; outdoor-air filter 60% (annex 1-5, KS B 6141), applied to PM2.5.
-                  ventilator=dict(ach=0.5, recovery=0.46, filter=0.60)),
+                  # Heat recovery: total (heat + moisture) recovery measured in Korean flats, 46% in winter and 27% in
+                  # summer (Kim, Park & Sohn 2005). Chosen each minute by which air is warmer (agreed 2026-11-19): outdoor
+                  # colder than the room -> 46%, outdoor warmer -> 27%; so spring and autumn switch between the two within
+                  # a day (the exchanger is passive: heat goes from the warmer stream to the colder). Using the two
+                  # seasonal averages in between seasons, and the same factor for moisture, are [assume]. Lab ratings are
+                  # higher (certified units 2014: cooling 45-71.4%, mean 52.7; heating 70-87%, mean 73.5; Shin et al.
+                  # 2014). Outdoor-air filter 60% (annex 1-5, KS B 6141, counting method), applied to PM2.5 [assume].
+                  ventilator=dict(ach=0.5, recoveryHeating=0.46, recoveryCooling=0.27, filter=0.60)),
     # air between rooms (2026-11-04). Open door / open plan: buoyancy flow through an opening, one direction
     # Q = Cd/3 * W * H * sqrt(g * H * dT / T) (Brown & Solvason 1962), Cd = 0.0835 * (dT/T)^-0.313 measured through a
     # doorway (Riffat 1989, ASHRAE Trans. 95(2); a doorway between floors), dT held within the measured 0.5-13 K (below 0.5 K
@@ -412,7 +417,8 @@ class Environment:
             k_inf = E["ach"] / 60  # per minute
             V = E["ventilator"]
             k_vent = V["ach"] / 60 if self.ventilator else 0.0  # outdoor air brought in by the ventilation unit, per minute
-            k = k_open + k_inf + k_vent * (1 - V["recovery"])  # outdoor air reaching the room, per minute (heat and moisture)
+            rec = V["recoveryHeating"] if out["temperature"] < e["temperature"] else V["recoveryCooling"]
+            k = k_open + k_inf + k_vent * (1 - rec)  # outdoor air reaching the room, per minute (heat and moisture)
             if e.get("mass") is None:
                 e["mass"] = e["temperature"]
             # 5R1C heat balance, explicit in one-minute steps (air time constant about 3 min)
