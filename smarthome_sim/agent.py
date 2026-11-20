@@ -41,6 +41,21 @@ HEAT_ON_BELOW_K = 1.0  # the person switches the floor heating on when the room 
 HEAT_UNUSED_MIN = 30  # a heated room left this long is switched off by people who switch off unused rooms
 HEAT_ROOM = dict(dining_room="living_room", hallway="living_room", entryway="living_room")  # open plan: the living room's
 DEFER_MAX_MIN = 180  # a daily behaviour waits at most this long after its minute
+# cooling and window habits (profiles coolingHabits / windowHabits, drawn by pipeline/sample_cooling_person.py and
+# pipeline/sample_window_person.py; agreed 2026-11-20). Cooling: awake at home, the room the person is in is cooled when
+# it reaches onAboveC (Seoul flats: switched on at 29.8 C, off at 27.3 C on average, Chun & Bae 2005), to setpointC
+# (rooms with cooling on: 25.2 C, Yun et al. 2020); its window is closed first. Bedtime / leaving: keep or off; a cooled
+# room left COOL_UNUSED_MIN is switched off by people who do that. Windows: in hot rooms, opened when the room reaches
+# openAboveC and outdoor air is cooler (no data; the LLM's choice), closed again when the room is WINDOW_CLOSE_BELOW_K
+# below openAboveC, when outdoor air is hotter, for cooling, for rain or snow, when leaving, and at bedtime unless the
+# person sleeps with it open on warm nights. Airing: 0-2 times a day, morning 9-11 / evening 17-19 (spring survey of 154
+# Seoul/Gyeonggi flats: once a day 49.7%, twice 30.7%; mornings 9-11 55.8%, evenings 17-19 33.4%; under 20 min 43.0%,
+# 20-40 min 39.6%; Lee 2010), shorter in the heating season (winter: 75% open 1-2 times a day, under 10 min; Cho & Choi
+# 2013). With these habits the off rules for cooling units and windows are not used.
+COOL_UNUSED_MIN = 30
+COOL_ROOM = dict(kitchen="living_room", dining_room="living_room", hallway="living_room", entryway="living_room")  # no unit there: the living room's
+WINDOW_CLOSE_BELOW_K = 2.0
+AIRING_SLOTS = [(9, 11, 55.8), (17, 19, 33.4)]  # local hours and the survey's share for one airing a day
 # ventilation habits (profile ventilationHabits, drawn by pipeline/sample_ventilation_person.py; agreed 2026-11-18): the
 # flat's ventilation unit (house.py PHYS envelope.ventilator) runs always / while someone is home / while the person is
 # home and awake; "winter": "off" stops it while the outdoor daily mean is below HEAT_SEASON_MEAN_C (cold draught is one of
@@ -187,6 +202,12 @@ class AgentRunner:
         self.keep_on = set()  # devices switched on with keepOn: left out of the leaving / bedtime checks
         self.heat = profile.get("heatingHabits")  # None: no heating habits (heating only by the profile's rules)
         self.heat_stats = dict(switchedOn=0, setpoint=0, sleepLower=0, sleepOff=0, leaveLower=0, leaveOff=0, keptOn=0, unusedOff=0)
+        self.cool = profile.get("coolingHabits")  # None: cooling only by the profile's rules
+        self.win = profile.get("windowHabits")  # None: windows only by the profile's rules
+        self.cool_stats = dict(switchedOn=0, setpoint=0, sleepOff=0, leaveOff=0, keptOn=0, unusedOff=0)
+        self.win_stats = dict(hotOpen=0, closedCool=0, closedHotOutside=0, closedRain=0, closedForCooling=0, airings=0, sleepOpen=0, closedAtCheck=0)
+        self.airing_plan = {}  # local day -> list of dict(at, until, done)
+        self.win_hot, self.win_airing = set(), set()  # windows the habit opened because of heat / for airing
         self.vent = profile.get("ventilationHabits")  # None: no ventilation unit running
         self.vent_minutes = dict(season=0, other=0)
         self.behaviours = []
@@ -843,6 +864,164 @@ class AgentRunner:
         if self.heat_cmd(d, "setThermostatMode", "thermostatMode", ["off"])["result"] == "done":
             self.heat_stats["unusedOff"] += 1
 
+    # ----- cooling habits -----
+    def cool_unit(self, room):
+        d = self.sim.house.at(room, "heating_cooling_unit")
+        if d is None and room in COOL_ROOM:
+            d = self.sim.house.at(COOL_ROOM[room], "heating_cooling_unit")
+        return d
+
+    def cool_cmd(self, d, cmd, cap, args):
+        here = self.S["place"] == "home" and self.cool_unit(self.S["room"]) is d
+        return self.exec(dict(do="home.command", args=dict(device=d.id, capability=cap, command=cmd, args=args,
+                                                          channel="physical" if here else "mobile_app")))
+
+    def cooling_tick(self, t):
+        """awake at home: the room the person is in is cooled to setpointC once it reaches onAboveC (its window closed first)"""
+        C, S = self.cool, self.S
+        if not C or not C.get("uses") or S["place"] != "home" or S["trip"] or S["asleep"]:
+            return
+        d = self.cool_unit(S["room"])
+        if d is None:
+            return
+        mode, sp = d.get("thermostatMode", "thermostatMode"), d.get("thermostatCoolingSetpoint", "coolingSetpoint")
+        if mode != "cool" and self.sim.house.env.rooms[d.roomId]["temperature"] >= C["onAboveC"]:
+            on = dict(do="home.command", args=dict(device=d.id, capability="thermostatMode", command="setThermostatMode", args=["cool"]))
+            if self.leaving_soon(on, None):
+                return
+            w = self.win_dev(d.roomId)
+            if w is not None and self.win_is_open(w) and self.win_set(w, "closed")["result"] == "done":
+                self.win_stats["closedForCooling"] += 1
+            if sp != C["setpointC"]:
+                self.cool_cmd(d, "setCoolingSetpoint", "thermostatCoolingSetpoint", [C["setpointC"]])
+            if self.cool_cmd(d, "setThermostatMode", "thermostatMode", ["cool"])["result"] == "done":
+                self.cool_stats["switchedOn"] += 1
+        elif mode == "cool" and sp != C["setpointC"]:
+            if self.cool_cmd(d, "setCoolingSetpoint", "thermostatCoolingSetpoint", [C["setpointC"]])["result"] == "done":
+                self.cool_stats["setpoint"] += 1
+
+    def cooling_moment(self, moment, t):
+        """going to bed or leaving home: each cooling unit that is on, as the habit says (keep / off); a person who does not
+        use cooling switches off what a rule switched on"""
+        C = self.cool
+        if not C:
+            return
+        act = (C["sleep"] if moment == "bedtime" else C["leaving"]) if C.get("uses") else "off"
+        for d in self.sim.house.devices.values():
+            if d.type != "heating_cooling_unit" or d.get("thermostatMode", "thermostatMode") != "cool":
+                continue
+            if act == "keep" or d.id in self.keep_on:
+                self.cool_stats["keptOn"] += 1
+            elif self.cool_cmd(d, "setThermostatMode", "thermostatMode", ["off"])["result"] == "done":
+                self.cool_stats[("sleep" if moment == "bedtime" else "leave") + "Off"] += 1
+
+    def cooling_unused(self, did, t):
+        """a cooled room left COOL_UNUSED_MIN ago and not entered since: switched off from the phone"""
+        S = self.S
+        d = self.sim.house.device(did)
+        if d is None or S["place"] != "home" or S["trip"] or S["asleep"] or d.get("thermostatMode", "thermostatMode") != "cool":
+            return
+        if self.cool_unit(S["room"]) is d or d.id in self.keep_on:
+            return
+        if self.cool_cmd(d, "setThermostatMode", "thermostatMode", ["off"])["result"] == "done":
+            self.cool_stats["unusedOff"] += 1
+
+    # ----- window habits -----
+    def win_dev(self, room):
+        return self.sim.house.at(room, "window_contact")
+
+    def win_is_open(self, d):
+        return d.get("contactSensor", "contact") == "open"
+
+    def win_set(self, d, value):
+        out = self.exec(dict(do="home.record", args=dict(device=d.id, capability="contactSensor", attribute="contact", value=value)))
+        if out["result"] == "done" and value == "closed":
+            self.win_hot.discard(d.id)
+            self.win_airing.discard(d.id)
+        return out
+
+    def window_tick(self, t):
+        """awake at home: windows closed for rain; the room's window opened when it is hot inside and cooler outside, closed
+        again when cool enough, when outdoor air is hotter or for cooling (only windows the habit opened); airing"""
+        W, S = self.win, self.S
+        if not W or S["place"] != "home" or S["trip"] or S["asleep"]:
+            return
+        out, rooms = outdoor_at(t), self.sim.house.env.rooms
+        if out["weather"] in ("rain", "snow"):
+            for d in self.sim.house.devices.values():
+                if d.type == "window_contact" and self.win_is_open(d) and self.win_set(d, "closed")["result"] == "done":
+                    self.win_stats["closedRain"] += 1
+            return
+        d = self.win_dev(S["room"])
+        if d is not None and d.id not in self.win_airing:
+            temp = rooms[d.roomId]["temperature"]
+            unit = self.cool_unit(S["room"])
+            cooling = unit is not None and unit.get("thermostatMode", "thermostatMode") == "cool"
+            if self.win_is_open(d):
+                if cooling and self.win_set(d, "closed")["result"] == "done":
+                    self.win_stats["closedForCooling"] += 1
+                elif d.id in self.win_hot and temp <= W["openAboveC"] - WINDOW_CLOSE_BELOW_K and self.win_set(d, "closed")["result"] == "done":
+                    self.win_stats["closedCool"] += 1
+                elif d.id in self.win_hot and out["temperature"] > temp + 1 and self.win_set(d, "closed")["result"] == "done":
+                    self.win_stats["closedHotOutside"] += 1
+            elif W.get("summerOpen") and not cooling and temp >= W["openAboveC"] and out["temperature"] < temp - 1:
+                a = dict(do="home.record", args=dict(device=d.id, capability="contactSensor", attribute="contact", value="open"))
+                if not self.leaving_soon(a, None) and self.win_set(d, "open")["result"] == "done":
+                    self.win_hot.add(d.id)
+                    self.win_stats["hotOpen"] += 1
+        self.airing_tick(t)
+
+    def airing_tick(self, t):
+        W = self.win
+        day = (t + 9 * 3600000) // DAY_MS  # local day number
+        plan = self.airing_plan.get(day)
+        if plan is None:
+            self.airing_plan = {k: v for k, v in self.airing_plan.items() if k >= day - 1}
+            n = int(W.get("airingPerDay", 0))
+            slots = AIRING_SLOTS if n >= 2 else ([] if n <= 0 else [AIRING_SLOTS[0] if self.rnd.random() * (AIRING_SLOTS[0][2] + AIRING_SLOTS[1][2]) < AIRING_SLOTS[0][2] else AIRING_SLOTS[1]])
+            day0 = day * DAY_MS - 9 * 3600000
+            plan = self.airing_plan[day] = [dict(at=day0 + int(self.uni(h0, h1) * 3600000), until=day0 + (h1 + 1) * 3600000, done=False) for h0, h1, _ in slots]
+        for it in plan:
+            if it["done"] or not (it["at"] <= t <= it["until"]):
+                continue
+            it["done"] = True
+            d = self.win_dev("living_room") or self.win_dev(self.S["room"])
+            if d is None or self.win_is_open(d):
+                continue
+            winter = outdoor_at(t)["meanTemperature"] < HEAT_SEASON_MEAN_C
+            typ = W["winterAiringMinutes"] if winter else W["airingMinutes"]
+            mins = max(1, js_round(typ * self.uni(0.7, 1.3)))
+            if self.win_set(d, "open")["result"] == "done":
+                self.win_airing.add(d.id)
+                self.win_stats["airings"] += 1
+                self.scheduled.append(dict(kind="airingEnd", at=self.now() + mins * MIN_MS, device=d.id))
+
+    def airing_end(self, did, t):
+        S = self.S
+        d = self.sim.house.device(did)
+        if d is None or did not in self.win_airing:
+            return
+        self.win_airing.discard(did)
+        if S["place"] == "home" and not S["trip"] and not S["asleep"] and self.win_is_open(d):
+            self.win_set(d, "closed")
+
+    def window_moment(self, moment, t):
+        """going to bed or leaving home: every open window closed, except at bedtime on a warm dry night for a person who
+        sleeps with it open when the room is warmer than outdoors"""
+        W = self.win
+        if not W:
+            return
+        out, rooms = outdoor_at(t), self.sim.house.env.rooms
+        for d in list(self.sim.house.devices.values()):
+            if d.type != "window_contact" or not self.win_is_open(d):
+                continue
+            if (moment == "bedtime" and W.get("sleepOpen") and out["meanTemperature"] >= HEAT_SEASON_MEAN_C
+                    and out["weather"] not in ("rain", "snow") and rooms[d.roomId]["temperature"] > out["temperature"]):
+                self.win_stats["sleepOpen"] += 1
+                continue
+            if self.win_set(d, "closed")["result"] == "done":
+                self.win_stats["closedAtCheck"] += 1
+
     # ----- ventilation habits -----
     def ventilation_tick(self, t):
         """the ventilation unit runs or not this minute, as the person's ventilationHabits say (effect only, no lines)"""
@@ -1080,6 +1259,8 @@ class AgentRunner:
         for d in self.sim.house.devices.values():
             if only is not None and d.id not in only:
                 continue
+            if (self.cool and d.type == "heating_cooling_unit") or (self.win and d.type == "window_contact"):
+                continue  # the person's cooling / window habits decide these (cooling_moment, window_moment)
             rule = next((r for r in self.OFF["rules"] if self.rule_state(r, d, t)), None)
             if rule:
                 out.append((d, rule))
@@ -1095,6 +1276,8 @@ class AgentRunner:
         back, left, cs = S["room"], [], self.check_stats[moment]
         if moment in ("bedtime", "leaving"):
             self.heating_moment(moment, t)
+            self.cooling_moment(moment, t)
+            self.window_moment(moment, t)
         on = self.on_devices(t, only)
         if only is None:
             self.keep_on &= {d.id for d, _ in on}  # a keepOn device switched off since is an ordinary device again
@@ -1289,6 +1472,10 @@ class AgentRunner:
                     prev = getattr(self, "heat_prev_room", None)
                     if prev and self.heat_unit(prev) is not None and self.heat_unit(prev) is not self.heat_unit(h["room"]):
                         self.scheduled.append(dict(kind="heatUnused", at=self.now() + HEAT_UNUSED_MIN * MIN_MS, device=self.heat_unit(prev).id))
+                if src == "person" and h["what"] == "enter_room" and self.cool and self.cool.get("unusedRooms") == "off":
+                    prev = getattr(self, "heat_prev_room", None)
+                    if prev and self.cool_unit(prev) is not None and self.cool_unit(prev) is not self.cool_unit(h["room"]):
+                        self.scheduled.append(dict(kind="coolUnused", at=self.now() + COOL_UNUSED_MIN * MIN_MS, device=self.cool_unit(prev).id))
                 if src == "person" and h["what"] == "enter_room":
                     self.heat_prev_room = h["room"]
                 if src == "person" and h["what"] == "fall_asleep":
@@ -1408,6 +1595,10 @@ class AgentRunner:
                 self.off_check("morning", t, it["devices"])
             elif it["kind"] == "heatUnused":
                 self.heating_unused(it["device"], t)
+            elif it["kind"] == "coolUnused":
+                self.cooling_unused(it["device"], t)
+            elif it["kind"] == "airingEnd":
+                self.airing_end(it["device"], t)
             self.person_changes()
             self.process_happenings()
 
@@ -1462,6 +1653,8 @@ class AgentRunner:
             self.tasks = [k for k in self.tasks if not k["finished"]]
             self.heating_tick(t)
             self.ventilation_tick(t)
+            self.cooling_tick(t)
+            self.window_tick(t)
             self.maybe_glance(t)
             self.sim.clock.set_to(t)
             if t % (6 * 3600000) == 0:
@@ -1506,6 +1699,7 @@ class AgentRunner:
                        cooking=dict(times=len(c), minutesMedian=q(0.5), minutesP10=q(0.1), minutesP90=q(0.9), minutesMax=c[-1] if c else None),
                        behaviours=self.stats, checks=self.check_stats, planSkips=plan_check, heating=dict(self.heat_stats, kWh=round(sum(self.sim.house.env.heat_wh.values()) / 1000, 1),
                                        kWhPerM2=round(sum(self.sim.house.env.heat_wh.values()) / 1000 / self.sim.house.profile["areaM2"], 1)),
+                       cooling=dict(habits=self.cool, **self.cool_stats), windows=dict(habits=self.win, **self.win_stats),
                        ventilation=dict(habits=self.vent, hoursInHeatingSeason=round(self.vent_minutes["season"] / 60), hoursOtherwise=round(self.vent_minutes["other"] / 60)),
                        seconds=round(_time.time() - t0))
         with open(os.path.join(self.out_dir, "summary.json"), "w", encoding="utf-8") as f:

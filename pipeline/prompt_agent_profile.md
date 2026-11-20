@@ -151,6 +151,37 @@ at night; long days out on cold days -> keepWhenOutdoorBelowC).
 }
 ```
 
+### Cooling and window habits
+
+Every room of our flats has an air conditioner. Write `coolingRanges` and `windowRanges` from the persona;
+`pipeline/sample_cooling_person.py` and `pipeline/sample_window_person.py` draw the person's habits, and the engine then
+cools the room the person is in once it reaches the switch-on temperature, opens windows of hot rooms when outdoor air is
+cooler, airs the flat 0-2 times a day and closes windows for rain, cooling, leaving and (unless the person sleeps with them
+open) bedtime. Do not write rules that only do this; rules for particular situations (e.g. cooling before arriving home)
+stay. Figures: Seoul flats switched cooling on at 29.8 C and off at 27.3 C on average; rooms with cooling on were at 25.2 C;
+airing once a day 49.7%, twice 30.7%, under 20 min 43.0%, 20-40 min 39.6%; in winter mostly under 10 min. Bedtime and
+leaving habits, opening for heat and sleeping with the window open have no data: choose from the persona and say why in
+`notes`.
+
+```json
+"coolingRanges": {
+  "uses": { "yes": 4, "no": 1 },
+  "onAboveC": { "min": 28, "max": 31 },
+  "setpointC": { "min": 24, "max": 27 },
+  "sleep": { "keep": 1, "off": 1 },
+  "leaving": { "keep": 1, "off": 3 },
+  "unusedRooms": { "off": 1, "keep": 1 }
+},
+"windowRanges": {
+  "summerOpen": { "yes": 3, "no": 1 },
+  "openAboveC": { "min": 25, "max": 28 },
+  "sleepOpen": { "yes": 1, "no": 1 },
+  "airingPerDay": { "0": 20, "1": 50, "2": 30 },
+  "airingMinutes": { "min": 10, "max": 40 },
+  "winterAiringMinutes": { "min": 5, "max": 10 }
+}
+```
+
 ### Ventilation habits
 
 New flats have a ventilation unit (0.5 air changes per hour). It is not a SmartThings device: it writes no lines and is

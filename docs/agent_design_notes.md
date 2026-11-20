@@ -336,6 +336,26 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
     room 39.2 C (10-90%: 37.2-41.5): no cooling, windows nearly always shut, no balcony shade (the balcony is only an
     outdoor space). Balconies: all expanded (agreed 2026-11-20: no shade; summer sun is handled by window,
     curtain and cooling habits; no figure found for the share of expanded flats). Next: window and cooling habits.
+- Cooling and window habits (agreed 2026-11-20, per person like heating and ventilation). The LLM writes `coolingRanges`
+  (uses, switch-on temperature, setpoint, bedtime / leaving keep or off, unused rooms) and `windowRanges` (opens hot rooms,
+  opening temperature, sleeps with it open, airings a day 0/1/2, airing minutes, winter airing minutes);
+  `pipeline/sample_cooling_person.py` / `sample_window_person.py` draw them. Engine (`cooling_*`, `window_*`, `airing_*`):
+  awake at home, the room the person is in is cooled once it reaches the switch-on temperature (its window closed first;
+  kitchen / dining / hallway / entryway use the living room unit, a 4-room kitchen its own); a hot room's window is opened
+  when outdoor air is at least 1 C cooler and closed 2 C below the opening temperature, when outdoor air is hotter or for
+  cooling (only windows the habit opened); every window is closed for rain or snow; airing: the living room window at
+  9-11 and/or 17-19, usual minutes x 0.7-1.3. At bedtime / leaving the habits decide cooling units and windows (the off
+  rules for them are not used); at bedtime a window may stay open on a warm dry night when the room is warmer than
+  outdoors. Figures: switch-on 29.8 C, switch-off 27.3 C on average (Chun & Bae 2005, Seoul flats); cooled rooms 25.2 C
+  (Yun et al. 2020); airing once a day 49.7%, twice 30.7%, under 20 min 43.0%, 20-40 min 39.6%, mornings 9-11 55.8%,
+  evenings 17-19 33.4% (Lee 2010, spring survey of 154 flats); winter: 75% 1-2 times a day under 10 min (Cho & Choi
+  2013). No data for bedtime / leaving habits, opening for heat, sleeping with the window open (LLM's choice).
+  - Check [ours, one year]: 063 (drew no cooling, opens at 26 C, sleeps with it open, airs twice a day): Jul-Aug living
+    room hourly median 33.5 C (10-90%: 31.5-35.8), its window open 860 of 1488 h, heating 20.8 kWh/m2. Same person with
+    a cooling habit (on at 30 C to 27 C, kept on at night, off when leaving): 28.3 C (26.7-30.2), 121 switch-ons. Outdoor
+    hourly median 25.6 C. Measured (Yun et al. 2020): summer indoor 26.6 vs outdoor 23.6, cooling off 26.9 vs 23.3. That
+    063 stays +7.9 C with the window open 58% of the time looks due to the open-window airflow (`windowOpen` large 0.04
+    per min = 2.4/h, no source) and windows shut while the flat is empty in the day; to check.
 - Ventilation habits (2026-11-18; agreed: a per-person habit, effect only when SmartThings has no device for it). Flats of
   30+ households since 2006-02 must be able to ventilate 0.5/h (Rules on Building Equipment Standards art. 11, annex 1-5;
   checked through commentary pages, not the statute text). No ventilator / ERV capability among the 328 standard and 182
@@ -368,6 +388,10 @@ immediate response timing, gap-dependent off probabilities, persona -> daily-lif
 
 | Short name | Reference | Used for | Read |
 |---|---|---|---|
+| Chun & Bae 2005 | Chun C.-Y., Bae N.-R. A Study on Acceptable Thermal Comfort Zone and Resident Behavior of Operating Cooling Devices in Apartments. KJACR 17(5) 477-486, 2005. https://koreascience.kr/article/JAKO200520828120793.page | switch-on / switch-off room temperature | abstract |
+| Yun 2020 | Yun et al. Indoor Thermal Environment Long-Term Data Analytics Using IoT Devices in Korean Apartments. IJERPH 2020. https://pmc.ncbi.nlm.nih.gov/articles/PMC7579249 | cooled / not cooled room temperature, summer indoor vs outdoor | web summary |
+| Lee 2010 (airing) | Lee Y.-J. Characteristics of Behavior for Ventilation and Maintenance for Ventilation Equipments by Multi-family Housing Residents. J. Korean Housing Assoc. 21(5), 2010. https://koreascience.or.kr/article/JAKO201011949345964.pdf | airing counts, minutes, times | web summary |
+| Cho & Choi 2013 | Cho J.-H., Choi Y.-J. The Indoor Thermal and Air Environment of General Apartment Houses during Winter in Cheongju City. KIEAE J. 13(3), 2013. https://kieae.kr/xml/01166/01166.pdf | winter airing | web summary |
 | Jo 2011 | Jo D.-K., Yun C.-Y., Kim K.-D., Kang Y.-H. A Detail Survey of Horizontal Global Radiation and Hours of Bright Sunshine for the Installation of Solar Photovoltaic System in Korea. J. Korean Solar Energy Soc. 31(3), 2011. https://koreascience.or.kr/article/JAKO201128451816195.pdf | Seoul monthly horizontal irradiation (table 3) | web summary |
 | Lee 2014 | Lee W.-J., Kang E.-C., Lee E.-J., Shin U.-C. A Study on the Calculation of Thermal Consumption Unit of Apartment. KJACR 26(8) 388-393, 2014. https://koreascience.kr/article/JAKO201428854482525.pdf | measured comparison (heating + hot water, built 1991-2008) | web summary |
 | Jin 2019 | Jin H. S. et al. Analysis of annual EUIs by end-use in apartment units (2017-2018). E3S Web Conf. 111, 04013 (CLIMA 2019). https://www.e3s-conferences.org/articles/e3sconf/pdf/2019/37/e3sconf_clima2019_04013.pdf | heating / hot water split (71 Seoul flats) | web summary |

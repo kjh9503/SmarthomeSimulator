@@ -418,6 +418,234 @@
     "ventilationPerson": {
       "type": "object",
       "description": "Written by pipeline/sample_ventilation_person.py: seed and the weights used. Not read by the engine."
+    },
+    "coolingRanges": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Use of the air conditioners as ranges and weights chosen from the persona; pipeline/sample_cooling_person.py draws coolingHabits. With coolingHabits the engine switches cooling on and off (logged) and the off rules for cooling units are not used.",
+      "required": [
+        "uses",
+        "onAboveC",
+        "setpointC",
+        "sleep",
+        "leaving",
+        "unusedRooms"
+      ],
+      "properties": {
+        "uses": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "yes": {
+              "type": "number",
+              "minimum": 0
+            },
+            "no": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "onAboveC": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "min",
+            "max"
+          ],
+          "properties": {
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            }
+          }
+        },
+        "setpointC": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "min",
+            "max"
+          ],
+          "properties": {
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            }
+          }
+        },
+        "sleep": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "keep": {
+              "type": "number",
+              "minimum": 0
+            },
+            "off": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "leaving": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "keep": {
+              "type": "number",
+              "minimum": 0
+            },
+            "off": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "unusedRooms": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "off": {
+              "type": "number",
+              "minimum": 0
+            },
+            "keep": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    },
+    "coolingHabits": {
+      "type": "object",
+      "description": "Written by pipeline/sample_cooling_person.py; read by the engine."
+    },
+    "coolingPerson": {
+      "type": "object",
+      "description": "Written by pipeline/sample_cooling_person.py: seed and the ranges used. Not read by the engine."
+    },
+    "windowRanges": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Window habits as ranges and weights chosen from the persona; pipeline/sample_window_person.py draws windowHabits. With windowHabits the engine opens and closes windows (logged where a window sensor exists) and the off rules for windows are not used.",
+      "required": [
+        "summerOpen",
+        "openAboveC",
+        "sleepOpen",
+        "airingPerDay",
+        "airingMinutes",
+        "winterAiringMinutes"
+      ],
+      "properties": {
+        "summerOpen": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "yes": {
+              "type": "number",
+              "minimum": 0
+            },
+            "no": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "openAboveC": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "min",
+            "max"
+          ],
+          "properties": {
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            }
+          }
+        },
+        "sleepOpen": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "yes": {
+              "type": "number",
+              "minimum": 0
+            },
+            "no": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "airingPerDay": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "0": {
+              "type": "number",
+              "minimum": 0
+            },
+            "1": {
+              "type": "number",
+              "minimum": 0
+            },
+            "2": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "airingMinutes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "min",
+            "max"
+          ],
+          "properties": {
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            }
+          }
+        },
+        "winterAiringMinutes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "min",
+            "max"
+          ],
+          "properties": {
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            }
+          }
+        }
+      }
+    },
+    "windowHabits": {
+      "type": "object",
+      "description": "Written by pipeline/sample_window_person.py; read by the engine."
+    },
+    "windowPerson": {
+      "type": "object",
+      "description": "Written by pipeline/sample_window_person.py: seed and the ranges used. Not read by the engine."
     }
   }
 }

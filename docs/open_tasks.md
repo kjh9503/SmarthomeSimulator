@@ -63,7 +63,10 @@ Not done yet:
 - Master bathroom: no rule in 063 uses it yet (only sensor lines).
 - Heating energy vs measured (2026-11-18): explained mostly by hot water in the measured figure and older envelopes (design
   notes section 12). Ventilation unit added as a per-person habit (effect only, no device).
-- Winter window airing: 75% of households open windows 1-2 times a day, under 10 min (Cho & Choi 2013, 20 flats in
+- Window airing and cooling habits added 2026-11-20 (design notes section 12). Open: the open-window airflow
+  (`windowOpen` 2.4/h for a large window, no source) looks small: 063 stays +7.9 C above outdoors in Jul-Aug with its
+  living room window open 58% of the time.
+- (old) Winter window airing: 75% of households open windows 1-2 times a day, under 10 min (Cho & Choi 2013, 20 flats in
   Cheongju); 063 opens a window about 0.2 times a day in Nov-Mar. Not decided whether it becomes a habit too.
 - Summer indoor temperature without cooling (2026-11-19; after the solar fix of 2026-11-20 the 063 living room is 39.2 C
   hourly median in Jul-Aug; balconies kept expanded, no shade; next: window and cooling habits): 063 (no cooling rule) living room Jul-Aug hourly median 32.2 C
