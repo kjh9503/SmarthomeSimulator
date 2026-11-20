@@ -14,11 +14,12 @@ from .phone import ST_ALERTS
 from .timeutil import (DAY_MS, MIN_MS, fields, local_ms, start_of_day, iso_local, js_round)
 from .weather import outdoor_at
 from .formats import compact
+from .house import PHYS
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
 DOW = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"]
-BODY_DO = {"person.travel", "person.moveRoom", "home.record"}
+BODY_DO = {"person.travel", "person.moveRoom", "home.record", "person.shower"}
 # glances at the lock screen: Hintze et al. 2014 (1,960 Android phones): locked sessions median 56 s, mean 88 s
 # -> lognormal sigma = sqrt(2 ln(88/56)) = 0.95; median 22 glances a day, spread over about 16 waking hours
 GLANCE = dict(median=56, sigma=0.95)
@@ -53,6 +54,7 @@ DEFER_MAX_MIN = 180  # a daily behaviour waits at most this long after its minut
 # 20-40 min 39.6%; Lee 2010), shorter in the heating season (winter: 75% open 1-2 times a day, under 10 min; Cho & Choi
 # 2013). With these habits the off rules for cooling units and windows are not used.
 COOL_UNUSED_MIN = 30
+LAUNDRY_DRYER_MIN = 120  # a finished wash not in the dryer within this long is dried on a rack indoors [assume]
 COOL_ROOM = dict(kitchen="living_room", dining_room="living_room", hallway="living_room", entryway="living_room")  # no unit there: the living room's
 WINDOW_CLOSE_BELOW_K = 4.0
 WINDOW_MIN_OPEN_MIN = 60  # a window opened for heat stays open at least this long (no data; avoids opening and closing every few minutes)
@@ -213,9 +215,12 @@ class AgentRunner:
         self.hood = profile.get("hoodHabits")  # None: the range hood never runs
         self.hood_session = None  # this cooking's hood decision (None: stove off)
         self.hood_stats = dict(cookings=0, withHood=0)
+        self.shower_stats = dict(showers=0)
+        self.laundry = dict(washerWas=None, finishedAt=None, dryerSince=False)
+        self.laundry_stats = dict(washes=0, dried=0, racks=0)
         self.vent_minutes = dict(season=0, other=0)
         self.behaviours = []
-        for b in profile["behaviours"]:
+        for b in profile["behaviours"] + self.shower_behaviours(profile.get("showerHabits")):
             acts, merged = self.merge_app_steps(b["actions"])
             self.behaviours.append(dict(b, actions=acts, _st={}, _firings=0, _merged=merged,
                                         _phoneUse=any(a["do"] == "phone.useApps" for a in acts)))
@@ -654,6 +659,14 @@ class AgentRunner:
                 out = dict(result="done", block=dict(chain=ev + [[int(plan[-1][1] * 1000), "close", None]])) if plan else dict(result="no_change")
         elif do == "wait":
             out = dict(result="done", block=dict(until=t + js_round(self.num(args["minutes"])) * MIN_MS))
+        elif do == "person.shower":  # engine-made (showerHabits): water vapour in the bathroom while it runs, no line of its own
+            if S["place"] != "home" or S["trip"] or S["asleep"] or "bathroom" not in S["room"]:
+                out = refused("not in a bathroom")
+            else:
+                until = t + js_round(self.num(args["minutes"])) * MIN_MS
+                self.sim.house.env.shower = (S["room"], until)
+                self.shower_stats["showers"] += 1
+                out = dict(result="done", block=dict(until=until))
         else:
             out = refused("unknown action " + do)
         if do in ("home.command", "home.record") and out["result"] == "done" and args.get("device"):
@@ -1027,6 +1040,62 @@ class AgentRunner:
                 continue
             if self.win_set(d, "closed")["result"] == "done":
                 self.win_stats["closedAtCheck"] += 1
+
+    # ----- shower habit and laundry drying (2026-11-21) -----
+    def shower_behaviours(self, H):
+        """routines made from showerHabits: a morning shower after waking and / or an evening shower; the person goes to the
+        bathroom, switches the light on, showers (person.shower: vapour, no line) and switches it off"""
+        self.prof_shower = H
+        if not H or not H.get("slots"):
+            return []
+        light = "bathroom.light" if self.sim.house.at("bathroom", "light") is not None else None
+        def acts():
+            a = [dict(do="person.moveRoom", args=dict(room="bathroom"))]
+            if light:
+                a.append(dict(do="home.command", args=dict(device=light, capability="switch", command="on", args=[], channel="physical")))
+            a.append(dict(do="person.shower", args=dict(minutes=dict(min=H["minutes"]["min"], max=H["minutes"]["max"]))))
+            if light:
+                a.append(dict(do="home.command", args=dict(device=light, capability="switch", command="off", args=[], channel="physical")))
+            return a
+        out = []
+        if "morning" in H["slots"]:
+            out.append(dict(id="habit_shower_morning", kind="routine", description="Shower after waking (showerHabits).",
+                            trigger=dict(kind="event", event=dict(source="person", what="wake", place="home"), delayMinutes=dict(min=3, max=20)),
+                            conditions=[dict(kind="place", op="is", place="home")], actions=acts(), probability=1, maxPerDay=1))
+        if "evening" in H["slots"]:
+            out.append(dict(id="habit_shower_evening", kind="routine", description="Shower in the evening (showerHabits).",
+                            trigger=dict(kind="daily", window={"from": H.get("eveningFrom", "21:00"), "to": H.get("eveningTo", "23:00")}),
+                            conditions=[dict(kind="place", op="is", place="home")], actions=acts(), probability=1, maxPerDay=1))
+        return out
+
+    def laundry_tick(self, t):
+        """a wash that is not put in the dryer within LAUNDRY_DRYER_MIN of finishing is dried indoors on a rack: water
+        (moisture.rackKg) released evenly over moisture.rackHours in the laundry room (else the living room); no line"""
+        H, L, env = self.sim.house, self.laundry, self.sim.house.env
+        w = H.at("laundry", "washer") or next((d for d in H.devices.values() if d.type == "washer"), None)
+        if w is None:
+            return
+        st = w.get("washerOperatingState", "machineState")
+        if L["washerWas"] == "run" and st != "run":
+            L["finishedAt"], L["dryerSince"] = t, False
+            self.laundry_stats["washes"] += 1
+        L["washerWas"] = st
+        if L["finishedAt"] is None:
+            return
+        dr = next((d for d in H.devices.values() if d.type == "dryer"), None)
+        if dr is not None and dr.get("dryerOperatingState", "machineState") == "run":
+            L["dryerSince"] = True
+        if t - L["finishedAt"] >= LAUNDRY_DRYER_MIN * MIN_MS:
+            if L["dryerSince"]:
+                self.laundry_stats["dried"] += 1
+            else:
+                M = PHYS["moisture"]
+                hours = self.uni(*M["rackHours"])
+                room = "laundry" if "laundry" in env.rooms else "living_room"
+                env.racks = [r for r in env.racks if r["until"] > t] + [dict(room=room, start=t, until=t + int(hours * 3600000),
+                                                                              gMin=self.uni(*M["rackKg"]) * 1000 / (hours * 60))]
+                self.laundry_stats["racks"] += 1
+            L["finishedAt"] = None
 
     # ----- range hood habit -----
     def hood_tick(self, t):
@@ -1676,6 +1745,7 @@ class AgentRunner:
             self.heating_tick(t)
             self.ventilation_tick(t)
             self.hood_tick(t)
+            self.laundry_tick(t)
             self.cooling_tick(t)
             self.window_tick(t)
             self.maybe_glance(t)
@@ -1723,7 +1793,8 @@ class AgentRunner:
                        behaviours=self.stats, checks=self.check_stats, planSkips=plan_check, heating=dict(self.heat_stats, kWh=round(sum(self.sim.house.env.heat_wh.values()) / 1000, 1),
                                        kWhPerM2=round(sum(self.sim.house.env.heat_wh.values()) / 1000 / self.sim.house.profile["areaM2"], 1)),
                        cooling=dict(habits=self.cool, **self.cool_stats), windows=dict(habits=self.win, **self.win_stats),
-                       hood=dict(habits=self.hood, **self.hood_stats),
+                       hood=dict(habits=self.hood, **self.hood_stats), showers=dict(habits=self.prof_shower, **self.shower_stats),
+                       laundry=self.laundry_stats,
                        ventilation=dict(habits=self.vent, hoursInHeatingSeason=round(self.vent_minutes["season"] / 60), hoursOtherwise=round(self.vent_minutes["other"] / 60)),
                        seconds=round(_time.time() - t0))
         with open(os.path.join(self.out_dir, "summary.json"), "w", encoding="utf-8") as f:

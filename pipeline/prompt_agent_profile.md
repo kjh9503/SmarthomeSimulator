@@ -182,6 +182,22 @@ leaving habits, opening for heat and sleeping with the window open have no data:
 }
 ```
 
+### Shower habit and laundry drying
+
+Write `showerRanges` from the persona; `pipeline/sample_shower_person.py` draws `showerHabits` and the engine makes the
+shower routines (bathroom, light on, shower, light off), so do not write shower routines. No Korean data on shower counts,
+times or lengths was found: choose from the persona and say why in `notes`. Laundry needs no habit: a wash that is not
+put in the dryer within two hours is dried indoors on a rack (water vapour only, no lines), so whether the persona uses
+the dryer is decided by the laundry rules you write (Korean households with a dryer: 12% in 2020, 35% in 2023).
+
+```json
+"showerRanges": {
+  "perDay": { "0": 1, "1": 8, "2": 2 },
+  "when": { "morning": 2, "evening": 1 },
+  "minutes": { "min": 8, "max": 15 }
+}
+```
+
 ### Range hood habit
 
 The kitchen range hood is not a SmartThings device (no lines). Write `hoodRanges.useShare`, the share of cookings on which

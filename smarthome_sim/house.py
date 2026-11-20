@@ -57,7 +57,11 @@ OP_STATE = dict(washer=("washerOperatingState", "washerJobState", "wash", "finis
 PHYS = dict(
     stepMs=60000, heartbeatMin=30, maxCatchUpDays=7,
     indoorGainC=2, indoorSwing=0.25, indoorMinC=15, solarGainC=3,
-    moistureOffset=3, moisture=dict(person=0.0025, dryer=0.035, washer=0.007, humidifierMax=0.04),
+    # moisture (2026-11-21): the fixed +3 hPa over outdoor air (moistureOffset, no source) is gone; sources are physical, in g:
+    # a person 52 g/h (family of 4: 0.44 pint/h, Minnesota 1988 table; 1.25 L a day, Quirouette, NRC Canada), a shower
+    # 0.24 kg per 5 min (same table), indoor laundry drying 2.2-2.9 kg a load (same table) released over rackHours [assume].
+    # dryer / washer / humidifierMax stay hPa a minute for a 10 m2 room (older values).
+    moisture=dict(personGh=52, showerGMin=48, rackKg=(2.2, 2.9), rackHours=(8, 12), dryer=0.035, washer=0.007, humidifierMax=0.04),
     report=dict(temperature=dict(th=0.5, dec=1), humidity=dict(th=2, dec=0), illuminance=dict(th=30, rel=0.1, dec=0),
                 pm25=dict(th=3, dec=0), co2=dict(th=50, dec=0), noise=dict(th=3, dec=0)),
     jitter=dict(temperature=0.05, humidity=0.3, illuminance=0.02, pm25=0.5, co2=4, noise=0.8),
@@ -231,6 +235,11 @@ def vapor_from_rh(rh, t):
     return rh / 100 * sat_vapor(t)
 
 
+def g_to_hpa(g, vol):
+    """water vapour pressure rise (hPa) from g grams of water in vol m3 of air at about 22 C (1 g/m3 = 1.36 hPa)"""
+    return g * 1.36 / vol
+
+
 def rh_from_vapor(e, t):
     return min(100, max(1, 100 * e / sat_vapor(t)))
 
@@ -353,6 +362,8 @@ class Environment:
         self.heat_wh = {}  # floor heating heat delivered per room (Wh)
         self.ventilator = False  # the flat's ventilation unit running (set by the agent from ventilationHabits; no device)
         self.hood = False  # the kitchen range hood running (set by the agent from hoodHabits; no device)
+        self.shower = None  # (room, until ms): a shower running (agent action person.shower)
+        self.racks = []  # laundry drying indoors: dict(room, start, until, gMin) (agent, after a wash not dried in the dryer)
         for r in house.room_ids:
             self.rooms[r] = (dict(temperature=out["temperature"], humidity=out["humidity"], pm25=out["pm25"], co2=out["co2"],
                                   illuminance=out["daylight"], noise=out["noise"]) if r == "balcony"
@@ -365,7 +376,7 @@ class Environment:
             if r == "balcony":
                 continue
             t = free_indoor_temp(out, self.house.room_profile(r))
-            vapor = min(sat_vapor(t), vapor_from_rh(out["humidity"], out["temperature"]) + PHYS["moistureOffset"])
+            vapor = min(sat_vapor(t), vapor_from_rh(out["humidity"], out["temperature"]))
             e.update(temperature=t, mass=t, vapor=vapor, humidity=rh_from_vapor(vapor, t), pm25=out["pm25"], co2=out["co2"])
 
     def exchange(self, dt):
@@ -493,7 +504,7 @@ class Environment:
             e["mass"] = tm + (h_ms * (ts - tm) + h_em * (t_out - tm) + phi_m + phi_nb) * sec / c_m
             if e.get("vapor") is None:
                 e["vapor"] = vapor_from_rh(e["humidity"], e["temperature"])
-            e["vapor"] += (vapor_from_rh(out["humidity"], out["temperature"]) + (0 if is_open else PHYS["moistureOffset"]) - e["vapor"]) * min(1, k * dt)
+            e["vapor"] += (vapor_from_rh(out["humidity"], out["temperature"]) - e["vapor"]) * min(1, k * dt)
             e["pm25"] += (out["pm25"] - e["pm25"]) * (min(1.0, k_open * dt) if is_open else PHYS["pmInfiltration"] * wall_share * dt)
             e["co2"] += (out["co2"] - e["co2"]) * (min(1.0, k_open * dt) if is_open else 0.003 * dt)
             if k_vent:
@@ -501,7 +512,7 @@ class Environment:
                 e["co2"] += (out["co2"] - e["co2"]) * k_vent * dt
             if occ:
                 e["co2"] += 10 * sf * dt
-                e["vapor"] += PHYS["moisture"]["person"] * sf * dt
+                e["vapor"] += g_to_hpa(PHYS["moisture"]["personGh"] / 60 * dt, vol)
             hvac = devs.get("heating_cooling_unit")
             mode = hvac.state.get("thermostatMode.thermostatMode") if hvac else None
             if mode == "cool":
@@ -552,7 +563,12 @@ class Environment:
                 e["co2"] += 5 * sf * dt
                 # latent heat as water vapour: g/min = W x 60 / 2450 J/g; 1 g in 1 m3 at about 22 C = 1.36 hPa
                 st = PHYS["envelope"]["stove"]
-                e["vapor"] += st["burnerKW"] * st["latent"] * 1000 * 60 / 2450 * 1.36 / (p["areaM2"] * PHYS["ceilingM"]) * dt
+                e["vapor"] += g_to_hpa(st["burnerKW"] * st["latent"] * 1000 * 60 / 2450 * dt, vol)
+            if self.shower and self.shower[0] == r and ms < self.shower[1]:
+                e["vapor"] += g_to_hpa(PHYS["moisture"]["showerGMin"] * dt, vol)
+            for rk in self.racks:
+                if rk["room"] == r and rk["start"] <= ms < rk["until"]:
+                    e["vapor"] += g_to_hpa(rk["gMin"] * dt, vol)
             dryer_on, washer_on = running("dryer"), running("washer")
             if dryer_on:
                 e["vapor"] += PHYS["moisture"]["dryer"] * sf * dt

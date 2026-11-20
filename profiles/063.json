@@ -1,6 +1,6 @@
 {
   "personaId": "063",
-  "notes": "University student living alone in a 3-room flat. Weekdays on Campus, evenings mostly at home. Only pattern p63_a is included; p63_b (Campus) is not in this profile. Heating ranges: a student living alone on a budget: off when leaving more often than kept, comfort 21-24 C. Ventilation: no persona reason to differ from the survey's about-half users; on a budget, so running it only while home is weighted over always. Cooling: on a budget, so a little less likely to use it and a higher switch-on temperature (29-31 C) than the measured 29.8 C average; mostly off when leaving. Windows: survey airing counts; opening for heat likely for someone saving on cooling. Range hood: cooks simple meals and does not always think of it, so a middle range (0.3-0.8 of cookings).",
+  "notes": "University student living alone in a 3-room flat. Weekdays on Campus, evenings mostly at home. Only pattern p63_a is included; p63_b (Campus) is not in this profile. Heating ranges: a student living alone on a budget: off when leaving more often than kept, comfort 21-24 C. Ventilation: no persona reason to differ from the survey's about-half users; on a budget, so running it only while home is weighted over always. Cooling: on a budget, so a little less likely to use it and a higher switch-on temperature (29-31 C) than the measured 29.8 C average; mostly off when leaving. Windows: survey airing counts; opening for heat likely for someone saving on cooling. Range hood: cooks simple meals and does not always think of it, so a middle range (0.3-0.8 of cookings). Showers: a student with morning classes, mostly one shower a day, more often in the morning.",
   "houseType": "3room",
   "variant": "3room-A",
   "roomRoles": {
@@ -2192,5 +2192,48 @@
       }
     },
     "source": "range chosen by the LLM for this persona (no survey found)"
+  },
+  "showerRanges": {
+    "perDay": {
+      "0": 1,
+      "1": 8,
+      "2": 2
+    },
+    "when": {
+      "morning": 2,
+      "evening": 1
+    },
+    "minutes": {
+      "min": 8,
+      "max": 15
+    }
+  },
+  "showerHabits": {
+    "slots": [
+      "morning"
+    ],
+    "minutes": {
+      "min": 9,
+      "max": 13
+    }
+  },
+  "showerPerson": {
+    "seed": 63,
+    "ranges": {
+      "perDay": {
+        "0": 1,
+        "1": 8,
+        "2": 2
+      },
+      "when": {
+        "morning": 2,
+        "evening": 1
+      },
+      "minutes": {
+        "min": 8,
+        "max": 15
+      }
+    },
+    "source": "weights chosen by the LLM for this persona (no Korean data found)"
   }
 }

@@ -684,6 +684,74 @@
     "hoodPerson": {
       "type": "object",
       "description": "Written by pipeline/sample_hood_person.py: seed and the range used. Not read by the engine."
+    },
+    "showerRanges": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "perDay",
+        "when",
+        "minutes"
+      ],
+      "description": "Shower habit as weights chosen from the persona; pipeline/sample_shower_person.py draws showerHabits, from which the engine makes routines (bathroom, light on, shower, light off). Do not write shower routines.",
+      "properties": {
+        "perDay": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "0": {
+              "type": "number",
+              "minimum": 0
+            },
+            "1": {
+              "type": "number",
+              "minimum": 0
+            },
+            "2": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "when": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "morning": {
+              "type": "number",
+              "minimum": 0
+            },
+            "evening": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "minutes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "min",
+            "max"
+          ],
+          "properties": {
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            }
+          }
+        }
+      }
+    },
+    "showerHabits": {
+      "type": "object",
+      "description": "Written by pipeline/sample_shower_person.py; read by the engine."
+    },
+    "showerPerson": {
+      "type": "object",
+      "description": "Written by pipeline/sample_shower_person.py: seed and the weights used. Not read by the engine."
     }
   }
 }

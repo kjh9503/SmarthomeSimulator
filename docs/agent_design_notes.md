@@ -379,6 +379,20 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
   - Check: Aug 5 18:00, closed flat starting 30.8 C, 240 min: kitchen 34.0 at 10 min, 35.3 C at 180 min, RH 62 -> 88%;
     with the hood 34.6 C, 85%. Before (2000 W, start 28.9 C): +5.0 K at 10 min, 36.1 C at 180 min. 063 one year (share
     0.55): hood on 131 of 244 cookings; kitchen temperature report lines max 35.1 -> 33.0 C, median 23.9 C.
+- Indoor moisture (2026-11-21). The fixed +3 hPa over outdoor air (`moistureOffset`, no source) is gone; physical sources:
+  a person 52 g/h (family of 4: 0.44 pint/h, Minnesota 1988 table; 1.25 L a day, Quirouette, NRC Canada; was about
+  2.5 g/h for a 10 m2 room), a shower 0.24 kg per 5 min = 48 g/min (same table), indoor laundry drying 2.2-2.9 kg a load
+  (same table) released evenly over 8-12 h [assume the hours]. Shower habit: the LLM's `showerRanges` (0/1/2 a day,
+  morning / evening, minutes) -> `pipeline/sample_shower_person.py` -> engine-made routines (bathroom, light on,
+  `person.shower`, light off; morning 3-20 min after waking, evening 21-23). Laundry: a wash not in the dryer within
+  120 min of finishing dries on a rack in the laundry room (else the living room) [assume 120 min]. Rack and shower write
+  no line of their own (seen in the humidity sensors). Korean dryer ownership 12% (2020) -> 35% (2023) (Gallup Korea,
+  Herald Economy 2025-11-18).
+  - Check [ours, one year, 063]: January living room hourly median 21% -> 13% (10-90%: 10-18), bathroom 18% (up to 56%
+    in showers), July living room 69%. 364 showers. No washes: the 063 profile has no laundry behaviour. With the
+    ventilation unit off: 16%. Measured winter means: 36.6% (households 19.5-58.5%, Choi & Jung 2008), 40-60% (Kim et
+    al. 2014, 68 flats). 063 is low because it is one person in 84 m2, ventilation unit always on, airing twice a day,
+    no laundry.
 - Ventilation habits (2026-11-18; agreed: a per-person habit, effect only when SmartThings has no device for it). Flats of
   30+ households since 2006-02 must be able to ventilate 0.5/h (Rules on Building Equipment Standards art. 11, annex 1-5;
   checked through commentary pages, not the statute text). No ventilator / ERV capability among the 328 standard and 182
