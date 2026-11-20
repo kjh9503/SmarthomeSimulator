@@ -62,7 +62,6 @@ PHYS = dict(
                 pm25=dict(th=3, dec=0), co2=dict(th=50, dec=0), noise=dict(th=3, dec=0)),
     jitter=dict(temperature=0.05, humidity=0.3, illuminance=0.02, pm25=0.5, co2=4, noise=0.8),
     windowLight=dict(large=.03, medium=.02, small=.012, none=.002),
-    windowOpen=dict(large=.04, medium=.03, small=.02, none=.01),
     windowHeat=dict(large=1, medium=.6, small=.3, none=0),
     lightLux=300, lampLux=150, ceilingM=2.3,
     # air purifier: CADR ~8.4 m3/min; the fan percent is the share of full CADR (0 = off); tuned to the 30-74% PM2.5 cut
@@ -105,6 +104,9 @@ PHYS = dict(
                   # seasonal averages in between seasons, and the same factor for moisture, are [assume]. Lab ratings are
                   # higher (certified units 2014: cooling 45-71.4%, mean 52.7; heating 70-87%, mean 73.5; Shin et al.
                   # 2014). Outdoor-air filter 60% (annex 1-5, KS B 6141, counting method), applied to PM2.5 [assume].
+                  # open windows (2026-11-20, see k_open): open share of the glass, window height (m) [assume: balcony-type
+                  # living room window 2.1 m, room window 1.5 m, small 1.0 m]
+                  openShare=0.5, windowHeightM=dict(large=2.1, medium=1.5, small=1.0, none=0.0),
                   ventilator=dict(ach=0.5, recoveryHeating=0.46, recoveryCooling=0.27, filter=0.60)),
     # air between rooms (2026-11-04). Open door / open plan: buoyancy flow through an opening, one direction
     # Q = Cd/3 * W * H * sqrt(g * H * dT / T) (Brown & Solvason 1962), Cd = 0.0835 * (dT/T)^-0.313 measured through a
@@ -408,12 +410,21 @@ class Environment:
             win_open = is_("window_contact", "contactSensor", "contact", "open")
             door_open = r == "living_room" and balcony_door is not None and balcony_door.state.get("contactSensor.contact") == "open"
             is_open = win_open or door_open
-            wind_k = WEATHER["windOpen"][0] + WEATHER["windOpen"][1] * out["windSpeed"] / WIND["mean"]
-            k_open = max(PHYS["windowOpen"][p["windowSize"]] if win_open else 0, PHYS["windowOpen"]["large"] if door_open else 0) * wind_k
             wall_share = (0.5 + p["exteriorWalls"]) / 1.5
             E = PHYS["envelope"]
             af = p["areaM2"]
             vol = af * PHYS["ceilingM"]
+            k_open = 0.0
+            if is_open:
+                # open window (2026-11-20): single-sided flow, De Gids & Phaff (1982), the basis of EN 16798-7:
+                # Q = 1/2 A sqrt(0.001 U10^2 + 0.0035 h dT + 0.01), A = open area, h = window height, dT = |in - out|.
+                # Open area = half the glass (one sash of a sliding pair; "half the window", Cho & Choi 2013); the
+                # balcony door counts as the living room's large window. Capped at 0.8 of the room air a minute.
+                size = "large" if door_open else p["windowSize"]
+                a_open = E["openShare"] * E["windowShare"][size] * af if (p["exteriorWalls"] or door_open) else 0.0
+                h = E["windowHeightM"][size]
+                u_m = math.sqrt(0.001 * out["windSpeed"] ** 2 + 0.0035 * h * abs(e["temperature"] - out["temperature"]) + 0.01)
+                k_open = min(0.8, 0.5 * a_open * u_m * 60 / vol)  # per minute
             k_inf = E["ach"] / 60  # per minute
             V = E["ventilator"]
             k_vent = V["ach"] / 60 if self.ventilator else 0.0  # outdoor air brought in by the ventilation unit, per minute
@@ -472,8 +483,8 @@ class Environment:
             if e.get("vapor") is None:
                 e["vapor"] = vapor_from_rh(e["humidity"], e["temperature"])
             e["vapor"] += (vapor_from_rh(out["humidity"], out["temperature"]) + (0 if is_open else PHYS["moistureOffset"]) - e["vapor"]) * min(1, k * dt)
-            e["pm25"] += (out["pm25"] - e["pm25"]) * (k_open if is_open else PHYS["pmInfiltration"] * wall_share) * dt
-            e["co2"] += (out["co2"] - e["co2"]) * (0.05 if is_open else 0.003) * dt
+            e["pm25"] += (out["pm25"] - e["pm25"]) * (min(1.0, k_open * dt) if is_open else PHYS["pmInfiltration"] * wall_share * dt)
+            e["co2"] += (out["co2"] - e["co2"]) * (min(1.0, k_open * dt) if is_open else 0.003 * dt)
             if k_vent:
                 e["pm25"] += (out["pm25"] * (1 - V["filter"]) - e["pm25"]) * k_vent * dt
                 e["co2"] += (out["co2"] - e["co2"]) * k_vent * dt

@@ -46,7 +46,7 @@ DEFER_MAX_MIN = 180  # a daily behaviour waits at most this long after its minut
 # it reaches onAboveC (Seoul flats: switched on at 29.8 C, off at 27.3 C on average, Chun & Bae 2005), to setpointC
 # (rooms with cooling on: 25.2 C, Yun et al. 2020); its window is closed first. Bedtime / leaving: keep or off; a cooled
 # room left COOL_UNUSED_MIN is switched off by people who do that. Windows: in hot rooms, opened when the room reaches
-# openAboveC and outdoor air is cooler (no data; the LLM's choice), closed again when the room is WINDOW_CLOSE_BELOW_K
+# openAboveC and outdoor air is cooler (no data; the LLM's choice), closed again (after WINDOW_MIN_OPEN_MIN) when the room is WINDOW_CLOSE_BELOW_K
 # below openAboveC, when outdoor air is hotter, for cooling, for rain or snow, when leaving, and at bedtime unless the
 # person sleeps with it open on warm nights. Airing: 0-2 times a day, morning 9-11 / evening 17-19 (spring survey of 154
 # Seoul/Gyeonggi flats: once a day 49.7%, twice 30.7%; mornings 9-11 55.8%, evenings 17-19 33.4%; under 20 min 43.0%,
@@ -54,7 +54,8 @@ DEFER_MAX_MIN = 180  # a daily behaviour waits at most this long after its minut
 # 2013). With these habits the off rules for cooling units and windows are not used.
 COOL_UNUSED_MIN = 30
 COOL_ROOM = dict(kitchen="living_room", dining_room="living_room", hallway="living_room", entryway="living_room")  # no unit there: the living room's
-WINDOW_CLOSE_BELOW_K = 2.0
+WINDOW_CLOSE_BELOW_K = 4.0
+WINDOW_MIN_OPEN_MIN = 60  # a window opened for heat stays open at least this long (no data; avoids opening and closing every few minutes)
 AIRING_SLOTS = [(9, 11, 55.8), (17, 19, 33.4)]  # local hours and the survey's share for one airing a day
 # ventilation habits (profile ventilationHabits, drawn by pipeline/sample_ventilation_person.py; agreed 2026-11-18): the
 # flat's ventilation unit (house.py PHYS envelope.ventilator) runs always / while someone is home / while the person is
@@ -207,7 +208,7 @@ class AgentRunner:
         self.cool_stats = dict(switchedOn=0, setpoint=0, sleepOff=0, leaveOff=0, keptOn=0, unusedOff=0)
         self.win_stats = dict(hotOpen=0, closedCool=0, closedHotOutside=0, closedRain=0, closedForCooling=0, airings=0, sleepOpen=0, closedAtCheck=0)
         self.airing_plan = {}  # local day -> list of dict(at, until, done)
-        self.win_hot, self.win_airing = set(), set()  # windows the habit opened because of heat / for airing
+        self.win_hot, self.win_airing = {}, set()  # windows the habit opened because of heat (id -> opened at) / for airing
         self.vent = profile.get("ventilationHabits")  # None: no ventilation unit running
         self.vent_minutes = dict(season=0, other=0)
         self.behaviours = []
@@ -936,7 +937,7 @@ class AgentRunner:
     def win_set(self, d, value):
         out = self.exec(dict(do="home.record", args=dict(device=d.id, capability="contactSensor", attribute="contact", value=value)))
         if out["result"] == "done" and value == "closed":
-            self.win_hot.discard(d.id)
+            self.win_hot.pop(d.id, None)
             self.win_airing.discard(d.id)
         return out
 
@@ -960,14 +961,16 @@ class AgentRunner:
             if self.win_is_open(d):
                 if cooling and self.win_set(d, "closed")["result"] == "done":
                     self.win_stats["closedForCooling"] += 1
-                elif d.id in self.win_hot and temp <= W["openAboveC"] - WINDOW_CLOSE_BELOW_K and self.win_set(d, "closed")["result"] == "done":
+                elif (d.id in self.win_hot and t - self.win_hot[d.id] >= WINDOW_MIN_OPEN_MIN * MIN_MS and temp <= W["openAboveC"] - WINDOW_CLOSE_BELOW_K
+                      and self.win_set(d, "closed")["result"] == "done"):
                     self.win_stats["closedCool"] += 1
-                elif d.id in self.win_hot and out["temperature"] > temp + 1 and self.win_set(d, "closed")["result"] == "done":
+                elif (d.id in self.win_hot and t - self.win_hot[d.id] >= WINDOW_MIN_OPEN_MIN * MIN_MS and out["temperature"] > temp + 1
+                      and self.win_set(d, "closed")["result"] == "done"):
                     self.win_stats["closedHotOutside"] += 1
             elif W.get("summerOpen") and not cooling and temp >= W["openAboveC"] and out["temperature"] < temp - 1:
                 a = dict(do="home.record", args=dict(device=d.id, capability="contactSensor", attribute="contact", value="open"))
                 if not self.leaving_soon(a, None) and self.win_set(d, "open")["result"] == "done":
-                    self.win_hot.add(d.id)
+                    self.win_hot[d.id] = t
                     self.win_stats["hotOpen"] += 1
         self.airing_tick(t)
 

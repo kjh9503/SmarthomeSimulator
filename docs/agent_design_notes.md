@@ -356,6 +356,19 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
     hourly median 25.6 C. Measured (Yun et al. 2020): summer indoor 26.6 vs outdoor 23.6, cooling off 26.9 vs 23.3. That
     063 stays +7.9 C with the window open 58% of the time looks due to the open-window airflow (`windowOpen` large 0.04
     per min = 2.4/h, no source) and windows shut while the flat is empty in the day; to check.
+- Open windows (2026-11-20). Before: fixed rates (large 0.04 per min = 2.4/h, medium 1.8, small 1.2; no source) x a wind
+  factor. Now single-sided flow, De Gids & Phaff (1982), the basis of EN 16798-7: Q = 1/2 A sqrt(0.001 U10^2 + 0.0035 h dT
+  + 0.01); A = half the glass (one sash of a sliding pair; "half the window", Cho & Choi 2013), h = 2.1 / 1.5 / 1.0 m for
+  large / medium / small [assume]; the balcony door counts as the living room's large window; capped at 0.8 of the room
+  air a minute. PM2.5 and CO2 exchange use the same rate (CO2 was a fixed 0.05 per min). Example: living room, half
+  open, 2.3 m/s, 5 C difference -> about 36/h. Measured: Beijing bedroom, windows open more than 3 cm, 0.89-2.31/h
+  seasonal means (Liu et al. 2022; opening width not recorded).
+  - A window opened for heat stays open at least 60 min and closes 4 C below the opening temperature (with 2 C the 063
+    living room window opened 5,575 times a year, every few minutes; no data, chosen to stop that).
+  - Check [ours, one year, 063: no cooling, opens at 26 C]: Jul-Aug living room hourly median 26.6 C (10-90%: 24.1-28.9),
+    room1 27.3, room3 28.2; outdoor 25.6. Living room window opened 98 times in Jul-Aug (1.6 a day), open 792 of 1488 h.
+    January living room 23.8 C; heating 29.5 kWh/m2 (more airing loss). Measured (Yun et al. 2020, whole summer):
+    indoor 26.6, outdoor 23.6.
 - Ventilation habits (2026-11-18; agreed: a per-person habit, effect only when SmartThings has no device for it). Flats of
   30+ households since 2006-02 must be able to ventilate 0.5/h (Rules on Building Equipment Standards art. 11, annex 1-5;
   checked through commentary pages, not the statute text). No ventilator / ERV capability among the 328 standard and 182
@@ -388,6 +401,8 @@ immediate response timing, gap-dependent off probabilities, persona -> daily-lif
 
 | Short name | Reference | Used for | Read |
 |---|---|---|---|
+| De Gids & Phaff 1982 | de Gids W., Phaff H. Ventilation rates and energy consumption due to open windows. Air Infiltration Review 4(1), 1982; equation as quoted in "Calculation methods for single sided natural ventilation - now and ahead" (Aalborg Univ.). https://vbn.aau.dk/ws/files/284948171/Calculation_methods_for_single_sided_natural_ventilation_now_and_ahead.pdf | open-window airflow | review paper |
+| Liu 2022 | Liu S. et al. Study on the Dynamic Natural Ventilation Rates of Occupied Residence. E3S Web Conf. 356 (ROOMVENT 2022). https://www.e3s-conferences.org/articles/e3sconf/pdf/2022/23/e3sconf_roomvent2022_03058.pdf | measured airflow with windows open | web summary |
 | Chun & Bae 2005 | Chun C.-Y., Bae N.-R. A Study on Acceptable Thermal Comfort Zone and Resident Behavior of Operating Cooling Devices in Apartments. KJACR 17(5) 477-486, 2005. https://koreascience.kr/article/JAKO200520828120793.page | switch-on / switch-off room temperature | abstract |
 | Yun 2020 | Yun et al. Indoor Thermal Environment Long-Term Data Analytics Using IoT Devices in Korean Apartments. IJERPH 2020. https://pmc.ncbi.nlm.nih.gov/articles/PMC7579249 | cooled / not cooled room temperature, summer indoor vs outdoor | web summary |
 | Lee 2010 (airing) | Lee Y.-J. Characteristics of Behavior for Ventilation and Maintenance for Ventilation Equipments by Multi-family Housing Residents. J. Korean Housing Assoc. 21(5), 2010. https://koreascience.or.kr/article/JAKO201011949345964.pdf | airing counts, minutes, times | web summary |
