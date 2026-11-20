@@ -4,7 +4,7 @@ import json
 import math
 import os
 
-from .weather import outdoor_at, db_sum, WEATHER, WIND, FACADE_DB
+from .weather import outdoor_at, db_sum, WEATHER, WIND, FACADE_DB, solar_at, vertical_irradiance
 
 DATA = os.path.join(os.path.dirname(__file__), "data")
 SPEC = [json.loads(l) for l in open(os.path.join(DATA, "device_spec.jsonl"), encoding="utf-8") if l.strip()]
@@ -74,7 +74,7 @@ PHYS = dict(
     # ("heavy", ISO13790.Data.Heavy: concrete flats). U [W/m2K]: wall 0.170, window 1.0 (energy-saving design standard for
     # flats, central region 2; wall: notice 2024-421, window: from 2018-09-01). Infiltration ACH50 3.51 (Yoon 2013, 27 new
     # Korean flats) / 20 (Persily's rule; Sherman's N ~ 20) = 0.18 per hour. Our own assumptions: window area 40 / 25 / 15 %
-    # of the floor (large / medium / small), each exterior wall sqrt(floor area) long, SHGC 0.5, daylight 110 lux per W/m2,
+    # of the floor (large / medium / small), each exterior wall sqrt(floor area) long, SHGC 0.5, daylight 110 lux per W/m2 (not used for heat since 2026-11-20: phi_sol),
     # curtain passes the same share of solar heat as of light, internal gains (W): person 65 (Kim & Byun 2008 sensible),
     # ceiling light 10 W/m2 (ibid., bedroom), TV 100, stove 2000, oven 2000, dryer 300, washer 150, dishwasher 300.
     # Neighbours (2026-11-05): the flat is a middle floor; its floor and ceiling slabs (each the room's floor area) pass heat to
@@ -432,7 +432,10 @@ class Environment:
             c_air, c_m = 1206 * vol, E["cMassPerFloor"] * af
             curtain_dev = devs.get("curtain")
             shade = PHYS["curtain"].get(curtain_dev.state.get("windowShade.windowShade"), 0.6) if curtain_dev is not None else 1
-            phi_sol = E["shgc"] * a_win * out["daylight"] / E["luxPerW"] * window_sun(p, out) * shade
+            # sun on the window (2026-11-20): vertical irradiance from the sun position and the calibrated horizontal
+            # irradiance (weather.solar_at, vertical_irradiance); before, daylight lux / 110 x window_sun, which was a
+            # quarter of the measured horizontal irradiation and ignored the sun height
+            phi_sol = E["shgc"] * a_win * vertical_irradiance(AZIMUTH[p["window"]], solar_at(ms)) * shade if a_win else 0.0
             G = E["gains"]
             phi_int = (G["person"] if occ else 0) + (G["lightPerM2"] * af if light_on else 0)
             tv_dev = devs.get("tv")

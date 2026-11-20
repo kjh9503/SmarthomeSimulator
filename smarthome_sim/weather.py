@@ -305,6 +305,66 @@ def weather_norm_for(ms):
     return norm
 
 
+# Solar irradiance for the heat balance (2026-11-20; replaces daylight / 110 for heat, daylight lux itself unchanged).
+# Sun position: Spencer (1971) declination and equation of time. Clear sky: Haurwitz (1945),
+# G = 1098 sin(alt) exp(-0.057 / sin(alt)) W/m2. Weather: x WEATHER["sun"] blend (clear 1, cloudy 0.4, rain 0.15, snow 0.2).
+# Calibrated per month (SOLAR_CAL, blended between months) so that the monthly mean daily horizontal irradiation equals
+# Seoul measurements 1982-2009, kWh/m2 a day (Jo, Yun, Kim & Kang 2011, J. Korean Solar Energy Soc. 31(3), table 3):
+SEOUL_GHI_KWH = [2.03, 2.83, 3.59, 4.49, 4.83, 4.48, 3.37, 3.70, 3.63, 3.13, 2.11, 1.78]
+SOLAR_CAL = [0.939, 1.0596, 0.9112, 0.988, 0.8778, 0.8338, 0.7708, 0.9238, 0.8572, 0.89, 0.9102, 0.9659]  # tools/calibrate_solar.py, years 2024-2028
+SOLAR = dict(albedo=0.2)  # ground reflectance for vertical windows (common value)
+_sol = {}
+
+
+def solar_at(ms):
+    """sun position and horizontal irradiance at a moment: alt, az (deg, 0 = N, 180 = S), ghi, dni, dhi (W/m2), i0"""
+    key = ms // MIN_MS
+    s = _sol.get(key)
+    if s is not None:
+        return s
+    t = key * MIN_MS
+    y = ymd(day_index(t))[0]
+    n = math.floor((t - local_ms(y, 0, 1)) / DAY_MS) + 1  # day of year (local)
+    B = 2 * math.pi * (n - 1) / 365
+    decl = (0.006918 - 0.399912 * math.cos(B) + 0.070257 * math.sin(B) - 0.006758 * math.cos(2 * B) + 0.000907 * math.sin(2 * B)
+            - 0.002697 * math.cos(3 * B) + 0.00148 * math.sin(3 * B))
+    eot_min = 229.18 * (0.000075 + 0.001868 * math.cos(B) - 0.032077 * math.sin(B) - 0.014615 * math.cos(2 * B) - 0.040849 * math.sin(2 * B))
+    utc_h = (t % DAY_MS) / 3600000
+    solar_h = utc_h + SEOUL_LON / 15 + eot_min / 60
+    H = math.radians(15 * (solar_h - 12))
+    lat = math.radians(SEOUL_LAT)
+    sa = math.sin(lat) * math.sin(decl) + math.cos(lat) * math.cos(decl) * math.cos(H)
+    alt = math.asin(max(-1.0, min(1.0, sa)))
+    az = (math.degrees(math.atan2(math.sin(H), math.cos(H) * math.sin(lat) - math.tan(decl) * math.cos(lat))) + 180) % 360
+    i0 = 1361 * (1 + 0.033 * math.cos(2 * math.pi * n / 365))
+    ghi = dni = dhi = 0.0
+    if sa > 0.01:
+        clear = 1098 * sa * math.exp(-0.057 / sa)
+        ghi = clear * weather_fx(t)["sun"] * month_blend(t, SOLAR_CAL)
+        kt = min(1.0, ghi / (i0 * sa))
+        if kt <= 0.22:
+            fd = 1 - 0.09 * kt
+        elif kt <= 0.8:
+            fd = 0.9511 - 0.1604 * kt + 4.388 * kt ** 2 - 16.638 * kt ** 3 + 12.336 * kt ** 4
+        else:
+            fd = 0.165
+        dhi = ghi * fd  # Erbs, Klein & Duffie (1982) diffuse fraction
+        dni = (ghi - dhi) / sa
+    s = dict(alt=math.degrees(alt), az=az, ghi=ghi, dni=dni, dhi=dhi, i0=i0)
+    if len(_sol) > 200000:
+        _sol.clear()
+    _sol[key] = s
+    return s
+
+
+def vertical_irradiance(window_az, s):
+    """W/m2 on a vertical window facing window_az (deg): beam on the glass + half the sky (isotropic) + half the ground"""
+    if s["ghi"] <= 0:
+        return 0.0
+    cos_inc = math.cos(math.radians(s["alt"])) * math.cos(math.radians(s["az"] - window_az))
+    return s["dni"] * max(0.0, cos_inc) + s["dhi"] * 0.5 + s["ghi"] * SOLAR["albedo"] * 0.5
+
+
 def db_sum(levels):
     return 10 * math.log10(sum(10 ** (L / 10) for L in levels))
 

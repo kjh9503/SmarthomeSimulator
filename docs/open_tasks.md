@@ -65,9 +65,12 @@ Not done yet:
   notes section 12). Ventilation unit added as a per-person habit (effect only, no device).
 - Winter window airing: 75% of households open windows 1-2 times a day, under 10 min (Cho & Choi 2013, 20 flats in
   Cheongju); 063 opens a window about 0.2 times a day in Nov-Mar. Not decided whether it becomes a habit too.
-- Summer indoor temperature without cooling (2026-11-19): 063 (no cooling rule) living room Jul-Aug hourly median 32.2 C
+- Summer indoor temperature without cooling (2026-11-19; after the solar fix of 2026-11-20 the 063 living room is 39.2 C
+  hourly median in Jul-Aug; agreed order: balcony shade, then window and cooling habits): 063 (no cooling rule) living room Jul-Aug hourly median 32.2 C
   (10-90%: 30.9-33.3) with the ventilation unit, 35.8 C median of report lines without it; outdoor median 25.6 C. Looks
   too hot; to check against measurements.
+- Outdoor daylight lux is about a quarter of real (clear noon 25,000 x sin altitude vs about 100,000); kept for the
+  illuminance sensors, not decided whether to change it (rules use illuminance thresholds).
 - Winter indoor humidity: report lines in Dec-Feb show 23-24% in 063 (with or without the ventilation unit); to check
   against measurements.
 - Stove gain 2000 W (2026-11-18): every switch-on adds 2000 W to the kitchen air, no range hood. Gas range: 30% of the gas

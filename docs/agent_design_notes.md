@@ -325,6 +325,16 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
   not the cause: 063 heats above 23 C and loses heat to them (-5.0); without them 21.7. No measured figure found for flats
   built to the 2018+ standard. Heating-season balance (063, kWh/m2): windows -17.6, ventilation/infiltration -10.9,
   floor heating downwards -5.2, neighbours -5.0, walls -4.1, sun +9.8, internal +4.5, floor heating 29.2.
+- Sun on windows (2026-11-20). Before: daylight (clear noon 25,000 lux x sin altitude) / 110 x an azimuth factor
+  (0.35-1); horizontal irradiation was 26% of Seoul measurements (0.87 vs 3.33 kWh/m2 a day) and the sun height was
+  ignored (south windows got too much in summer, too little in winter). Now `weather.solar_at`: sun position (Spencer
+  1971), Haurwitz (1945) clear sky x weather factor (clear 1, cloudy 0.4, rain 0.15, snow 0.2) x monthly calibration
+  (`SOLAR_CAL` 0.77-1.06, `tools/calibrate_solar.py`, years 2024-2028 fitted to Seoul 1982-2009 monthly means, Jo et al.
+  2011), Erbs (1982) beam/diffuse split, vertical window = beam x cos(incidence) + diffuse x 0.5 + horizontal x 0.2 x 0.5
+  [assume isotropic sky, albedo 0.2]. Daylight lux and indoor illuminance unchanged (heat only).
+  - Check [ours, one year, 063]: heating 45.2 -> 17.5 kWh/m2 a; January living room hourly median 23.5 C. Jul-Aug living
+    room 39.2 C (10-90%: 37.2-41.5): no cooling, windows nearly always shut, no balcony shade (the balcony is only an
+    outdoor space). Next: balcony shade, then window and cooling habits.
 - Ventilation habits (2026-11-18; agreed: a per-person habit, effect only when SmartThings has no device for it). Flats of
   30+ households since 2006-02 must be able to ventilate 0.5/h (Rules on Building Equipment Standards art. 11, annex 1-5;
   checked through commentary pages, not the statute text). No ventilator / ERV capability among the 328 standard and 182
@@ -357,6 +367,7 @@ immediate response timing, gap-dependent off probabilities, persona -> daily-lif
 
 | Short name | Reference | Used for | Read |
 |---|---|---|---|
+| Jo 2011 | Jo D.-K., Yun C.-Y., Kim K.-D., Kang Y.-H. A Detail Survey of Horizontal Global Radiation and Hours of Bright Sunshine for the Installation of Solar Photovoltaic System in Korea. J. Korean Solar Energy Soc. 31(3), 2011. https://koreascience.or.kr/article/JAKO201128451816195.pdf | Seoul monthly horizontal irradiation (table 3) | web summary |
 | Lee 2014 | Lee W.-J., Kang E.-C., Lee E.-J., Shin U.-C. A Study on the Calculation of Thermal Consumption Unit of Apartment. KJACR 26(8) 388-393, 2014. https://koreascience.kr/article/JAKO201428854482525.pdf | measured comparison (heating + hot water, built 1991-2008) | web summary |
 | Jin 2019 | Jin H. S. et al. Analysis of annual EUIs by end-use in apartment units (2017-2018). E3S Web Conf. 111, 04013 (CLIMA 2019). https://www.e3s-conferences.org/articles/e3sconf/pdf/2019/37/e3sconf_clima2019_04013.pdf | heating / hot water split (71 Seoul flats) | web summary |
 | Kim 2005 | Kim S.-M., Park B.-Y., Sohn J.-Y. Evaluation of the Performance and the Energy Consumption Characteristics of Heat Recovery Ventilators in Apartments, 2005. https://koreascience.or.kr/article/JAKO200520828120913.page | ventilator heat recovery 46% | abstract |
