@@ -334,7 +334,8 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
   [assume isotropic sky, albedo 0.2]. Daylight lux and indoor illuminance unchanged (heat only).
   - Check [ours, one year, 063]: heating 45.2 -> 17.5 kWh/m2 a; January living room hourly median 23.5 C. Jul-Aug living
     room 39.2 C (10-90%: 37.2-41.5): no cooling, windows nearly always shut, no balcony shade (the balcony is only an
-    outdoor space). Next: balcony shade, then window and cooling habits.
+    outdoor space). Balconies: all expanded (agreed 2026-11-20: no shade; summer sun is handled by window,
+    curtain and cooling habits; no figure found for the share of expanded flats). Next: window and cooling habits.
 - Ventilation habits (2026-11-18; agreed: a per-person habit, effect only when SmartThings has no device for it). Flats of
   30+ households since 2006-02 must be able to ventilate 0.5/h (Rules on Building Equipment Standards art. 11, annex 1-5;
   checked through commentary pages, not the statute text). No ventilator / ERV capability among the 328 standard and 182
