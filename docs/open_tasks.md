@@ -78,7 +78,9 @@ Not done yet:
   against measurements.
 - Stove gain: replaced 2026-11-21 (one large burner, sensible + latent, range hood habit; design notes section 12).
 - Person moisture and the +3 hPa offset: replaced 2026-11-21 by physical sources (design notes section 12). Open: 063 has no
-  laundry behaviour (no washes in a year), so its indoor drying never happens; winter RH 13% vs measured 36.6%.
+  laundry behaviour (no washes in a year), so its indoor drying never happens; winter RH 13% vs measured 36.6%. Test with two washes a week (60 days):
+  10 washes, 5 dryer, 5 racks; the laundry room behind its closed door reaches 100% RH (vapour above saturation is
+  dropped) and the living room stays at 13%. Where racks stand is not decided.
 - Cooling RH 100% (seen earlier): not reproduced in a 4-hour test on commits 318b564 / a3c4d77 / 8eb2550 (85-90% at
   16 C); where it came from is not found.
 - Wrong skips from deferred departures (not a problem, agreed 2026-11-04): a daily departure rule deferred while the person is busy can leave later than

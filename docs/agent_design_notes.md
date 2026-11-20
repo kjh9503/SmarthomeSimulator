@@ -384,8 +384,10 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
   2.5 g/h for a 10 m2 room), a shower 0.24 kg per 5 min = 48 g/min (same table), indoor laundry drying 2.2-2.9 kg a load
   (same table) released evenly over 8-12 h [assume the hours]. Shower habit: the LLM's `showerRanges` (0/1/2 a day,
   morning / evening, minutes) -> `pipeline/sample_shower_person.py` -> engine-made routines (bathroom, light on,
-  `person.shower`, light off; morning 3-20 min after waking, evening 21-23). Laundry: a wash not in the dryer within
-  120 min of finishing dries on a rack in the laundry room (else the living room) [assume 120 min]. Rack and shower write
+  `person.shower`, light off; morning 3-20 min after waking, evening 21-23). Laundry (revised 2026-11-21, agreed: a per-person
+  share): 5-40 min after a wash ends [assume], once home and awake, the person starts the dryer by hand (logged) with
+  the share `laundryRanges.dryerShare` (`pipeline/sample_laundry_person.py`; 0 without a dryer), else hangs it on a rack in
+  the laundry room (else the living room); a dryer a rule started meanwhile counts as the dryer. Rack and shower write
   no line of their own (seen in the humidity sensors). Korean dryer ownership 12% (2020) -> 35% (2023) (Gallup Korea,
   Herald Economy 2025-11-18).
   - Check [ours, one year, 063]: January living room hourly median 21% -> 13% (10-90%: 10-18), bathroom 18% (up to 56%

@@ -752,6 +752,44 @@
     "showerPerson": {
       "type": "object",
       "description": "Written by pipeline/sample_shower_person.py: seed and the weights used. Not read by the engine."
+    },
+    "laundryRanges": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dryerShare"
+      ],
+      "description": "Share of washes put in the dryer (the rest dries on a rack indoors) as a range chosen from the persona; pipeline/sample_laundry_person.py draws laundryHabits. No dryer: min 0, max 0. Do not write rules that start the dryer after a wash.",
+      "properties": {
+        "dryerShare": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "min",
+            "max"
+          ],
+          "properties": {
+            "min": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "max": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        }
+      }
+    },
+    "laundryHabits": {
+      "type": "object",
+      "description": "Written by pipeline/sample_laundry_person.py; read by the engine."
+    },
+    "laundryPerson": {
+      "type": "object",
+      "description": "Written by pipeline/sample_laundry_person.py: seed and the range used. Not read by the engine."
     }
   }
 }

@@ -54,7 +54,7 @@ DEFER_MAX_MIN = 180  # a daily behaviour waits at most this long after its minut
 # 20-40 min 39.6%; Lee 2010), shorter in the heating season (winter: 75% open 1-2 times a day, under 10 min; Cho & Choi
 # 2013). With these habits the off rules for cooling units and windows are not used.
 COOL_UNUSED_MIN = 30
-LAUNDRY_DRYER_MIN = 120  # a finished wash not in the dryer within this long is dried on a rack indoors [assume]
+LAUNDRY_WAIT_MIN = (5, 40)  # the laundry is dealt with this long after the wash ends, once home and awake [assume]
 COOL_ROOM = dict(kitchen="living_room", dining_room="living_room", hallway="living_room", entryway="living_room")  # no unit there: the living room's
 WINDOW_CLOSE_BELOW_K = 4.0
 WINDOW_MIN_OPEN_MIN = 60  # a window opened for heat stays open at least this long (no data; avoids opening and closing every few minutes)
@@ -218,6 +218,7 @@ class AgentRunner:
         self.shower_stats = dict(showers=0)
         self.laundry = dict(washerWas=None, finishedAt=None, dryerSince=False)
         self.laundry_stats = dict(washes=0, dried=0, racks=0)
+        self.laundry_h = profile.get("laundryHabits")  # None: no dryer use by habit (racks only)
         self.vent_minutes = dict(season=0, other=0)
         self.behaviours = []
         for b in profile["behaviours"] + self.shower_behaviours(profile.get("showerHabits")):
@@ -1069,33 +1070,44 @@ class AgentRunner:
         return out
 
     def laundry_tick(self, t):
-        """a wash that is not put in the dryer within LAUNDRY_DRYER_MIN of finishing is dried indoors on a rack: water
-        (moisture.rackKg) released evenly over moisture.rackHours in the laundry room (else the living room); no line"""
-        H, L, env = self.sim.house, self.laundry, self.sim.house.env
+        """after each wash, once the person is home and awake (LAUNDRY_WAIT_MIN after the wash ends at the earliest), the
+        laundry goes into the dryer with the person's share (laundryHabits.dryerShare; started by hand, logged) or onto a
+        rack indoors: water (moisture.rackKg) released evenly over moisture.rackHours in the laundry room (else the living
+        room), no line. A dryer a rule started since the wash counts as the dryer."""
+        H, L, env, S = self.sim.house, self.laundry, self.sim.house.env, self.S
         w = H.at("laundry", "washer") or next((d for d in H.devices.values() if d.type == "washer"), None)
         if w is None:
             return
         st = w.get("washerOperatingState", "machineState")
         if L["washerWas"] == "run" and st != "run":
             L["finishedAt"], L["dryerSince"] = t, False
+            L["waitMin"] = self.uni(LAUNDRY_WAIT_MIN[0], LAUNDRY_WAIT_MIN[1])
             self.laundry_stats["washes"] += 1
         L["washerWas"] = st
         if L["finishedAt"] is None:
             return
         dr = next((d for d in H.devices.values() if d.type == "dryer"), None)
         if dr is not None and dr.get("dryerOperatingState", "machineState") == "run":
-            L["dryerSince"] = True
-        if t - L["finishedAt"] >= LAUNDRY_DRYER_MIN * MIN_MS:
-            if L["dryerSince"]:
-                self.laundry_stats["dried"] += 1
-            else:
-                M = PHYS["moisture"]
-                hours = self.uni(*M["rackHours"])
-                room = "laundry" if "laundry" in env.rooms else "living_room"
-                env.racks = [r for r in env.racks if r["until"] > t] + [dict(room=room, start=t, until=t + int(hours * 3600000),
-                                                                              gMin=self.uni(*M["rackKg"]) * 1000 / (hours * 60))]
-                self.laundry_stats["racks"] += 1
+            self.laundry_stats["dried"] += 1
             L["finishedAt"] = None
+            return
+        if t - L["finishedAt"] < L["waitMin"] * MIN_MS or S["place"] != "home" or S["trip"] or S["asleep"] or self.busy(t):
+            return
+        L["finishedAt"] = None
+        share = (self.laundry_h or {}).get("dryerShare", 0)
+        if dr is not None and self.chance(share):
+            r = self.exec(dict(do="home.command", args=dict(device=dr.id, capability="dryerOperatingState", command="setMachineState",
+                                                           args=["run"], channel="physical")))
+            if r["result"] == "done":
+                self.laundry_stats["dried"] += 1
+                return
+        room = "laundry" if "laundry" in env.rooms else "living_room"
+        self.exec(dict(do="person.moveRoom", args=dict(room=room)))
+        M = PHYS["moisture"]
+        hours = self.uni(*M["rackHours"])
+        env.racks = [r for r in env.racks if r["until"] > t] + [dict(room=room, start=t, until=t + int(hours * 3600000),
+                                                                      gMin=self.uni(*M["rackKg"]) * 1000 / (hours * 60))]
+        self.laundry_stats["racks"] += 1
 
     # ----- range hood habit -----
     def hood_tick(self, t):
@@ -1794,7 +1806,7 @@ class AgentRunner:
                                        kWhPerM2=round(sum(self.sim.house.env.heat_wh.values()) / 1000 / self.sim.house.profile["areaM2"], 1)),
                        cooling=dict(habits=self.cool, **self.cool_stats), windows=dict(habits=self.win, **self.win_stats),
                        hood=dict(habits=self.hood, **self.hood_stats), showers=dict(habits=self.prof_shower, **self.shower_stats),
-                       laundry=self.laundry_stats,
+                       laundry=dict(habits=self.laundry_h, **self.laundry_stats),
                        ventilation=dict(habits=self.vent, hoursInHeatingSeason=round(self.vent_minutes["season"] / 60), hoursOtherwise=round(self.vent_minutes["other"] / 60)),
                        seconds=round(_time.time() - t0))
         with open(os.path.join(self.out_dir, "summary.json"), "w", encoding="utf-8") as f:
