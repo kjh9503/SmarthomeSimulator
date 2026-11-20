@@ -646,6 +646,44 @@
     "windowPerson": {
       "type": "object",
       "description": "Written by pipeline/sample_window_person.py: seed and the ranges used. Not read by the engine."
+    },
+    "hoodRanges": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "useShare"
+      ],
+      "description": "Share of cookings on which the person runs the kitchen range hood, as a range chosen from the persona; pipeline/sample_hood_person.py draws hoodHabits. The hood has no SmartThings capability: no lines, only its effect.",
+      "properties": {
+        "useShare": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "min",
+            "max"
+          ],
+          "properties": {
+            "min": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "max": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        }
+      }
+    },
+    "hoodHabits": {
+      "type": "object",
+      "description": "Written by pipeline/sample_hood_person.py; read by the engine."
+    },
+    "hoodPerson": {
+      "type": "object",
+      "description": "Written by pipeline/sample_hood_person.py: seed and the range used. Not read by the engine."
     }
   }
 }

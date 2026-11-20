@@ -182,6 +182,16 @@ leaving habits, opening for heat and sleeping with the window open have no data:
 }
 ```
 
+### Range hood habit
+
+The kitchen range hood is not a SmartThings device (no lines). Write `hoodRanges.useShare`, the share of cookings on which
+the person runs it, from the persona; `pipeline/sample_hood_person.py` draws `hoodHabits`. No survey was found: choose it
+from the persona and say why in `notes` (e.g. bothered by smells or smoke -> high; does not think about it -> low).
+
+```json
+"hoodRanges": { "useShare": { "min": 0.3, "max": 0.9 } }
+```
+
 ### Ventilation habits
 
 New flats have a ventilation unit (0.5 air changes per hour). It is not a SmartThings device: it writes no lines and is

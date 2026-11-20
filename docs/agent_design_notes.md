@@ -369,6 +369,16 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
     room1 27.3, room3 28.2; outdoor 25.6. Living room window opened 98 times in Jul-Aug (1.6 a day), open 792 of 1488 h.
     January living room 23.8 C; heating 29.5 kWh/m2 (more airing loss). Measured (Yun et al. 2020, whole summer):
     indoor 26.6, outdoor 23.6.
+- Stove and range hood (2026-11-21). While the stove is on: one large burner at full flame [assume], 4.07 kW (Rinnai
+  RBR-S3000, city gas, seller's table; Danawa gives 8.84 kW in all, not resolved) x 0.30 sensible = 1.22 kW, x 0.20
+  latent = 0.81 kW as water vapour (about 1.2 kg/h) (Building America gas range fractions). Before: 2000 W sensible, no
+  vapour. The range hood has no SmartThings capability (effect only): each cooking it runs with the person's share
+  (`hoodRanges.useShare`, `pipeline/sample_hood_person.py`; no usage survey found, LLM's choice), until the stove is off:
+  0.018 m3/s exhaust (stage 1, one Korean flat measured, Lee, Jeong & Kang 2017) made up by outdoor air, 85% of the
+  cooking PM2.5 removed (80-90%, Lee 2016).
+  - Check: Aug 5 18:00, closed flat starting 30.8 C, 240 min: kitchen 34.0 at 10 min, 35.3 C at 180 min, RH 62 -> 88%;
+    with the hood 34.6 C, 85%. Before (2000 W, start 28.9 C): +5.0 K at 10 min, 36.1 C at 180 min. 063 one year (share
+    0.55): hood on 131 of 244 cookings; kitchen temperature report lines max 35.1 -> 33.0 C, median 23.9 C.
 - Ventilation habits (2026-11-18; agreed: a per-person habit, effect only when SmartThings has no device for it). Flats of
   30+ households since 2006-02 must be able to ventilate 0.5/h (Rules on Building Equipment Standards art. 11, annex 1-5;
   checked through commentary pages, not the statute text). No ventilator / ERV capability among the 328 standard and 182
@@ -403,6 +413,8 @@ immediate response timing, gap-dependent off probabilities, persona -> daily-lif
 |---|---|---|---|
 | De Gids & Phaff 1982 | de Gids W., Phaff H. Ventilation rates and energy consumption due to open windows. Air Infiltration Review 4(1), 1982; equation as quoted in "Calculation methods for single sided natural ventilation - now and ahead" (Aalborg Univ.). https://vbn.aau.dk/ws/files/284948171/Calculation_methods_for_single_sided_natural_ventilation_now_and_ahead.pdf | open-window airflow | review paper |
 | Liu 2022 | Liu S. et al. Study on the Dynamic Natural Ventilation Rates of Occupied Residence. E3S Web Conf. 356 (ROOMVENT 2022). https://www.e3s-conferences.org/articles/e3sconf/pdf/2022/23/e3sconf_roomvent2022_03058.pdf | measured airflow with windows open | web summary |
+| Lee 2016 (hood) | Lee Y.-G. Characteristics and Management of Particulate Matter from Kitchen Cooking in Apartment Buildings. Air Cleaning Technology 29(1), 2016. https://koreascience.kr/article/JAKO201654942433477.pdf | hood removes 80-90% of cooking PM2.5 | web summary |
+| Lee 2017 (hood) | Lee M., Jeong M., Kang M. Characteristics and Management of PM2.5 Emission on Cooking Condition. JCCT 4(1), 2017. https://koreascience.kr/article/JAKO201810256456089.pdf | hood airflow stage 1 0.018 m3/s | web summary |
 | Chun & Bae 2005 | Chun C.-Y., Bae N.-R. A Study on Acceptable Thermal Comfort Zone and Resident Behavior of Operating Cooling Devices in Apartments. KJACR 17(5) 477-486, 2005. https://koreascience.kr/article/JAKO200520828120793.page | switch-on / switch-off room temperature | abstract |
 | Yun 2020 | Yun et al. Indoor Thermal Environment Long-Term Data Analytics Using IoT Devices in Korean Apartments. IJERPH 2020. https://pmc.ncbi.nlm.nih.gov/articles/PMC7579249 | cooled / not cooled room temperature, summer indoor vs outdoor | web summary |
 | Lee 2010 (airing) | Lee Y.-J. Characteristics of Behavior for Ventilation and Maintenance for Ventilation Equipments by Multi-family Housing Residents. J. Korean Housing Assoc. 21(5), 2010. https://koreascience.or.kr/article/JAKO201011949345964.pdf | airing counts, minutes, times | web summary |

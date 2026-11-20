@@ -76,9 +76,9 @@ Not done yet:
   illuminance sensors, not decided whether to change it (rules use illuminance thresholds).
 - Winter indoor humidity: report lines in Dec-Feb show 23-24% in 063 (with or without the ventilation unit); to check
   against measurements.
-- Stove gain 2000 W (2026-11-18): every switch-on adds 2000 W to the kitchen air, no range hood. Gas range: 30% of the gas
-  becomes room heat (Building America benchmark); a 3-burner range uses 8.84 kW in all (Rinnai RBR-S3000), one burner not
-  found. 063: 240 uses, median 9 min, max 54 min; a 240-minute test takes the kitchen to 36 C. To decide.
+- Stove gain: replaced 2026-11-21 (one large burner, sensible + latent, range hood habit; design notes section 12).
+- Person moisture: `moisture.person` 0.0025 hPa a minute for a 10 m2 room is about 2.5 g of water an hour; often-quoted
+  values for a person are tens of grams an hour (source not checked). May be part of the low winter humidity.
 - Cooling RH 100% (seen earlier): not reproduced in a 4-hour test on commits 318b564 / a3c4d77 / 8eb2550 (85-90% at
   16 C); where it came from is not found.
 - Wrong skips from deferred departures (not a problem, agreed 2026-11-04): a daily departure rule deferred while the person is busy can leave later than

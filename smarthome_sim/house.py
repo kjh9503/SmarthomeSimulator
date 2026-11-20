@@ -75,7 +75,7 @@ PHYS = dict(
     # Korean flats) / 20 (Persily's rule; Sherman's N ~ 20) = 0.18 per hour. Our own assumptions: window area 40 / 25 / 15 %
     # of the floor (large / medium / small), each exterior wall sqrt(floor area) long, SHGC 0.5, daylight 110 lux per W/m2 (not used for heat since 2026-11-20: phi_sol),
     # curtain passes the same share of solar heat as of light, internal gains (W): person 65 (Kim & Byun 2008 sensible),
-    # ceiling light 10 W/m2 (ibid., bedroom), TV 100, stove 2000, oven 2000, dryer 300, washer 150, dishwasher 300.
+    # ceiling light 10 W/m2 (ibid., bedroom), TV 100, oven 2000, dryer 300, washer 150, dishwasher 300. Stove: see stove=.
     # Neighbours (2026-11-05): the flat is a middle floor; its floor and ceiling slabs (each the room's floor area) pass heat to
     # the flats below and above at U 0.810 W/m2K (design standard, floor between storeys, notice 2025-738), into the mass node;
     # side neighbours are left out (about 1% of the heat, Lee, Koo & Hong 2016). The neighbours are heated to 22 C while the
@@ -92,7 +92,15 @@ PHYS = dict(
                   # (Jang et al. 2007: wood 52.0 up, 10.8 down, mean surface 26.8 C). Downward heat goes to the flat below.
                   floor=dict(supplyC=40.0, bandK=0.5, cPerM2=80000, hUp=11.1, kPipe=4.72, downShare=10.8 / 52.0),
                   uPartyFloor=0.810, neighbourC=22.0, neighbourHeatingBelowMeanC=15.0,
-                  gains=dict(person=65, lightPerM2=10, tv=100, stove=2000, oven=2000, dryer=300, washer=150, dishwasher=300),
+                  gains=dict(person=65, lightPerM2=10, tv=100, oven=2000, dryer=300, washer=150, dishwasher=300),
+                  # stove (2026-11-21): one large burner at full flame while the stove is on [assume], 4.07 kW of gas
+                  # (Rinnai RBR-S3000, city gas; seller's table); of a gas range's energy 30% heats the room air and 20%
+                  # goes to moisture (Building America benchmark): 1.22 kW sensible, 0.81 kW latent (about 1.2 kg water/h)
+                  stove=dict(burnerKW=4.07, sensible=0.30, latent=0.20),
+                  # kitchen range hood (2026-11-21): runs while the stove is on when the person's hoodHabits say so (no
+                  # SmartThings capability: effect only). Exhaust 0.018 m3/s, stage 1 measured in a Korean flat (Lee,
+                  # Jeong & Kang 2017), replaced by outdoor air; removes 85% of the cooking PM2.5 (80-90%, Lee 2016).
+                  hood=dict(m3s=0.018, pmCapture=0.85),
                   # ventilation unit (2026-11-18): flats of 30+ households built or remodelled since 2006-02 must be able to
                   # ventilate 0.5 air changes per hour (natural or mechanical; Rules on Building Equipment Standards art. 11,
                   # annex 1-5: the "proper" fan step gives 0.5/h). It runs when the person's ventilationHabits say so; it has
@@ -344,6 +352,7 @@ class Environment:
         self.rooms = {}
         self.heat_wh = {}  # floor heating heat delivered per room (Wh)
         self.ventilator = False  # the flat's ventilation unit running (set by the agent from ventilationHabits; no device)
+        self.hood = False  # the kitchen range hood running (set by the agent from hoodHabits; no device)
         for r in house.room_ids:
             self.rooms[r] = (dict(temperature=out["temperature"], humidity=out["humidity"], pm25=out["pm25"], co2=out["co2"],
                                   illuminance=out["daylight"], noise=out["noise"]) if r == "balcony"
@@ -430,6 +439,8 @@ class Environment:
             k_vent = V["ach"] / 60 if self.ventilator else 0.0  # outdoor air brought in by the ventilation unit, per minute
             rec = V["recoveryHeating"] if out["temperature"] < e["temperature"] else V["recoveryCooling"]
             k = k_open + k_inf + k_vent * (1 - rec)  # outdoor air reaching the room, per minute (heat and moisture)
+            if self.hood and r == "kitchen" and is_("stove", "switch", "switch", "on"):
+                k += E["hood"]["m3s"] * 60 / vol  # range hood exhaust, made up by outdoor air
             if e.get("mass") is None:
                 e["mass"] = e["temperature"]
             # 5R1C heat balance, explicit in one-minute steps (air time constant about 3 min)
@@ -453,7 +464,7 @@ class Environment:
             if tv_dev is not None and tv_dev.state.get("switch.switch") == "on":
                 phi_int += G["tv"]
             if is_("stove", "switch", "switch", "on"):
-                phi_int += G["stove"]
+                phi_int += E["stove"]["burnerKW"] * E["stove"]["sensible"] * 1000
             if devs.get("oven") is not None and devs["oven"].state.get("mode.mode") != "off":
                 phi_int += G["oven"]
             for t in ("dryer", "washer", "dishwasher"):
@@ -536,8 +547,12 @@ class Environment:
             oven_on = oven is not None and oven.state.get("mode.mode") != "off"
             robot_on = is_("robot_vacuum", "robotCleanerOperatingState", "operatingState", "running")
             if stove_on:
-                e["pm25"] += 0.6 * sf * dt
+                hood = self.hood and r == "kitchen"
+                e["pm25"] += 0.6 * sf * dt * ((1 - PHYS["envelope"]["hood"]["pmCapture"]) if hood else 1)
                 e["co2"] += 5 * sf * dt
+                # latent heat as water vapour: g/min = W x 60 / 2450 J/g; 1 g in 1 m3 at about 22 C = 1.36 hPa
+                st = PHYS["envelope"]["stove"]
+                e["vapor"] += st["burnerKW"] * st["latent"] * 1000 * 60 / 2450 * 1.36 / (p["areaM2"] * PHYS["ceilingM"]) * dt
             dryer_on, washer_on = running("dryer"), running("washer")
             if dryer_on:
                 e["vapor"] += PHYS["moisture"]["dryer"] * sf * dt

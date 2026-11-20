@@ -108,6 +108,8 @@ def main():
                                              "add \"keepOn\": true if it is meant to stay on, else the engine skips it"))
     if "heatingRanges" in prof and "heatingHabits" not in prof:
         out.append(("WARN", "-", "heatingRanges without heatingHabits: run pipeline/sample_heating_person.py"))
+    if "hoodRanges" in prof and "hoodHabits" not in prof:
+        out.append(("WARN", "-", "hoodRanges without hoodHabits: run pipeline/sample_hood_person.py"))
     if "coolingRanges" in prof and "coolingHabits" not in prof:
         out.append(("WARN", "-", "coolingRanges without coolingHabits: run pipeline/sample_cooling_person.py"))
     if "windowRanges" in prof and "windowHabits" not in prof:

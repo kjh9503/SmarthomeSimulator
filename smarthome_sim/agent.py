@@ -210,6 +210,9 @@ class AgentRunner:
         self.airing_plan = {}  # local day -> list of dict(at, until, done)
         self.win_hot, self.win_airing = {}, set()  # windows the habit opened because of heat (id -> opened at) / for airing
         self.vent = profile.get("ventilationHabits")  # None: no ventilation unit running
+        self.hood = profile.get("hoodHabits")  # None: the range hood never runs
+        self.hood_session = None  # this cooking's hood decision (None: stove off)
+        self.hood_stats = dict(cookings=0, withHood=0)
         self.vent_minutes = dict(season=0, other=0)
         self.behaviours = []
         for b in profile["behaviours"]:
@@ -1025,6 +1028,22 @@ class AgentRunner:
             if self.win_set(d, "closed")["result"] == "done":
                 self.win_stats["closedAtCheck"] += 1
 
+    # ----- range hood habit -----
+    def hood_tick(self, t):
+        """each time the stove is switched on the person runs the range hood with the share of cookings the habit says
+        (hoodHabits.useShare); it runs until the stove is off (effect only, no lines)"""
+        d = self.sim.house.at("kitchen", "stove")
+        on = d is not None and d.get("switch", "switch") == "on"
+        if not on:
+            self.hood_session = None
+            self.sim.house.env.hood = False
+            return
+        if self.hood_session is None:
+            self.hood_session = bool(self.hood) and self.rnd.random() < self.hood.get("useShare", 0)
+            self.hood_stats["cookings"] += 1
+            self.hood_stats["withHood"] += int(self.hood_session)
+        self.sim.house.env.hood = self.hood_session
+
     # ----- ventilation habits -----
     def ventilation_tick(self, t):
         """the ventilation unit runs or not this minute, as the person's ventilationHabits say (effect only, no lines)"""
@@ -1656,6 +1675,7 @@ class AgentRunner:
             self.tasks = [k for k in self.tasks if not k["finished"]]
             self.heating_tick(t)
             self.ventilation_tick(t)
+            self.hood_tick(t)
             self.cooling_tick(t)
             self.window_tick(t)
             self.maybe_glance(t)
@@ -1703,6 +1723,7 @@ class AgentRunner:
                        behaviours=self.stats, checks=self.check_stats, planSkips=plan_check, heating=dict(self.heat_stats, kWh=round(sum(self.sim.house.env.heat_wh.values()) / 1000, 1),
                                        kWhPerM2=round(sum(self.sim.house.env.heat_wh.values()) / 1000 / self.sim.house.profile["areaM2"], 1)),
                        cooling=dict(habits=self.cool, **self.cool_stats), windows=dict(habits=self.win, **self.win_stats),
+                       hood=dict(habits=self.hood, **self.hood_stats),
                        ventilation=dict(habits=self.vent, hoursInHeatingSeason=round(self.vent_minutes["season"] / 60), hoursOtherwise=round(self.vent_minutes["other"] / 60)),
                        seconds=round(_time.time() - t0))
         with open(os.path.join(self.out_dir, "summary.json"), "w", encoding="utf-8") as f:

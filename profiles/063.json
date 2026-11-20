@@ -1,6 +1,6 @@
 {
   "personaId": "063",
-  "notes": "University student living alone in a 3-room flat. Weekdays on Campus, evenings mostly at home. Only pattern p63_a is included; p63_b (Campus) is not in this profile. Heating ranges: a student living alone on a budget: off when leaving more often than kept, comfort 21-24 C. Ventilation: no persona reason to differ from the survey's about-half users; on a budget, so running it only while home is weighted over always. Cooling: on a budget, so a little less likely to use it and a higher switch-on temperature (29-31 C) than the measured 29.8 C average; mostly off when leaving. Windows: survey airing counts; opening for heat likely for someone saving on cooling.",
+  "notes": "University student living alone in a 3-room flat. Weekdays on Campus, evenings mostly at home. Only pattern p63_a is included; p63_b (Campus) is not in this profile. Heating ranges: a student living alone on a budget: off when leaving more often than kept, comfort 21-24 C. Ventilation: no persona reason to differ from the survey's about-half users; on a budget, so running it only while home is weighted over always. Cooling: on a budget, so a little less likely to use it and a higher switch-on temperature (29-31 C) than the measured 29.8 C average; mostly off when leaving. Windows: survey airing counts; opening for heat likely for someone saving on cooling. Range hood: cooks simple meals and does not always think of it, so a middle range (0.3-0.8 of cookings).",
   "houseType": "3room",
   "variant": "3room-A",
   "roomRoles": {
@@ -2173,5 +2173,24 @@
       }
     },
     "source": "ranges chosen by the LLM for this persona; airing counts and minutes from Lee 2010 and Cho & Choi 2013"
+  },
+  "hoodRanges": {
+    "useShare": {
+      "min": 0.3,
+      "max": 0.8
+    }
+  },
+  "hoodHabits": {
+    "useShare": 0.55
+  },
+  "hoodPerson": {
+    "seed": 63,
+    "ranges": {
+      "useShare": {
+        "min": 0.3,
+        "max": 0.8
+      }
+    },
+    "source": "range chosen by the LLM for this persona (no survey found)"
   }
 }
