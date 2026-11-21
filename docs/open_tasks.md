@@ -1,99 +1,56 @@
 # Open tasks (agreed to come back to)
 
-## Calendar events from persona and scenario (2026-10-22)
+Rewritten 2026-11-21: finished items removed (their record is in docs/agent_design_notes*.md, section 12).
 
-Where we are:
-- `phone.calendarAdd` writes exactly what the profile says (title, begin, durationMinutes, location); nothing invents events.
-- `begin` is "HH:MM" of the day the step runs, or an epoch ms number: no way to say "next Tuesday 10:30".
-- The structuring prompt makes a `calendar` prerequisite for every calendar condition, but the runner does not execute
-  prerequisites, so no event is created unless a routine adds it. Profile 063 has no calendar events.
-- No persona descriptions exist yet: `pipeline/personas.csv` notes are empty and `input/realistic_patterns.txt` has only
-  pattern sentences (119 lines mention calendar / meeting / lecture / deadline / class / shift / appointment / schedule).
-  063's "student living alone" is an assumption made while writing the profile.
+## House physics
 
-Agreed direction (user, 2026-10-22): event titles and contents should come from the persona / scenario.
-Two kinds of events to produce, both in the persona -> routines LLM step (LLM 3):
-1. events a pattern needs: the condition's word in the title, values (guests, duration, type) varying so the condition
-   holds on some days and not others;
-2. ordinary events from the persona (classes, deadlines, appointments, friends) that hide the pattern's events.
+1. Outdoor daylight lux (done 2026-11-21): now the calibrated global irradiance x 110 lux per W/m2 instead of
+   25,000 lux x sin altitude (about a quarter of real). Indoor light keeps the window factors (living room 3%, rooms 2%,
+   ...), which match the simulated daylight factors of Seoul flats (living room 2-5%, bedrooms 0.5-1.5%, kitchen 0.2%;
+   Lim et al. 2012). 063: midday living room 151 -> 768 lux (Jan), 277 -> 1019 lux (Jul); room1 about 710 lux; entryway
+   about 90 lux; light switch-ons per year changed little (living room 278 -> 259, entryway 282 -> 249). Open: the
+   110 lux per W/m2 factor has no checked source; the kitchen (small window, 1.2%) is above the simulated 0.2%.
+2. Vapour above saturation (done 2026-11-21 for racks): laundry on a rack now dries only as fast as the room air takes
+   the water; the rest stays in the clothes. Showers and other sources still drop what the air cannot hold (it
+   condenses and runs off). Open: in the closed laundry room a rack takes about 96 h to dry in winter (4 racks in 90
+   days, 063), far longer than real; whether the laundry room door or window is opened while drying is not decided.
+3. Humidifier: `humidifierMode` auto / low / medium / high instead of `humiditySetpoint` (agreed 2026-11-04, not built);
+   the effect of each mode on room humidity is still to decide.
+4. "Cooling at 100% RH" seen earlier: not reproduced (85-90% at 16 C on three older commits); where it came from is
+   unknown. Deferred by the user.
+5. The measured summer figures used for comparison (Yun et al. 2020: indoor 26.6 C, outdoor 23.6 C) cover a "summer"
+   whose months were not checked, so the comparison with our Jul-Aug may not be like for like.
+6. Winter humidity: 063 is at 13% in January (one person in 84 m2, ventilation unit always on, airing twice a day);
+   measured winter means are 36.6% (households 19.5-58.5%). Not yet compared with a family-sized household.
+7. Device reservations (timers) for air conditioner, purifier, TV: not built, no SmartThings definition found; 7 items
+   listed in the conversation of 2026-11-04.
+8. Wifi router `connectedDevices` is our own attribute name: to be marked in the docs (agreed, not done).
 
-Open questions:
-- Is there persona / scenario material, or should an LLM first write a persona from the patterns?
-- Engine: allow future dates in `begin` (e.g. weekly class times) and decide whether `calendar` prerequisites run
-  directly or are always written as routines.
+## Person behaviour
 
-## Phone screen and app use: what is not done yet (2026-10-28)
+9. Laundry happens about half as often as drawn (063: 2 a week drawn, 57 washes a year): a wash slot (weekend morning,
+   weekday evening) is skipped when the person is not home, not moved to another day.
+10. Music pause, health entry, exercise: the choice "with the app or without" (agreed to be a probability), not built.
+11. Phone use statistics differ from the literature: one-app uses about 83% (Bohmer et al. 2011: 68.2%), uses under 5 s
+    about 9% (49.8%); app time reaches 94-97% of the drawn target. Not changed.
+12. App tap task time has a long tail (median 12 s, up to the 600 s cap): check whether it looks right.
 
-Done in the Python engine: `phone.useApps` (apps in a row), screen on when a phone use starts, screen off by hand
-(`phoneHabits.manualScreenOff`) or after `screenTimeoutSeconds`, glances at the lock screen (`glancesPerDay`).
-Not done yet:
-- The JS runner (`tools/js/run_agent.js`) and the browser page do not have `phone.useApps`, the screen model or glances.
-- Quick checks (phone.useApps check) are in: about 48% of uses are under 40 s (41% in arXiv 2609.24477), but only
-  about 9% under 5 s (Bohmer et al. 2011: 49.8% of chains, 2011 data).
-- Apps per use: checks are one app, so one-app uses are about 83% (Bohmer et al. 2011: 68.2%). Not changed yet:
-  matching it with the geometric `continue` would give too many uses of 4+ apps.
-- App time reaches 94-97% of the drawn target and uses 96-97% (sampler with the engine's 1-hour cap per app,
-  2026-10-28). Not explained: the rest; the sampler counts all unlocks as phone.useApps uses, but other rules
-  (music on the way, the pattern) also unlock the phone.
-- Opening the app before using it: built 2026-11-03 (app tasks, tap / input times; see design notes section 11).
-- Music pause, health entry, exercise: the choice "with the app or without" (agreed to be a probability), not built.
-- Glances do not follow notifications yet (there are no incoming notifications, see below).
+## Making the data (LLM steps)
 
-## Repeated operations on one device (2026-10-29)
+13. Calendar events: to come from the persona / scenario (agreed 2026-10-22); there is no persona material yet
+    (`pipeline/personas.csv` notes are empty). `phone.calendarAdd` cannot say "next Tuesday 10:30"; prerequisites in the
+    structured patterns are not executed.
+14. Incoming phone events: the simulator can post notifications, ringing calls and SMS, but nothing triggers them.
+    To decide: agent actions or an outside source like the weather.
+15. Time-of-day and seasonal probabilities: sources not looked for yet (deferred in October).
+16. 063 is a partial profile (written to test one pattern): everyday behaviour was missing (cooling, laundry), now partly
+    covered by the habits. A full LLM-written profile has not been tried end to end.
 
-- Done: switching on just before a planned departure or sleep is skipped (`leaving_soon`, minimum times per device).
-- Decided 2026-11-03: a run whose actions were all skipped this way counts as not followed (`notFollowedPlan`).
-- Done 2026-11-03: `ground_truth.jsonl` written by the engine (if with observed values, then as done); the LLM-written
-  pattern JSON is no longer the answer. 063's embedded pattern still has openApp / wait / closeApp (harmless: merged).
-- Done 2026-11-03: `keepOn` for switch-ons meant to stay on while away or asleep, with a decoy rule in the prompt and a
-  warning in `check_profile.py`.
-- Departures / sleep from event rules: known once the event happened (`eventCheck`); before that, not known.
-- Plan rule and probability < 1: done 2026-11-04 (follow decided when the minute is drawn); wrong skips 0 in 063 and
-  the test profile.
-- Device reservations (timers): only with real SmartThings definitions; for AC / purifier / TV none found yet, so
-  not built; 7 items without a definition listed in the conversation of 2026-11-04 (to search real device dumps).
-- Air exchange and air conditioning (agreed 2026-11-04, in this order): (1) rooms exchange air with their neighbours in
-  m3/h (open plan, open door, closed door; heat, moisture, PM, CO2 together; no heat through walls), with the door rule:
-  a room's door is closed while its unit cools or heats (also when the person left it on and went out), open otherwise
-  (also when switched on from outside by app); kitchen and dining room are always open to the living room; (2) units by
-  real specs (cooling capacity W shared between cooling and dehumidifying); (3) check: cooling RH, and that a closed
-  cooled room1 does not end at the living room's temperature.
-- Humidifier: `humidifierMode` auto / low / medium / high instead of `humiditySetpoint` (agreed); effect of each mode
-  on room humidity still to decide.
-- Master bathroom: no rule in 063 uses it yet (only sensor lines).
-- Heating energy vs measured (2026-11-18): explained mostly by hot water in the measured figure and older envelopes (design
-  notes section 12). Ventilation unit added as a per-person habit (effect only, no device).
-- Window airing and cooling habits added 2026-11-20 (design notes section 12). Open-window airflow replaced by
-  De Gids & Phaff (2026-11-20): 063 without cooling is now 26.6 C in Jul-Aug (outdoor 25.6). Open: the measured +3.0 C
-  (Yun et al. 2020) covers a "summer" whose months were not checked.
-- (old) Winter window airing: 75% of households open windows 1-2 times a day, under 10 min (Cho & Choi 2013, 20 flats in
-  Cheongju); 063 opens a window about 0.2 times a day in Nov-Mar. Not decided whether it becomes a habit too.
-- Summer indoor temperature without cooling (2026-11-19; after the solar fix of 2026-11-20 the 063 living room is 39.2 C
-  hourly median in Jul-Aug; balconies kept expanded, no shade; next: window and cooling habits): 063 (no cooling rule) living room Jul-Aug hourly median 32.2 C
-  (10-90%: 30.9-33.3) with the ventilation unit, 35.8 C median of report lines without it; outdoor median 25.6 C. Looks
-  too hot; to check against measurements.
-- Outdoor daylight lux is about a quarter of real (clear noon 25,000 x sin altitude vs about 100,000); kept for the
-  illuminance sensors, not decided whether to change it (rules use illuminance thresholds).
-- Winter indoor humidity: report lines in Dec-Feb show 23-24% in 063 (with or without the ventilation unit); to check
-  against measurements.
-- Stove gain: replaced 2026-11-21 (one large burner, sensible + latent, range hood habit; design notes section 12).
-- Person moisture and the +3 hPa offset: replaced 2026-11-21 by physical sources (design notes section 12). Laundry is now a habit (2026-11-21): 063 washes 57 times a year (2 a week drawn; washes are skipped when the person
-  is not home in the slot); winter RH 13% vs measured 36.6%. Test with two washes a week (60 days):
-  10 washes, 5 dryer, 5 racks; the laundry room behind its closed door reaches 100% RH (vapour above saturation is
-  dropped) and the living room stays at 13%. Where racks stand is not decided.
-- Cooling RH 100% (seen earlier): not reproduced in a 4-hour test on commits 318b564 / a3c4d77 / 8eb2550 (85-90% at
-  16 C); where it came from is not found.
-- Wrong skips from deferred departures (not a problem, agreed 2026-11-04): a daily departure rule deferred while the person is busy can leave later than
-  the device minimum (dryer test profile: 1 of 72, r_to_campus 08:21 planned, left 08:39) (2026-11-04).
-- Browser JS simulator: still the old appliance capabilities (cycleState etc.); vocabulary.json now follows the
-  Python device spec (2026-11-04).
-- Tap task time has a long tail (median 12 s, sigma 1.56; up to the 600 s cap): check whether it looks right.
-- On hold: very short uses from the profile's own distributions; measure per device over many LLM-written profiles.
-- On hold: a second action too soon from another path (not seen on its own in 063); reverts of one rule acting on a
-  device another rule changed since (possible when several rules use one device).
+## On hold
 
-## Incoming phone events (2026-10-22)
-
-The simulator can post incoming notifications, ringing calls and incoming SMS, but nothing triggers them: the agent's
-actions are the person's own actions. KakaoTalk messages have no action of their own (only app use). To decide: make them
-agent actions or an outside source like the weather.
+- Browser JS simulator (`browser/smarthome-sim.html`): not maintained until the user asks; it still has the old appliance
+  capabilities, and its daylight no longer matches (the parity test skips daylight).
+- Master bathroom: no rule in 063 uses it (only sensor lines).
+- Very short uses from a profile's own distributions; a second action too soon from another path; reverts of one rule
+  acting on a device another rule changed since.
+- Wrong skips from deferred departures (agreed not a problem, 2026-11-04).

@@ -1128,8 +1128,8 @@ class AgentRunner:
         self.exec(dict(do="person.moveRoom", args=dict(room=room)))
         M = PHYS["moisture"]
         hours = self.uni(*M["rackHours"])
-        env.racks = [r for r in env.racks if r["until"] > t] + [dict(room=room, start=t, until=t + int(hours * 3600000),
-                                                                      gMin=self.uni(*M["rackKg"]) * 1000 / (hours * 60))]
+        kg = self.uni(*M["rackKg"])
+        env.racks = [r for r in env.racks if r["leftG"] > 0] + [dict(room=room, start=t, gMin=kg * 1000 / (hours * 60), leftG=kg * 1000)]
         self.laundry_stats["racks"] += 1
 
     # ----- range hood habit -----

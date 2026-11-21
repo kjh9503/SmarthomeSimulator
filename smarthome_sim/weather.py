@@ -305,14 +305,16 @@ def weather_norm_for(ms):
     return norm
 
 
-# Solar irradiance for the heat balance (2026-11-20; replaces daylight / 110 for heat, daylight lux itself unchanged).
+# Solar irradiance for the heat balance (2026-11-20; replaces daylight / 110 for heat). Since 2026-11-21 outdoor daylight
+# lux is also ghi x luxPerW (before: clear noon 25,000 lux x sin altitude, about a quarter of real).
 # Sun position: Spencer (1971) declination and equation of time. Clear sky: Haurwitz (1945),
 # G = 1098 sin(alt) exp(-0.057 / sin(alt)) W/m2. Weather: x WEATHER["sun"] blend (clear 1, cloudy 0.4, rain 0.15, snow 0.2).
 # Calibrated per month (SOLAR_CAL, blended between months) so that the monthly mean daily horizontal irradiation equals
 # Seoul measurements 1982-2009, kWh/m2 a day (Jo, Yun, Kim & Kang 2011, J. Korean Solar Energy Soc. 31(3), table 3):
 SEOUL_GHI_KWH = [2.03, 2.83, 3.59, 4.49, 4.83, 4.48, 3.37, 3.70, 3.63, 3.13, 2.11, 1.78]
 SOLAR_CAL = [0.939, 1.0596, 0.9112, 0.988, 0.8778, 0.8338, 0.7708, 0.9238, 0.8572, 0.89, 0.9102, 0.9659]  # tools/calibrate_solar.py, years 2024-2028
-SOLAR = dict(albedo=0.2)  # ground reflectance for vertical windows (common value)
+SOLAR = dict(albedo=0.2,  # ground reflectance for vertical windows (common value)
+             luxPerW=110)  # daylight lux per W/m2 of global irradiance (the model's earlier factor; luminous efficacy, no source checked)
 _sol = {}
 
 
@@ -395,7 +397,7 @@ def outdoor_at(ms):
     up = rise < h < sset
     o = dict(temperature=temperature, humidity=humidity,
              pm25=b["pm25"] * pm_factor_at(ms) * nm["pmScale"] * (1 - washout_at(ms)), co2=SEOUL_CO2_PPM,
-             daylight=25000 * noon_h * math.sin(math.pi * (h - rise) / day_len) * fx["sun"] if up else 0,
+             daylight=solar_at(ms)["ghi"] * SOLAR["luxPerW"],  # 2026-11-21: from the calibrated irradiance (was 25,000 lux x sin)
              noise=base_noise if rain_db is None else db_sum([base_noise, rain_db]), meanTemperature=b["mean"] + nm["tShift"],
              weather=state, windSpeed=js_round(wind * 10) / 10, precipitation=js_round(precip * 10) / 10,
              sunAz=90 + 180 * (h - rise) / day_len if up else None)

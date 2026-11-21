@@ -401,6 +401,13 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
     ventilation unit off: 16%. Measured winter means: 36.6% (households 19.5-58.5%, Choi & Jung 2008), 40-60% (Kim et
     al. 2014, 68 flats). 063 is low because it is one person in 84 m2, ventilation unit always on, airing twice a day,
     no laundry.
+- Outdoor daylight and saturated air (2026-11-21). Outdoor daylight lux = calibrated global irradiance x 110 (before:
+  clear noon 25,000 lux x sin altitude, about a quarter of real). The indoor window factors (living room 3%, rooms 2%,
+  small 1.2%, none 0.2%) are of the size of simulated daylight factors in Seoul flats (living room 2-5%, bedrooms
+  0.5-1.5%, kitchen 0.2%; Lim et al. 2012) and stay. 063: midday living room 151 -> 768 lux (Jan), 277 -> 1,019 lux (Jul),
+  room1 about 710, entryway about 90; light switch-ons living room 278 -> 259, entryway 282 -> 249. The browser parity
+  test skips daylight. Racks: laundry dries only as fast as the room air takes the water, the rest stays in the clothes
+  (before: dropped above saturation); 063, 90 days: about 96 h per rack in the closed laundry room (4 racks).
 - Ventilation habits (2026-11-18; agreed: a per-person habit, effect only when SmartThings has no device for it). Flats of
   30+ households since 2006-02 must be able to ventilate 0.5/h (Rules on Building Equipment Standards art. 11, annex 1-5;
   checked through commentary pages, not the statute text). No ventilator / ERV capability among the 328 standard and 182
@@ -437,6 +444,7 @@ immediate response timing, gap-dependent off probabilities, persona -> daily-lif
 | Liu 2022 | Liu S. et al. Study on the Dynamic Natural Ventilation Rates of Occupied Residence. E3S Web Conf. 356 (ROOMVENT 2022). https://www.e3s-conferences.org/articles/e3sconf/pdf/2022/23/e3sconf_roomvent2022_03058.pdf | measured airflow with windows open | web summary |
 | Lee 2016 (hood) | Lee Y.-G. Characteristics and Management of Particulate Matter from Kitchen Cooking in Apartment Buildings. Air Cleaning Technology 29(1), 2016. https://koreascience.kr/article/JAKO201654942433477.pdf | hood removes 80-90% of cooking PM2.5 | web summary |
 | Lee 2017 (hood) | Lee M., Jeong M., Kang M. Characteristics and Management of PM2.5 Emission on Cooking Condition. JCCT 4(1), 2017. https://koreascience.kr/article/JAKO201810256456089.pdf | hood airflow stage 1 0.018 m3/s | web summary |
+| Lim 2012 | Lim T. S., Lim H. S., Koo J.-O., Kim G. Assessment of the Daylighting Performance in Residential Building Units of South Korea through RADIANCE simulation. KIEAE J. 12(2), 2012. https://koreascience.kr/article/JAKO201230360544423.pdf | daylight factors per room | web summary |
 | Chun & Bae 2005 | Chun C.-Y., Bae N.-R. A Study on Acceptable Thermal Comfort Zone and Resident Behavior of Operating Cooling Devices in Apartments. KJACR 17(5) 477-486, 2005. https://koreascience.kr/article/JAKO200520828120793.page | switch-on / switch-off room temperature | abstract |
 | Yun 2020 | Yun et al. Indoor Thermal Environment Long-Term Data Analytics Using IoT Devices in Korean Apartments. IJERPH 2020. https://pmc.ncbi.nlm.nih.gov/articles/PMC7579249 | cooled / not cooled room temperature, summer indoor vs outdoor | web summary |
 | Lee 2010 (airing) | Lee Y.-J. Characteristics of Behavior for Ventilation and Maintenance for Ventilation Equipments by Multi-family Housing Residents. J. Korean Housing Assoc. 21(5), 2010. https://koreascience.or.kr/article/JAKO201011949345964.pdf | airing counts, minutes, times | web summary |

@@ -59,7 +59,8 @@ PHYS = dict(
     indoorGainC=2, indoorSwing=0.25, indoorMinC=15, solarGainC=3,
     # moisture (2026-11-21): the fixed +3 hPa over outdoor air (moistureOffset, no source) is gone; sources are physical, in g:
     # a person 52 g/h (family of 4: 0.44 pint/h, Minnesota 1988 table; 1.25 L a day, Quirouette, NRC Canada), a shower
-    # 0.24 kg per 5 min (same table), indoor laundry drying 2.2-2.9 kg a load (same table) released over rackHours [assume].
+    # 0.24 kg per 5 min (same table), indoor laundry drying 2.2-2.9 kg a load (same table) released over rackHours [assume]
+    # or more slowly when the room air is saturated.
     # dryer / washer / humidifierMax stay hPa a minute for a 10 m2 room (older values).
     moisture=dict(personGh=52, showerGMin=48, rackKg=(2.2, 2.9), rackHours=(8, 12), dryer=0.035, washer=0.007, humidifierMax=0.04),
     report=dict(temperature=dict(th=0.5, dec=1), humidity=dict(th=2, dec=0), illuminance=dict(th=30, rel=0.1, dec=0),
@@ -223,7 +224,7 @@ def window_sun(profile, out):
 
 def free_indoor_temp(out, profile=NO_PROFILE):
     """only the starting state of the rooms (Environment.settle); the rooms then follow the heat balance in step"""
-    solar = PHYS["solarGainC"] * PHYS["windowHeat"][profile["windowSize"]] * window_sun(profile, out) * out["daylight"] / 20000
+    solar = PHYS["solarGainC"] * PHYS["windowHeat"][profile["windowSize"]] * window_sun(profile, out) * out["daylight"] / 80000  # start state only; /80000 since daylight became about 4x (2026-11-21)
     return max(PHYS["indoorMinC"], out["meanTemperature"] + PHYS["indoorGainC"] + PHYS["indoorSwing"] * (out["temperature"] - out["meanTemperature"])) + solar
 
 
@@ -363,7 +364,7 @@ class Environment:
         self.ventilator = False  # the flat's ventilation unit running (set by the agent from ventilationHabits; no device)
         self.hood = False  # the kitchen range hood running (set by the agent from hoodHabits; no device)
         self.shower = None  # (room, until ms): a shower running (agent action person.shower)
-        self.racks = []  # laundry drying indoors: dict(room, start, until, gMin) (agent, after a wash not dried in the dryer)
+        self.racks = []  # laundry drying indoors: dict(room, start, gMin, leftG) (agent, after a wash not dried in the dryer)
         for r in house.room_ids:
             self.rooms[r] = (dict(temperature=out["temperature"], humidity=out["humidity"], pm25=out["pm25"], co2=out["co2"],
                                   illuminance=out["daylight"], noise=out["noise"]) if r == "balcony"
@@ -567,8 +568,13 @@ class Environment:
             if self.shower and self.shower[0] == r and ms < self.shower[1]:
                 e["vapor"] += g_to_hpa(PHYS["moisture"]["showerGMin"] * dt, vol)
             for rk in self.racks:
-                if rk["room"] == r and rk["start"] <= ms < rk["until"]:
-                    e["vapor"] += g_to_hpa(rk["gMin"] * dt, vol)
+                # laundry dries at its pace (gMin) while the air can take it; in saturated air the water stays in the
+                # clothes (rk["leftG"]) and the rack dries later (2026-11-21: was dropped above saturation)
+                if rk["room"] == r and rk["start"] <= ms and rk["leftG"] > 0:
+                    room_g = max(0.0, (sat_vapor(e["temperature"]) - e["vapor"]) * vol / 1.36)
+                    give = min(rk["gMin"] * dt, rk["leftG"], room_g)
+                    e["vapor"] += g_to_hpa(give, vol)
+                    rk["leftG"] -= give
             dryer_on, washer_on = running("dryer"), running("washer")
             if dryer_on:
                 e["vapor"] += PHYS["moisture"]["dryer"] * sf * dt
@@ -576,6 +582,7 @@ class Environment:
                 e["vapor"] += PHYS["moisture"]["washer"] * sf * dt
             if robot_on:
                 e["pm25"] += 0.1 * sf * dt
+            # vapour above saturation condenses on walls and glass and is dropped (showers: it runs down the drain)
             e["vapor"] = max(0.5, min(sat_vapor(e["temperature"]), e["vapor"]))
             e["humidity"] = rh_from_vapor(e["vapor"], e["temperature"])
             e["pm25"] = max(0, e["pm25"])
