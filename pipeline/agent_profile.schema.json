@@ -757,9 +757,11 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
+        "washesPerWeek",
+        "weekendShare",
         "dryerShare"
       ],
-      "description": "Share of washes put in the dryer (the rest dries on a rack indoors) as a range chosen from the persona; pipeline/sample_laundry_person.py draws laundryHabits. No dryer: min 0, max 0. Do not write rules that start the dryer after a wash.",
+      "description": "Laundry habit as ranges chosen from the persona: washes a week, the share on weekend mornings, the share put in the dryer (the rest dries on a rack indoors); pipeline/sample_laundry_person.py draws laundryHabits and the engine makes the washing routines. No dryer: dryerShare 0 to 0. Do not write washing or drying rules.",
       "properties": {
         "dryerShare": {
           "type": "object",
@@ -778,6 +780,42 @@
               "type": "number",
               "minimum": 0,
               "maximum": 1
+            }
+          }
+        },
+        "washesPerWeek": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "min",
+            "max"
+          ],
+          "properties": {
+            "min": {
+              "type": "number",
+              "minimum": 0
+            },
+            "max": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "weekendShare": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "min",
+            "max"
+          ],
+          "properties": {
+            "min": {
+              "type": "number",
+              "minimum": 0
+            },
+            "max": {
+              "type": "number",
+              "minimum": 0
             }
           }
         }

@@ -77,8 +77,8 @@ Not done yet:
 - Winter indoor humidity: report lines in Dec-Feb show 23-24% in 063 (with or without the ventilation unit); to check
   against measurements.
 - Stove gain: replaced 2026-11-21 (one large burner, sensible + latent, range hood habit; design notes section 12).
-- Person moisture and the +3 hPa offset: replaced 2026-11-21 by physical sources (design notes section 12). Open: 063 has no
-  laundry behaviour (no washes in a year), so its indoor drying never happens; winter RH 13% vs measured 36.6%. Test with two washes a week (60 days):
+- Person moisture and the +3 hPa offset: replaced 2026-11-21 by physical sources (design notes section 12). Laundry is now a habit (2026-11-21): 063 washes 57 times a year (2 a week drawn; washes are skipped when the person
+  is not home in the slot); winter RH 13% vs measured 36.6%. Test with two washes a week (60 days):
   10 washes, 5 dryer, 5 racks; the laundry room behind its closed door reaches 100% RH (vapour above saturation is
   dropped) and the living room stays at 13%. Where racks stand is not decided.
 - Cooling RH 100% (seen earlier): not reproduced in a 4-hour test on commits 318b564 / a3c4d77 / 8eb2550 (85-90% at

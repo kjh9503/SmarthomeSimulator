@@ -221,7 +221,7 @@ class AgentRunner:
         self.laundry_h = profile.get("laundryHabits")  # None: no dryer use by habit (racks only)
         self.vent_minutes = dict(season=0, other=0)
         self.behaviours = []
-        for b in profile["behaviours"] + self.shower_behaviours(profile.get("showerHabits")):
+        for b in profile["behaviours"] + self.shower_behaviours(profile.get("showerHabits")) + self.laundry_behaviours(profile.get("laundryHabits")):
             acts, merged = self.merge_app_steps(b["actions"])
             self.behaviours.append(dict(b, actions=acts, _st={}, _firings=0, _merged=merged,
                                         _phoneUse=any(a["do"] == "phone.useApps" for a in acts)))
@@ -1067,6 +1067,29 @@ class AgentRunner:
             out.append(dict(id="habit_shower_evening", kind="routine", description="Shower in the evening (showerHabits).",
                             trigger=dict(kind="daily", window={"from": H.get("eveningFrom", "21:00"), "to": H.get("eveningTo", "23:00")}),
                             conditions=[dict(kind="place", op="is", place="home")], actions=acts(), probability=1, maxPerDay=1))
+        return out
+
+    def laundry_behaviours(self, H):
+        """routines made from laundryHabits (agreed 2026-11-21): washesPerWeek split into weekend mornings (09-12) and weekday
+        evenings (19-22) by the person's weekendShare; the person goes to the laundry room and starts the washer by hand"""
+        if not H or not H.get("washesPerWeek"):
+            return []
+        w = self.sim.house.at("laundry", "washer") or next((d for d in self.sim.house.devices.values() if d.type == "washer"), None)
+        if w is None:
+            return []
+        n = H["washesPerWeek"]
+        n_we = n * H.get("weekendShare", 0.5)
+        acts = [dict(do="person.moveRoom", args=dict(room=w.roomId)),
+                dict(do="home.command", args=dict(device=w.id, capability="washerOperatingState", command="setMachineState", args=["run"], channel="physical"))]
+        out = []
+        if n_we > 0:
+            out.append(dict(id="habit_laundry_weekend", kind="routine", description="Laundry on weekend mornings (laundryHabits).",
+                            trigger=dict(kind="daily", window={"from": "09:00", "to": "12:00"}, days="weekends"),
+                            conditions=[dict(kind="place", op="is", place="home")], actions=acts, probability=min(1.0, n_we / 2), maxPerDay=1))
+        if n - n_we > 0:
+            out.append(dict(id="habit_laundry_weekday", kind="routine", description="Laundry on weekday evenings (laundryHabits).",
+                            trigger=dict(kind="daily", window={"from": "19:00", "to": "22:00"}, days="weekdays"),
+                            conditions=[dict(kind="place", op="is", place="home")], actions=acts, probability=min(1.0, (n - n_we) / 5), maxPerDay=1))
         return out
 
     def laundry_tick(self, t):

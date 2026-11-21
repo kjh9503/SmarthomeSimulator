@@ -186,10 +186,12 @@ leaving habits, opening for heat and sleeping with the window open have no data:
 
 Write `showerRanges` from the persona; `pipeline/sample_shower_person.py` draws `showerHabits` and the engine makes the
 shower routines (bathroom, light on, shower, light off), so do not write shower routines. No Korean data on shower counts,
-times or lengths was found: choose from the persona and say why in `notes`. After each wash the engine puts the laundry
-in the dryer (logged) with the share in `laundryRanges.dryerShare` (`pipeline/sample_laundry_person.py`), otherwise on a
-rack indoors (water vapour only, no lines); do not write rules that start the dryer after a wash. Korean households with
-a dryer: 12% in 2020, 35% in 2023; a persona without one gets 0 to 0.
+times or lengths was found: choose from the persona and say why in `notes`. Laundry is a habit too: write
+`laundryRanges` (washes a week, the share on weekend mornings vs weekday evenings, the share put in the dryer);
+`pipeline/sample_laundry_person.py` draws `laundryHabits`, the engine makes the washing routines and after each wash puts
+the laundry in the dryer (logged) or on a rack indoors (water vapour only, no lines). Do not write washing or drying
+rules. More than half of 20-50 year olds wash once every two days (a laundry service's 2022 survey); Korean households
+with a dryer: 12% in 2020, 35% in 2023; a persona without one gets dryerShare 0 to 0.
 
 ```json
 "showerRanges": {
@@ -197,7 +199,11 @@ a dryer: 12% in 2020, 35% in 2023; a persona without one gets 0 to 0.
   "when": { "morning": 2, "evening": 1 },
   "minutes": { "min": 8, "max": 15 }
 },
-"laundryRanges": { "dryerShare": { "min": 0.5, "max": 0.9 } }
+"laundryRanges": {
+  "washesPerWeek": { "min": 2, "max": 4 },
+  "weekendShare": { "min": 0.4, "max": 0.8 },
+  "dryerShare": { "min": 0.5, "max": 0.9 }
+}
 ```
 
 ### Range hood habit

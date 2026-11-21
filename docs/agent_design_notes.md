@@ -387,7 +387,13 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
   `person.shower`, light off; morning 3-20 min after waking, evening 21-23). Laundry (revised 2026-11-21, agreed: a per-person
   share): 5-40 min after a wash ends [assume], once home and awake, the person starts the dryer by hand (logged) with
   the share `laundryRanges.dryerShare` (`pipeline/sample_laundry_person.py`; 0 without a dryer), else hangs it on a rack in
-  the laundry room (else the living room); a dryer a rule started meanwhile counts as the dryer. Rack and shower write
+  the laundry room (else the living room); a dryer a rule started meanwhile counts as the dryer. Washing itself is a habit too (agreed
+  2026-11-21): from `laundryRanges.washesPerWeek` (whole) and `weekendShare` the engine makes two routines (weekend 09-12
+  with probability n x share / 2, weekday 19-22 with n x (1 - share) / 5; to the laundry room, washer on by hand). More
+  than half of 20-50 year olds wash once every two days (Laundrygo "2022 Korean Laundry Report", Aju News 2022-08-18; a
+  laundry service's survey). Times of day: no data.
+  - Check [ours, one year, 063: 2 a week, weekend 0.55, dryer 0.65]: 57 washes (about 1.1 a week; skipped when not home
+    then), 36 dryer, 21 rack. January living room 13% (11-16). Rack and shower write
   no line of their own (seen in the humidity sensors). Korean dryer ownership 12% (2020) -> 35% (2023) (Gallup Korea,
   Herald Economy 2025-11-18).
   - Check [ours, one year, 063]: January living room hourly median 21% -> 13% (10-90%: 10-18), bathroom 18% (up to 56%
