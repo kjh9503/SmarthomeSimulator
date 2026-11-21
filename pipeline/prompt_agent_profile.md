@@ -190,7 +190,9 @@ times or lengths was found: choose from the persona and say why in `notes`. Laun
 `laundryRanges` (washes a week, the share on weekend mornings vs weekday evenings, the share put in the dryer);
 `pipeline/sample_laundry_person.py` draws `laundryHabits`, the engine makes the washing routines and after each wash puts
 the laundry in the dryer (logged) or on a rack indoors (water vapour only, no lines). Do not write washing or drying
-rules. More than half of 20-50 year olds wash once every two days (a laundry service's 2022 survey); Korean households
+rules. Racks stand on the balcony (flats of 84 m2 and more) or in the living room; the person checks them from 6 hours
+after hanging and, if not dry, opens a window when outdoor air is between `dryingRanges.airMinC` and `airMaxC`, otherwise
+moves a balcony rack inside or heats / cools the living room. More than half of 20-50 year olds wash once every two days (a laundry service's 2022 survey); Korean households
 with a dryer: 12% in 2020, 35% in 2023; a persona without one gets dryerShare 0 to 0.
 
 ```json
@@ -199,6 +201,7 @@ with a dryer: 12% in 2020, 35% in 2023; a persona without one gets dryerShare 0 
   "when": { "morning": 2, "evening": 1 },
   "minutes": { "min": 8, "max": 15 }
 },
+"dryingRanges": { "airMinC": { "min": 5, "max": 12 }, "airMaxC": { "min": 26, "max": 30 } },
 "laundryRanges": {
   "washesPerWeek": { "min": 2, "max": 4 },
   "weekendShare": { "min": 0.4, "max": 0.8 },

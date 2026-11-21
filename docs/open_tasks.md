@@ -12,8 +12,14 @@ Rewritten 2026-11-21: finished items removed (their record is in docs/agent_desi
    110 lux per W/m2 factor has no checked source; the kitchen (small window, 1.2%) is above the simulated 0.2%.
 2. Vapour above saturation (done 2026-11-21 for racks): laundry on a rack now dries only as fast as the room air takes
    the water; the rest stays in the clothes. Showers and other sources still drop what the air cannot hold (it
-   condenses and runs off). Open: in the closed laundry room a rack takes about 96 h to dry in winter (4 racks in 90
-   days, 063), far longer than real; whether the laundry room door or window is opened while drying is not decided.
+   condenses and runs off). Racks moved to a real balcony (flats of 84 m2 and more) or the living room, with checks and
+   drying actions (done 2026-11-22; 063: 29 racks taken in 10-25 h after hanging, was about 96 h).
+2a. Balcony (2026-11-22): in summer the 063 living room is at 32.8 C (Jul) and 34.0 C (Aug), was 26.6 C before the
+   balcony; the window habit opens the living room window onto a balcony whose outer window stays closed (balcony up to
+   44-48 C). Not decided how the window habit should treat the balcony's outer window. Balcony parameters (U 2.4 only
+   from a source; SHGC 0.7, 0.7 sun into the living room, 1.0 air change an hour, area from sqrt(living area), 35%
+   daylight at its sensor) are assumptions; January balcony 15.6 C median at -1.1 C outdoors and up to 33.6 C on sunny
+   days, no Korean measurements found to compare.
 3. Humidifier: `humidifierMode` auto / low / medium / high instead of `humiditySetpoint` (agreed 2026-11-04, not built);
    the effect of each mode on room humidity is still to decide.
 4. "Cooling at 100% RH" seen earlier: not reproduced (85-90% at 16 C on three older commits); where it came from is

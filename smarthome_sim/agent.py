@@ -54,6 +54,9 @@ DEFER_MAX_MIN = 180  # a daily behaviour waits at most this long after its minut
 # 20-40 min 39.6%; Lee 2010), shorter in the heating season (winter: 75% open 1-2 times a day, under 10 min; Cho & Choi
 # 2013). With these habits the off rules for cooling units and windows are not used.
 COOL_UNUSED_MIN = 30
+DRY_CHECK_FIRST_H, DRY_CHECK_EVERY_H = 6, 4  # first check of a rack after hanging, then every this many hours [assume]
+DRY_DONE_SHARE = 0.05  # water left (share of the load's water) at which the laundry counts as dry [assume]
+DRY_DEFAULT = dict(airMinC=10, airMaxC=28)  # mild weather for opening windows to dry laundry, without dryingHabits [assume]
 LAUNDRY_WAIT_MIN = (5, 40)  # the laundry is dealt with this long after the wash ends, once home and awake [assume]
 COOL_ROOM = dict(kitchen="living_room", dining_room="living_room", hallway="living_room", entryway="living_room")  # no unit there: the living room's
 WINDOW_CLOSE_BELOW_K = 4.0
@@ -219,6 +222,9 @@ class AgentRunner:
         self.laundry = dict(washerWas=None, finishedAt=None, dryerSince=False)
         self.laundry_stats = dict(washes=0, dried=0, racks=0)
         self.laundry_h = profile.get("laundryHabits")  # None: no dryer use by habit (racks only)
+        self.dry_h = profile.get("dryingHabits")  # None: DRY_DEFAULT
+        self.dry_window = set()  # living room windows opened for drying
+        self.dry_stats = dict(takenIn=0, balconyWindow=0, livingWindow=0, movedInside=0, heating=0, cooling=0, hoursToDry=[])
         self.vent_minutes = dict(season=0, other=0)
         self.behaviours = []
         for b in profile["behaviours"] + self.shower_behaviours(profile.get("showerHabits")) + self.laundry_behaviours(profile.get("laundryHabits")):
@@ -965,6 +971,8 @@ class AgentRunner:
         if not W or S["place"] != "home" or S["trip"] or S["asleep"]:
             return
         out, rooms = outdoor_at(t), self.sim.house.env.rooms
+        if out["weather"] in ("rain", "snow") and self.sim.house.env.balcony_window_open:
+            self.close_drying_window("balcony")
         if out["weather"] in ("rain", "snow"):
             for d in self.sim.house.devices.values():
                 if d.type == "window_contact" and self.win_is_open(d) and self.win_set(d, "closed")["result"] == "done":
@@ -1124,13 +1132,81 @@ class AgentRunner:
             if r["result"] == "done":
                 self.laundry_stats["dried"] += 1
                 return
-        room = "laundry" if "laundry" in env.rooms else "living_room"
+        room = "balcony" if env.real_balcony else "living_room"  # agreed 2026-11-22: the balcony, else the living room
         self.exec(dict(do="person.moveRoom", args=dict(room=room)))
         M = PHYS["moisture"]
         hours = self.uni(*M["rackHours"])
         kg = self.uni(*M["rackKg"])
-        env.racks = [r for r in env.racks if r["leftG"] > 0] + [dict(room=room, start=t, gMin=kg * 1000 / (hours * 60), leftG=kg * 1000)]
+        env.racks = [r for r in env.racks if not r.get("takenIn")] + [dict(room=room, start=t, gMin=kg * 1000 / (hours * 60), leftG=kg * 1000,
+                                                                      totalG=kg * 1000, nextCheck=t + DRY_CHECK_FIRST_H * 3600000)]
         self.laundry_stats["racks"] += 1
+
+    def drying_tick(self, t):
+        """the person checks a rack DRY_CHECK_FIRST_H after hanging it, then every DRY_CHECK_EVERY_H, when home and awake
+        (the check itself writes nothing). Dry (water left at most DRY_DONE_SHARE of the load): taken in. Not dry: with
+        mild weather (dryingHabits airMinC..airMaxC, no rain) the window of the rack's room is opened (the balcony's outer
+        window: no sensor; the living room's: logged); otherwise a balcony rack is moved into the living room (agreed
+        2026-11-22), and in the living room heating (colder than airMinC) or cooling (warmer than airMaxC) is switched on"""
+        env, S = self.sim.house.env, self.S
+        if not env.racks or S["place"] != "home" or S["trip"] or S["asleep"] or self.busy(t):
+            return
+        D = self.dry_h or DRY_DEFAULT
+        out = outdoor_at(t)
+        for rk in env.racks:
+            if rk.get("takenIn") or t < rk.get("nextCheck", 0):  # a rack the air has dried still waits for the person
+                continue
+            rk["nextCheck"] = t + DRY_CHECK_EVERY_H * 3600000
+            self.exec(dict(do="person.moveRoom", args=dict(room=rk["room"])))
+            if rk["leftG"] <= DRY_DONE_SHARE * rk["totalG"]:
+                rk["leftG"], rk["takenIn"] = 0.0, True
+                self.dry_stats["takenIn"] += 1
+                self.dry_stats["hoursToDry"].append(round((t - rk["start"]) / 3600000, 1))
+                self.close_drying_window(rk["room"])
+                continue
+            mild = D["airMinC"] <= out["temperature"] <= D["airMaxC"] and out["weather"] not in ("rain", "snow")
+            if mild:
+                if rk["room"] == "balcony":
+                    if not env.balcony_window_open:
+                        env.balcony_window_open = True
+                        self.dry_stats["balconyWindow"] += 1
+                else:
+                    w = self.win_dev("living_room")
+                    if w is not None and not self.win_is_open(w) and self.win_set(w, "open")["result"] == "done":
+                        self.dry_window.add(w.id)
+                        self.dry_stats["livingWindow"] += 1
+            elif rk["room"] == "balcony":
+                self.close_drying_window("balcony")
+                rk["room"] = "living_room"
+                self.exec(dict(do="person.moveRoom", args=dict(room="living_room")))
+                self.dry_stats["movedInside"] += 1
+            elif out["temperature"] < D["airMinC"]:
+                fh = self.sim.house.at("living_room", "floor_heating")
+                if fh is not None and fh.get("thermostatMode", "thermostatMode") != "heat":
+                    comfort = (self.heat or {}).get("comfortC", 22)
+                    self.heat_cmd(fh, "setHeatingSetpoint", "thermostatHeatingSetpoint", [comfort])
+                    if self.heat_cmd(fh, "setThermostatMode", "thermostatMode", ["heat"])["result"] == "done":
+                        self.dry_stats["heating"] += 1
+            else:
+                ac = self.cool_unit("living_room")
+                if ac is not None and ac.get("thermostatMode", "thermostatMode") != "cool":
+                    sp = (self.cool or {}).get("setpointC", 26)
+                    self.cool_cmd(ac, "setCoolingSetpoint", "thermostatCoolingSetpoint", [sp])
+                    if self.cool_cmd(ac, "setThermostatMode", "thermostatMode", ["cool"])["result"] == "done":
+                        self.dry_stats["cooling"] += 1
+
+    def close_drying_window(self, room):
+        env = self.sim.house.env
+        if room == "balcony" and env.balcony_window_open:
+            env.balcony_window_open = False
+        for did in list(self.dry_window):
+            d = self.sim.house.device(did)
+            self.dry_window.discard(did)
+            if d is not None and self.win_is_open(d):
+                self.win_set(d, "closed")
+
+    def drying_moment(self, moment, t):
+        """going to bed or leaving: windows opened for drying are closed"""
+        self.close_drying_window("balcony")
 
     # ----- range hood habit -----
     def hood_tick(self, t):
@@ -1402,6 +1478,7 @@ class AgentRunner:
         back, left, cs = S["room"], [], self.check_stats[moment]
         if moment in ("bedtime", "leaving"):
             self.heating_moment(moment, t)
+            self.drying_moment(moment, t)
             self.cooling_moment(moment, t)
             self.window_moment(moment, t)
         on = self.on_devices(t, only)
@@ -1781,6 +1858,7 @@ class AgentRunner:
             self.ventilation_tick(t)
             self.hood_tick(t)
             self.laundry_tick(t)
+            self.drying_tick(t)
             self.cooling_tick(t)
             self.window_tick(t)
             self.maybe_glance(t)
@@ -1830,6 +1908,8 @@ class AgentRunner:
                        cooling=dict(habits=self.cool, **self.cool_stats), windows=dict(habits=self.win, **self.win_stats),
                        hood=dict(habits=self.hood, **self.hood_stats), showers=dict(habits=self.prof_shower, **self.shower_stats),
                        laundry=dict(habits=self.laundry_h, **self.laundry_stats),
+                       drying=dict(habits=self.dry_h, **{k: v for k, v in self.dry_stats.items() if k != "hoursToDry"},
+                                   medianHoursToDry=(sorted(self.dry_stats["hoursToDry"])[len(self.dry_stats["hoursToDry"]) // 2] if self.dry_stats["hoursToDry"] else None)),
                        ventilation=dict(habits=self.vent, hoursInHeatingSeason=round(self.vent_minutes["season"] / 60), hoursOtherwise=round(self.vent_minutes["other"] / 60)),
                        seconds=round(_time.time() - t0))
         with open(os.path.join(self.out_dir, "summary.json"), "w", encoding="utf-8") as f:

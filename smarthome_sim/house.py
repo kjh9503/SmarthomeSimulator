@@ -120,6 +120,13 @@ PHYS = dict(
                   # open windows (2026-11-20, see k_open): open share of the glass, window height (m) [assume: balcony-type
                   # living room window 2.1 m, room window 1.5 m, small 1.0 m]
                   openShare=0.5, windowHeightM=dict(large=2.1, medium=1.5, small=1.0, none=0.0),
+                  # front balcony, not expanded, in flats of 84 m2 and more (agreed 2026-11-22): depth 1.5 m (balconies within
+                  # 1.5 m of the building are left out of the floor-area ratio; Economist 2018-01-28) x living room width
+                  # (taken as sqrt of its area) [assume]; outer glass 2.2 m high over that width [assume]. Outer glass: clear
+                  # double glazing U 2.4 (integrated U of clear double glazing, Yoon, Ahn & Kim 2007), SHGC 0.7 and 0.7 of the
+                  # sun passing on into the living room [assume]; air change 1.0 an hour through the balcony frames [assume].
+                  # No heating; slabs face the neighbours' balconies (no exchange). luxShare: daylight reaching its sensor.
+                  balcony=dict(uGlass=2.4, shgc=0.7, tau=0.7, ach=1.0, glassHeightM=2.2, luxShare=0.35),
                   ventilator=dict(ach=0.5, recoveryHeating=0.46, recoveryCooling=0.27, filter=0.60)),
     # air between rooms (2026-11-04). Open door / open plan: buoyancy flow through an opening, one direction
     # Q = Cd/3 * W * H * sqrt(g * H * dT / T) (Brown & Solvason 1962), Cd = 0.0835 * (dT/T)^-0.313 measured through a
@@ -365,16 +372,18 @@ class Environment:
         self.hood = False  # the kitchen range hood running (set by the agent from hoodHabits; no device)
         self.shower = None  # (room, until ms): a shower running (agent action person.shower)
         self.racks = []  # laundry drying indoors: dict(room, start, gMin, leftG) (agent, after a wash not dried in the dryer)
+        self.balcony_window_open = False  # the balcony's outer window opened (agent, to dry laundry; no sensor)
+        self.real_balcony = bool(house.room_profile("balcony").get("glassM2")) and "balcony" in house.room_ids
         for r in house.room_ids:
             self.rooms[r] = (dict(temperature=out["temperature"], humidity=out["humidity"], pm25=out["pm25"], co2=out["co2"],
-                                  illuminance=out["daylight"], noise=out["noise"]) if r == "balcony"
+                                  illuminance=out["daylight"], noise=out["noise"]) if r == "balcony" and not self.real_balcony
                              else dict(temperature=22, mass=22, humidity=45, pm25=15, co2=600, illuminance=0, noise=30))
         self.settle(ms)
 
     def settle(self, ms):
         out = outdoor_at(ms)
         for r, e in self.rooms.items():
-            if r == "balcony":
+            if r == "balcony" and not self.real_balcony:
                 continue
             t = free_indoor_temp(out, self.house.room_profile(r))
             vapor = min(sat_vapor(t), vapor_from_rh(out["humidity"], out["temperature"]))
@@ -396,22 +405,40 @@ class Environment:
                 q = opening_flow(D["widthM"], D["heightM"], ea["temperature"] - eb["temperature"], (ea["temperature"] + eb["temperature"]) / 2)
             else:
                 q = PHYS["door"]["closedM3h"] / 60
-            va, vb = H.room_profile(a)["areaM2"] * PHYS["ceilingM"], H.room_profile(b)["areaM2"] * PHYS["ceilingM"]
-            f = math.exp(-q * dt * (1 / va + 1 / vb))
-            for k in ("temperature", "vapor", "pm25", "co2"):
-                xa, xb = ea[k], eb[k]
-                m, d = (va * xa + vb * xb) / (va + vb), (xa - xb) * f
-                ea[k], eb[k] = m + d * vb / (va + vb), m - d * va / (va + vb)
+            self._swap(a, b, q, dt)
+        if self.real_balcony:  # living room and balcony, through the balcony door (open: a door-sized opening)
+            d = H.at("balcony", "door_contact")
+            ea, eb = self.rooms["living_room"], self.rooms["balcony"]
+            if d is not None and d.state.get("contactSensor.contact") == "open":
+                D = PHYS["door"]
+                q = opening_flow(D["widthM"], D["heightM"], ea["temperature"] - eb["temperature"], (ea["temperature"] + eb["temperature"]) / 2)
+            else:
+                q = PHYS["door"]["closedM3h"] / 60
+            self._swap("living_room", "balcony", q, dt)
+
+    def _swap(self, a, b, q, dt):
+        H = self.house
+        ea, eb = self.rooms[a], self.rooms[b]
+        va, vb = H.room_profile(a)["areaM2"] * PHYS["ceilingM"], H.room_profile(b)["areaM2"] * PHYS["ceilingM"]
+        f = math.exp(-q * dt * (1 / va + 1 / vb))
+        for k in ("temperature", "vapor", "pm25", "co2"):
+            xa, xb = ea[k], eb[k]
+            m, d = (va * xa + vb * xb) / (va + vb), (xa - xb) * f
+            ea[k], eb[k] = m + d * vb / (va + vb), m - d * va / (va + vb)
 
     def step(self, ms, dt):
         out = outdoor_at(ms)
         H = self.house
         for r in H.room_ids:
             e = self.rooms[r]
-            if r != "balcony" and e.get("vapor") is None:
+            if (r != "balcony" or self.real_balcony) and e.get("vapor") is None:
                 e["vapor"] = vapor_from_rh(e["humidity"], e["temperature"])
         self.exchange(dt)
         balcony_door = H.at("balcony", "door_contact")
+        RB = self.real_balcony
+        if RB:  # the balcony's state at the start of this minute: what the living room's window and frames face
+            bal0 = dict(self.rooms["balcony"])
+            liv0 = dict(self.rooms["living_room"])
         for r in H.room_ids:
             e = self.rooms[r]
             devs = H.by_room[r]
@@ -424,15 +451,23 @@ class Environment:
 
             occ = is_("occupancy_sensor", "presenceSensor", "presence", "present")
             light_on = is_("light", "switch", "switch", "on")
-            if r == "balcony":
+            if r == "balcony" and not RB:
                 e.update(temperature=out["temperature"], humidity=out["humidity"], pm25=out["pm25"], co2=out["co2"],
                          illuminance=out["daylight"] + (200 if light_on else 0), noise=db_sum([out["noise"], 45] if occ else [out["noise"]]))
                 continue
             win_open = is_("window_contact", "contactSensor", "contact", "open")
-            door_open = r == "living_room" and balcony_door is not None and balcony_door.state.get("contactSensor.contact") == "open"
+            door_open = r == "living_room" and not RB and balcony_door is not None and balcony_door.state.get("contactSensor.contact") == "open"
+            if r == "balcony":
+                win_open = self.balcony_window_open
             is_open = win_open or door_open
+            # what the room's windows and frames face: outdoors, or the balcony for the living room of a flat with one
+            side = dict(temperature=bal0["temperature"], vapor=bal0["vapor"], pm25=bal0["pm25"], co2=bal0["co2"]) if RB and r == "living_room" else \
+                dict(temperature=out["temperature"], vapor=vapor_from_rh(out["humidity"], out["temperature"]), pm25=out["pm25"], co2=out["co2"])
             wall_share = (0.5 + p["exteriorWalls"]) / 1.5
             E = PHYS["envelope"]
+            if r == "balcony":  # outer glass instead of a window; leakier frames
+                B = E["balcony"]
+                E = dict(E, uWindow=B["uGlass"], shgc=B["shgc"], ach=B["ach"], windowHeightM=dict(E["windowHeightM"], large=B["glassHeightM"]))
             af = p["areaM2"]
             vol = af * PHYS["ceilingM"]
             k_open = 0.0
@@ -442,34 +477,45 @@ class Environment:
                 # Open area = half the glass (one sash of a sliding pair; "half the window", Cho & Choi 2013); the
                 # balcony door counts as the living room's large window. Capped at 0.8 of the room air a minute.
                 size = "large" if door_open else p["windowSize"]
-                a_open = E["openShare"] * E["windowShare"][size] * af if (p["exteriorWalls"] or door_open) else 0.0
+                a_open = E["openShare"] * (p.get("glassM2") or E["windowShare"][size] * af) if (p["exteriorWalls"] or door_open) else 0.0
                 h = E["windowHeightM"][size]
-                u_m = math.sqrt(0.001 * out["windSpeed"] ** 2 + 0.0035 * h * abs(e["temperature"] - out["temperature"]) + 0.01)
+                u_m = math.sqrt(0.001 * out["windSpeed"] ** 2 + 0.0035 * h * abs(e["temperature"] - side["temperature"]) + 0.01)
                 k_open = min(0.8, 0.5 * a_open * u_m * 60 / vol)  # per minute
             k_inf = E["ach"] / 60  # per minute
             V = E["ventilator"]
             k_vent = V["ach"] / 60 if self.ventilator else 0.0  # outdoor air brought in by the ventilation unit, per minute
             rec = V["recoveryHeating"] if out["temperature"] < e["temperature"] else V["recoveryCooling"]
-            k = k_open + k_inf + k_vent * (1 - rec)  # outdoor air reaching the room, per minute (heat and moisture)
+            if r == "balcony":
+                k_vent = 0.0  # the ventilation unit serves the heated rooms
+            k_side = k_open + k_inf  # air through the windows and frames (from outdoors, or from the balcony), per minute
+            k_out = k_vent * (1 - rec)  # outdoor air from the ventilation unit (heat and moisture), per minute
             if self.hood and r == "kitchen" and is_("stove", "switch", "switch", "on"):
-                k += E["hood"]["m3s"] * 60 / vol  # range hood exhaust, made up by outdoor air
+                k_out += E["hood"]["m3s"] * 60 / vol  # range hood exhaust, made up by outdoor air
+            k = k_side + k_out
             if e.get("mass") is None:
                 e["mass"] = e["temperature"]
             # 5R1C heat balance, explicit in one-minute steps (air time constant about 3 min)
-            a_win = E["windowShare"][p["windowSize"]] * af if p["exteriorWalls"] else 0.0
+            a_win = (p.get("glassM2") or E["windowShare"][p["windowSize"]] * af) if p["exteriorWalls"] else 0.0
             a_wall = max(0.0, p["exteriorWalls"] * math.sqrt(af) * PHYS["ceilingM"] - a_win)
             h_win, h_op = E["uWindow"] * a_win, E["uWall"] * a_wall
             a_tot, a_m = E["aTotPerFloor"] * af, E["aMassPerFloor"] * af
             h_is, h_ms = E["hIs"] * a_tot, E["hMs"] * a_m
             h_em = 1 / (1 / h_op - 1 / h_ms) if h_op > 0 else 0.0
-            h_ve = 1206 * vol * k / 60  # W/K
+            h_ve = 1206 * vol * k / 60  # W/K (both air paths)
             c_air, c_m = 1206 * vol, E["cMassPerFloor"] * af
             curtain_dev = devs.get("curtain")
             shade = PHYS["curtain"].get(curtain_dev.state.get("windowShade.windowShade"), 0.6) if curtain_dev is not None else 1
             # sun on the window (2026-11-20): vertical irradiance from the sun position and the calibrated horizontal
             # irradiance (weather.solar_at, vertical_irradiance); before, daylight lux / 110 x window_sun, which was a
             # quarter of the measured horizontal irradiation and ignored the sun height
-            phi_sol = E["shgc"] * a_win * vertical_irradiance(AZIMUTH[p["window"]], solar_at(ms)) * shade if a_win else 0.0
+            irr = vertical_irradiance(AZIMUTH[p["window"]], solar_at(ms)) if a_win else 0.0
+            phi_sol = E["shgc"] * a_win * irr * shade
+            if RB and r == "living_room":  # sun reaches the living room through the balcony glass first
+                phi_sol *= E["balcony"]["tau"]
+            if r == "balcony":  # sun kept in the balcony: what its glass lets in minus what goes on into the living room
+                lp = H.room_profile("living_room")
+                passed = PHYS["envelope"]["shgc"] * PHYS["envelope"]["windowShare"][lp["windowSize"]] * lp["areaM2"] * irr * E["balcony"]["tau"]
+                phi_sol = max(0.0, phi_sol - passed)
             G = E["gains"]
             phi_int = (G["person"] if occ else 0) + (G["lightPerM2"] * af if light_on else 0)
             tv_dev = devs.get("tv")
@@ -493,21 +539,27 @@ class Environment:
                 phi_floor_down = F["downShare"] * max(0.0, phi_floor_up)
                 e["floor"] += (pipe - phi_floor_up - phi_floor_down) * dt * 60 / (F["cPerM2"] * af)
                 self.heat_wh[r] = self.heat_wh.get(r, 0.0) + pipe * dt / 60  # heat delivered by the pipes
+            if r == "balcony":  # heat through the living room's window from the living room (its loss to the balcony)
+                lp = H.room_profile("living_room")
+                phi_int += PHYS["envelope"]["uWindow"] * PHYS["envelope"]["windowShare"][lp["windowSize"]] * lp["areaM2"] * (liv0["temperature"] - e["temperature"])
             phi_ia = 0.5 * phi_int
             phi_m = a_m / a_tot * (0.5 * phi_int + phi_sol)
             phi_st = (1 - a_m / a_tot - h_win / (E["hMs"] * a_tot)) * (0.5 * phi_int + phi_sol) + phi_floor_up
             t_out, ta, tm = out["temperature"], e["temperature"], e["mass"]
-            ts = (h_is * ta + h_ms * tm + h_win * t_out + phi_st) / (h_is + h_ms + h_win)
+            t_side = side["temperature"]
+            ts = (h_is * ta + h_ms * tm + h_win * t_side + phi_st) / (h_is + h_ms + h_win)
             sec = dt * 60
-            e["temperature"] = ta + (h_ve * (t_out - ta) + h_is * (ts - ta) + phi_ia) * sec / c_air
+            h_side, h_outv = 1206 * vol * k_side / 60, 1206 * vol * k_out / 60
+            e["temperature"] = ta + (h_side * (t_side - ta) + h_outv * (t_out - ta) + h_is * (ts - ta) + phi_ia) * sec / c_air
             # the downward share of the floor heating leaves to the flat below; the slabs exchange heat with heated neighbours
-            phi_nb = E["uPartyFloor"] * 2 * af * (E["neighbourC"] - tm) if out["meanTemperature"] < E["neighbourHeatingBelowMeanC"] else 0.0
-            e["mass"] = tm + (h_ms * (ts - tm) + h_em * (t_out - tm) + phi_m + phi_nb) * sec / c_m
+            phi_nb = E["uPartyFloor"] * 2 * af * (E["neighbourC"] - tm) if out["meanTemperature"] < E["neighbourHeatingBelowMeanC"] and r != "balcony" else 0.0
+            e["mass"] = tm + (h_ms * (ts - tm) + h_em * (t_side - tm) + phi_m + phi_nb) * sec / c_m
             if e.get("vapor") is None:
                 e["vapor"] = vapor_from_rh(e["humidity"], e["temperature"])
-            e["vapor"] += (vapor_from_rh(out["humidity"], out["temperature"]) - e["vapor"]) * min(1, k * dt)
-            e["pm25"] += (out["pm25"] - e["pm25"]) * (min(1.0, k_open * dt) if is_open else PHYS["pmInfiltration"] * wall_share * dt)
-            e["co2"] += (out["co2"] - e["co2"]) * (min(1.0, k_open * dt) if is_open else 0.003 * dt)
+            e["vapor"] += (side["vapor"] - e["vapor"]) * min(1, k_side * dt)
+            e["vapor"] += (vapor_from_rh(out["humidity"], out["temperature"]) - e["vapor"]) * min(1, k_out * dt)
+            e["pm25"] += (side["pm25"] - e["pm25"]) * (min(1.0, k_open * dt) if is_open else PHYS["pmInfiltration"] * wall_share * dt)
+            e["co2"] += (side["co2"] - e["co2"]) * (min(1.0, k_open * dt) if is_open else 0.003 * dt)
             if k_vent:
                 e["pm25"] += (out["pm25"] * (1 - V["filter"]) - e["pm25"]) * k_vent * dt
                 e["co2"] += (out["co2"] - e["co2"]) * k_vent * dt
@@ -588,6 +640,10 @@ class Environment:
             e["pm25"] = max(0, e["pm25"])
             e["co2"] = max(400, e["co2"])
             lux = out["daylight"] * PHYS["windowLight"][p["windowSize"]] * window_sun(p, out)
+            if r == "balcony":
+                lux = out["daylight"] * E["balcony"]["luxShare"] * window_sun(p, out)
+            elif RB and r == "living_room":
+                lux *= E["balcony"]["tau"]
             curtain = devs.get("curtain")
             if curtain is not None:
                 lux *= PHYS["curtain"].get(curtain.state.get("windowShade.windowShade"), 0.6)

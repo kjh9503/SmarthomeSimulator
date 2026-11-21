@@ -43,8 +43,8 @@
    },
    "laundry": {
     "areaM2": 2.6,
-    "window": "N",
-    "windowSize": "small",
+    "window": null,
+    "windowSize": "none",
     "exteriorWalls": 1
    },
    "closet": {
@@ -105,8 +105,8 @@
    },
    "laundry": {
     "areaM2": 2.4,
-    "window": "W",
-    "windowSize": "small",
+    "window": null,
+    "windowSize": "none",
     "exteriorWalls": 1
    },
    "closet": {
@@ -167,8 +167,8 @@
    },
    "laundry": {
     "areaM2": 2.6,
-    "window": "NE",
-    "windowSize": "small",
+    "window": null,
+    "windowSize": "none",
     "exteriorWalls": 1
    },
    "closet": {
@@ -235,8 +235,8 @@
    },
    "laundry": {
     "areaM2": 2.3,
-    "window": "N",
-    "windowSize": "small",
+    "window": null,
+    "windowSize": "none",
     "exteriorWalls": 1
    },
    "closet": {
@@ -262,6 +262,13 @@
     "window": null,
     "windowSize": "none",
     "exteriorWalls": 0
+   },
+   "balcony": {
+    "areaM2": 7.0,
+    "window": "S",
+    "windowSize": "large",
+    "exteriorWalls": 1,
+    "glassM2": 10.3
    }
   }
  },
@@ -315,8 +322,8 @@
    },
    "laundry": {
     "areaM2": 2.3,
-    "window": "NW",
-    "windowSize": "small",
+    "window": null,
+    "windowSize": "none",
     "exteriorWalls": 1
    },
    "closet": {
@@ -342,6 +349,13 @@
     "window": null,
     "windowSize": "none",
     "exteriorWalls": 0
+   },
+   "balcony": {
+    "areaM2": 7.0,
+    "window": "SE",
+    "windowSize": "large",
+    "exteriorWalls": 1,
+    "glassM2": 10.3
    }
   }
  },
@@ -395,8 +409,8 @@
    },
    "laundry": {
     "areaM2": 1.9,
-    "window": "E",
-    "windowSize": "small",
+    "window": null,
+    "windowSize": "none",
     "exteriorWalls": 1
    },
    "closet": {
@@ -481,8 +495,8 @@
    },
    "laundry": {
     "areaM2": 3.9,
-    "window": "N",
-    "windowSize": "small",
+    "window": null,
+    "windowSize": "none",
     "exteriorWalls": 1
    },
    "closet": {
@@ -508,6 +522,13 @@
     "window": null,
     "windowSize": "none",
     "exteriorWalls": 0
+   },
+   "balcony": {
+    "areaM2": 7.9,
+    "window": "S",
+    "windowSize": "large",
+    "exteriorWalls": 1,
+    "glassM2": 11.6
    }
   }
  },
@@ -567,8 +588,8 @@
    },
    "laundry": {
     "areaM2": 3.1,
-    "window": "NW",
-    "windowSize": "small",
+    "window": null,
+    "windowSize": "none",
     "exteriorWalls": 1
    },
    "closet": {
@@ -594,6 +615,13 @@
     "window": null,
     "windowSize": "none",
     "exteriorWalls": 0
+   },
+   "balcony": {
+    "areaM2": 7.4,
+    "window": "SE",
+    "windowSize": "large",
+    "exteriorWalls": 1,
+    "glassM2": 10.8
    }
   }
  },
@@ -653,8 +681,8 @@
    },
    "laundry": {
     "areaM2": 3.9,
-    "window": "W",
-    "windowSize": "small",
+    "window": null,
+    "windowSize": "none",
     "exteriorWalls": 1
    },
    "closet": {
@@ -680,6 +708,13 @@
     "window": null,
     "windowSize": "none",
     "exteriorWalls": 0
+   },
+   "balcony": {
+    "areaM2": 7.9,
+    "window": "E",
+    "windowSize": "large",
+    "exteriorWalls": 1,
+    "glassM2": 11.6
    }
   }
  }

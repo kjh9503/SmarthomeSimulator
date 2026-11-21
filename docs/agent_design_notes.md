@@ -422,6 +422,26 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
     (awake) / 40.4 (home) / 45.2 (always) kWh/m2 a. Winter room1 CO2 (median of report lines) 903 -> 611 ppm (always),
     PM2.5 21 -> 15. Winter humidity 23-24% either way (looks low; to check). 063 drew always, running in winter. With 27% added (2026-11-19) the run is unchanged:
     in Jul-Aug the 063 living room is always warmer than outdoors (hourly median 32.2 C vs 25.6 C), so 46% applies.
+- Balcony and laundry drying (agreed 2026-11-22). The laundry room has no window any more (it was never opened). The five
+  plans of 84 m2 and more (3room-A/B, 4room-A/B/C) have a real front balcony, not expanded: 1.5 m deep (balconies within
+  1.5 m are left out of the floor-area ratio; Economist 2018-01-28) x living room width taken as sqrt(living area)
+  [assume], outer glass 2.2 m high [assume], clear double glazing U 2.4 (integrated 2.407, Yoon, An & Kim 2007), SHGC 0.7,
+  0.7 of the sun passing on into the living room, 1.0 air change an hour through its frames [all assume], no heating. The
+  living room's windows face the balcony instead of outdoors; the balcony door exchanges air with the living room. Smaller
+  plans keep the old balcony (outdoor values copied). Racks stand on the balcony, else in the living room. The person checks
+  a rack 6 h after hanging and every 4 h after that when home and awake (the check writes no line); dry = water left at
+  most 5% [assume: stands for touching the clothes]. Not dry: outdoor air between `dryingHabits.airMinC` and `airMaxC`
+  and no rain -> the window of the rack's room is opened (balcony outer window: no sensor, no line; living room: logged);
+  otherwise a balcony rack is moved into the living room (agreed: option (나)), a living room rack gets heating (colder)
+  or cooling (warmer). Windows opened for drying are closed at bedtime, when leaving, in rain and when the rack is taken in.
+  The LLM writes `dryingRanges`; `pipeline/sample_drying_person.py` draws `dryingHabits` (no data).
+  - Check [ours, one year, 063 in 3room-A, airMinC 11, airMaxC 27]: 29 racks, all taken in, 10-25 h after hanging
+    (median 19.6; the spread comes from the check times, sleep and work); 14 moved inside (Nov-Mar, and Jul-Aug above
+    27 C); balcony window opened 10 times. Before (closed laundry room, 90 days): about 96 h per rack. Hourly medians:
+    January balcony 15.6 C (4.7-33.6) at outdoor -1.1 C, balcony RH 18%; July balcony 33.8 C (29.0-44.7) at outdoor
+    25.4 C. Heating 29.5 -> 17.0 kWh/m2 a. Living room Jul 32.8 C, Aug 34.0 C (before the balcony: Jul-Aug 26.6 C): the
+    window habit opens the living room window onto the balcony, whose outer window stays closed (open task). No measured
+    Korean balcony temperatures found to compare with.
 - Python port equals the JS simulator: outdoor values within 1e-12, physics within 1e-15 (`tests/test_port.py`).
 - 2026 weather vs climate normals [ours]: monthly max/min temperature within 0.9 C, PM within 1.2 ug/m3, 86 wet days
   vs 79.3, 1,509 mm vs 1,418 mm.
@@ -449,6 +469,8 @@ immediate response timing, gap-dependent off probabilities, persona -> daily-lif
 | Yun 2020 | Yun et al. Indoor Thermal Environment Long-Term Data Analytics Using IoT Devices in Korean Apartments. IJERPH 2020. https://pmc.ncbi.nlm.nih.gov/articles/PMC7579249 | cooled / not cooled room temperature, summer indoor vs outdoor | web summary |
 | Lee 2010 (airing) | Lee Y.-J. Characteristics of Behavior for Ventilation and Maintenance for Ventilation Equipments by Multi-family Housing Residents. J. Korean Housing Assoc. 21(5), 2010. https://koreascience.or.kr/article/JAKO201011949345964.pdf | airing counts, minutes, times | web summary |
 | Cho & Choi 2013 | Cho J.-H., Choi Y.-J. The Indoor Thermal and Air Environment of General Apartment Houses during Winter in Cheongju City. KIEAE J. 13(3), 2013. https://kieae.kr/xml/01166/01166.pdf | winter airing | web summary |
+| Yoon 2007 | Yoon J.-H., An Y.-S., Kim B.-S. 확장형 발코니 공동주택의 창호종류에 따른 결로 및 온열환경에 관한 연구. KIEAE J. 7(5) 87-92, 2007. https://koreascience.kr/article/JAKO200730360545457.pdf | clear double glazing integrated U 2.407 W/m2K | PDF (section 2.1, table 2) |
+| Economist 2018 | The Economist, 2018-01-28, on Korean apartment balconies (URL not kept) | balconies within 1.5 m left out of the floor-area ratio | article, read 2026-11-22 |
 | Jo 2011 | Jo D.-K., Yun C.-Y., Kim K.-D., Kang Y.-H. A Detail Survey of Horizontal Global Radiation and Hours of Bright Sunshine for the Installation of Solar Photovoltaic System in Korea. J. Korean Solar Energy Soc. 31(3), 2011. https://koreascience.or.kr/article/JAKO201128451816195.pdf | Seoul monthly horizontal irradiation (table 3) | web summary |
 | Lee 2014 | Lee W.-J., Kang E.-C., Lee E.-J., Shin U.-C. A Study on the Calculation of Thermal Consumption Unit of Apartment. KJACR 26(8) 388-393, 2014. https://koreascience.kr/article/JAKO201428854482525.pdf | measured comparison (heating + hot water, built 1991-2008) | web summary |
 | Jin 2019 | Jin H. S. et al. Analysis of annual EUIs by end-use in apartment units (2017-2018). E3S Web Conf. 111, 04013 (CLIMA 2019). https://www.e3s-conferences.org/articles/e3sconf/pdf/2019/37/e3sconf_clima2019_04013.pdf | heating / hot water split (71 Seoul flats) | web summary |

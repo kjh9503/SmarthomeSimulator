@@ -1,6 +1,6 @@
 {
   "personaId": "063",
-  "notes": "University student living alone in a 3-room flat. Weekdays on Campus, evenings mostly at home. Only pattern p63_a is included; p63_b (Campus) is not in this profile. Heating ranges: a student living alone on a budget: off when leaving more often than kept, comfort 21-24 C. Ventilation: no persona reason to differ from the survey's about-half users; on a budget, so running it only while home is weighted over always. Cooling: on a budget, so a little less likely to use it and a higher switch-on temperature (29-31 C) than the measured 29.8 C average; mostly off when leaving. Windows: survey airing counts; opening for heat likely for someone saving on cooling. Range hood: cooks simple meals and does not always think of it, so a middle range (0.3-0.8 of cookings). Showers: a student with morning classes, mostly one shower a day, more often in the morning. Laundry: one person, 2-3 washes a week, mostly on weekends when home; has a dryer (dryerLoad) and uses it for most washes, some are hung to save power.",
+  "notes": "University student living alone in a 3-room flat. Weekdays on Campus, evenings mostly at home. Only pattern p63_a is included; p63_b (Campus) is not in this profile. Heating ranges: a student living alone on a budget: off when leaving more often than kept, comfort 21-24 C. Ventilation: no persona reason to differ from the survey's about-half users; on a budget, so running it only while home is weighted over always. Cooling: on a budget, so a little less likely to use it and a higher switch-on temperature (29-31 C) than the measured 29.8 C average; mostly off when leaving. Windows: survey airing counts; opening for heat likely for someone saving on cooling. Range hood: cooks simple meals and does not always think of it, so a middle range (0.3-0.8 of cookings). Showers: a student with morning classes, mostly one shower a day, more often in the morning. Laundry: one person, 2-3 washes a week, mostly on weekends when home; has a dryer (dryerLoad) and uses it for most washes, some are hung to save power. Drying: opens a window to finish drying in mild weather, otherwise brings the rack inside.",
   "houseType": "3room",
   "variant": "3room-A",
   "roomRoles": {
@@ -2272,5 +2272,33 @@
       }
     },
     "source": "range chosen by the LLM for this persona; dryer ownership 35% in 2023 (Gallup Korea)"
+  },
+  "dryingRanges": {
+    "airMinC": {
+      "min": 5,
+      "max": 12
+    },
+    "airMaxC": {
+      "min": 26,
+      "max": 30
+    }
+  },
+  "dryingHabits": {
+    "airMinC": 11,
+    "airMaxC": 27
+  },
+  "dryingPerson": {
+    "seed": 63,
+    "ranges": {
+      "airMinC": {
+        "min": 5,
+        "max": 12
+      },
+      "airMaxC": {
+        "min": 26,
+        "max": 30
+      }
+    },
+    "source": "ranges chosen by the LLM for this persona (no data found)"
   }
 }

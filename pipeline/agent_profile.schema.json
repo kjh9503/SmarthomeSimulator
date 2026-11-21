@@ -828,6 +828,57 @@
     "laundryPerson": {
       "type": "object",
       "description": "Written by pipeline/sample_laundry_person.py: seed and the range used. Not read by the engine."
+    },
+    "dryingRanges": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "airMinC",
+        "airMaxC"
+      ],
+      "description": "Outdoor temperatures between which the person opens a window to finish drying laundry (else: balcony rack moved inside; heating or cooling in the living room); pipeline/sample_drying_person.py draws dryingHabits.",
+      "properties": {
+        "airMinC": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "min",
+            "max"
+          ],
+          "properties": {
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            }
+          }
+        },
+        "airMaxC": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "min",
+            "max"
+          ],
+          "properties": {
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            }
+          }
+        }
+      }
+    },
+    "dryingHabits": {
+      "type": "object",
+      "description": "Written by pipeline/sample_drying_person.py; read by the engine."
+    },
+    "dryingPerson": {
+      "type": "object",
+      "description": "Written by pipeline/sample_drying_person.py: seed and the ranges used. Not read by the engine."
     }
   }
 }
