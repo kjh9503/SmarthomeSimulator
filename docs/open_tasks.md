@@ -17,7 +17,8 @@ Rewritten 2026-11-21: finished items removed (their record is in docs/agent_desi
 2a. Balcony (2026-11-22): in summer the 063 living room is at 32.8 C (Jul) and 34.0 C (Aug), was 26.6 C before the
    balcony; the window habit opens the living room window onto a balcony whose outer window stays closed (balcony up to
    44-48 C). Not decided how the window habit should treat the balcony's outer window. Balcony parameters (U 2.4 only
-   from a source; SHGC 0.7, 0.7 sun into the living room, 1.0 air change an hour, area from sqrt(living area), 35%
+   from a source; SHGC 0.5 since 2026-11-23 (0.7 was glass-only and gave 33.9 C in January; now 19.6 C max,
+   January median 11.9 K above outdoors, Shanghai / Nanjing closed balconies +5.7 / +6.1 K, glazing not stated); 0.7 sun into the living room, 1.0 air change an hour, area from sqrt(living area), 35%
    daylight at its sensor) are assumptions; January balcony 15.6 C median at -1.1 C outdoors and up to 33.6 C on sunny
    days, no Korean measurements found to compare.
 3. Humidifier: `humidifierMode` auto / low / medium / high instead of `humiditySetpoint` (agreed 2026-11-04, not built);

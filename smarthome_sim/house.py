@@ -123,10 +123,12 @@ PHYS = dict(
                   # front balcony, not expanded, in flats of 84 m2 and more (agreed 2026-11-22): depth 1.5 m (balconies within
                   # 1.5 m of the building are left out of the floor-area ratio; Economist 2018-01-28) x living room width
                   # (taken as sqrt of its area) [assume]; outer glass 2.2 m high over that width [assume]. Outer glass: clear
-                  # double glazing U 2.4 (integrated U of clear double glazing, Yoon, Ahn & Kim 2007), SHGC 0.7 and 0.7 of the
-                  # sun passing on into the living room [assume]; air change 1.0 an hour through the balcony frames [assume].
+                  # double glazing U 2.4 (integrated U of clear double glazing, Yoon, Ahn & Kim 2007). SHGC 0.5 over the whole
+                  # glass area with its frames, as the room windows (2026-11-23: glass-only shading coefficient of double
+                  # glazing 0.83, Kim, Moon & Yu 2013 table 2, x 0.87 = SHGC 0.72; x frame factor about 0.7 [assume]; 0.7
+                  # before gave the balcony 33.9 C in January). 0.7 of the sun passing on into the living room [assume]; air change 1.0 an hour through the balcony frames [assume].
                   # No heating; slabs face the neighbours' balconies (no exchange). luxShare: daylight reaching its sensor.
-                  balcony=dict(uGlass=2.4, shgc=0.7, tau=0.7, ach=1.0, glassHeightM=2.2, luxShare=0.35),
+                  balcony=dict(uGlass=2.4, shgc=0.5, tau=0.7, ach=1.0, glassHeightM=2.2, luxShare=0.35),
                   ventilator=dict(ach=0.5, recoveryHeating=0.46, recoveryCooling=0.27, filter=0.60)),
     # air between rooms (2026-11-04). Open door / open plan: buoyancy flow through an opening, one direction
     # Q = Cd/3 * W * H * sqrt(g * H * dT / T) (Brown & Solvason 1962), Cd = 0.0835 * (dT/T)^-0.313 measured through a
