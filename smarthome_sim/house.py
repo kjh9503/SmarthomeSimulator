@@ -334,6 +334,8 @@ class House:
         by_room = {r: [] for r in self.room_ids}
         for d in spec:
             for i, r in enumerate(d["rooms"]):
+                if d["device"] == "window_contact" and r == "balcony" and not self.profile["rooms"].get("balcony", {}).get("glassM2"):
+                    continue  # the balcony's outer window sensor: only flats with a real balcony (84 m2 and more)
                 if r in by_room and (d["device"], r) not in DEVICE_EXCLUDE[self.type]:
                     by_room[r].append(Device(d["deviceIds"][i], d["device"], r, d["capabilities"]))
         self.devices = {}
@@ -374,7 +376,6 @@ class Environment:
         self.hood = False  # the kitchen range hood running (set by the agent from hoodHabits; no device)
         self.shower = None  # (room, until ms): a shower running (agent action person.shower)
         self.racks = []  # laundry drying indoors: dict(room, start, gMin, leftG) (agent, after a wash not dried in the dryer)
-        self.balcony_window_open = False  # the balcony's outer window opened (agent, to dry laundry; no sensor)
         self.real_balcony = bool(house.room_profile("balcony").get("glassM2")) and "balcony" in house.room_ids
         for r in house.room_ids:
             self.rooms[r] = (dict(temperature=out["temperature"], humidity=out["humidity"], pm25=out["pm25"], co2=out["co2"],
@@ -459,8 +460,6 @@ class Environment:
                 continue
             win_open = is_("window_contact", "contactSensor", "contact", "open")
             door_open = r == "living_room" and not RB and balcony_door is not None and balcony_door.state.get("contactSensor.contact") == "open"
-            if r == "balcony":
-                win_open = self.balcony_window_open
             is_open = win_open or door_open
             # what the room's windows and frames face: outdoors, or the balcony for the living room of a flat with one
             side = dict(temperature=bal0["temperature"], vapor=bal0["vapor"], pm25=bal0["pm25"], co2=bal0["co2"]) if RB and r == "living_room" else \

@@ -78,6 +78,9 @@ def main():
         out.append(("ERROR", "-", f"houseType {prof['houseType']} unknown"))
     elif prof["variant"] not in vocab["houseTypes"][prof["houseType"]]["variants"]:
         out.append(("ERROR", "-", f"variant {prof['variant']} not in {vocab['houseTypes'][prof['houseType']]['variants']}"))
+    REAL_BALCONY = {"3room-A", "3room-B", "4room-A", "4room-B", "4room-C"}  # room_profiles.json: balcony with glassM2
+    if prof.get("variant") not in REAL_BALCONY and "balcony.window_contact" in json.dumps(prof["behaviours"]):
+        out.append(("ERROR", "-", f"balcony.window_contact used but {prof.get('variant')} has no real balcony"))
     if prof["start"]["place"] not in vocab["places"]:
         out.append(("ERROR", "start", f"unknown place {prof['start']['place']}"))
     ids = [b["id"] for b in prof["behaviours"]]

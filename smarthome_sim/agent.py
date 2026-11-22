@@ -224,6 +224,7 @@ class AgentRunner:
         self.laundry_h = profile.get("laundryHabits")  # None: no dryer use by habit (racks only)
         self.dry_h = profile.get("dryingHabits")  # None: DRY_DEFAULT
         self.dry_window = set()  # living room windows opened for drying
+        self.outer_why = set()  # why the balcony's outer window is open: living / dry
         self.dry_stats = dict(takenIn=0, balconyWindow=0, livingWindow=0, movedInside=0, heating=0, cooling=0, hoursToDry=[])
         self.vent_minutes = dict(season=0, other=0)
         self.behaviours = []
@@ -579,6 +580,10 @@ class AgentRunner:
                 if not (d.id == "balcony.door_contact" and S["room"] == "living_room"):
                     self.go_to(d.roomId)
                 out = done(sim.set_value(did, args["capability"], args["attribute"], args["value"]))
+                if did == "living_room.window_contact" and out["result"] == "done" and sim.house.env.real_balcony:
+                    # agreed 2026-11-23, for everyone: the living room window opens onto the balcony, so whoever opens it
+                    # (habit, airing, a rule) opens the balcony's outer window as well, and closes it with it
+                    self.outer_open("living") if args["value"] == "open" else self.outer_release("living")
         elif do == "person.travel":
             if S["trip"]:
                 out = refused("already travelling")
@@ -962,7 +967,38 @@ class AgentRunner:
         if out["result"] == "done" and value == "closed":
             self.win_hot.pop(d.id, None)
             self.win_airing.discard(d.id)
+            if d.id == "balcony.window_contact":
+                self.outer_why.clear()
         return out
+
+    def outer_win(self):
+        """the balcony's outer window (flats with a real balcony), else None"""
+        return self.win_dev("balcony") if self.sim.house.env.real_balcony else None
+
+    def outer_open(self, why):
+        """open the balcony's outer window for a reason: living (the living room window is open; agreed 2026-11-23, so the
+        balcony does not become a greenhouse feeding the living room) or dry (laundry); the person goes back after"""
+        d = self.outer_win()
+        if d is None:
+            return False
+        self.outer_why.add(why)
+        if not self.win_is_open(d):
+            back = self.S["room"]
+            ok = self.win_set(d, "open")["result"] == "done"
+            if back:
+                self.go_to(back)
+            return ok
+        return False
+
+    def outer_release(self, why):
+        """a reason ends; the outer window is closed when no reason is left"""
+        d = self.outer_win()
+        self.outer_why.discard(why)
+        if d is not None and not self.outer_why and self.win_is_open(d):
+            back = self.S["room"]
+            self.win_set(d, "closed")
+            if back:
+                self.go_to(back)
 
     def window_tick(self, t):
         """awake at home: windows closed for rain; the room's window opened when it is hot inside and cooler outside, closed
@@ -971,15 +1007,13 @@ class AgentRunner:
         if not W or S["place"] != "home" or S["trip"] or S["asleep"]:
             return
         out, rooms = outdoor_at(t), self.sim.house.env.rooms
-        if out["weather"] in ("rain", "snow") and self.sim.house.env.balcony_window_open:
-            self.close_drying_window("balcony")
         if out["weather"] in ("rain", "snow"):
             for d in self.sim.house.devices.values():
                 if d.type == "window_contact" and self.win_is_open(d) and self.win_set(d, "closed")["result"] == "done":
                     self.win_stats["closedRain"] += 1
             return
         d = self.win_dev(S["room"])
-        if d is not None and d.id not in self.win_airing:
+        if d is not None and d.id not in self.win_airing and d.id != "balcony.window_contact":  # the outer window follows the living room window, laundry and rain
             temp = rooms[d.roomId]["temperature"]
             unit = self.cool_unit(S["room"])
             cooling = unit is not None and unit.get("thermostatMode", "thermostatMode") == "cool"
@@ -994,9 +1028,10 @@ class AgentRunner:
                     self.win_stats["closedHotOutside"] += 1
             elif W.get("summerOpen") and not cooling and temp >= W["openAboveC"] and out["temperature"] < temp - 1:
                 a = dict(do="home.record", args=dict(device=d.id, capability="contactSensor", attribute="contact", value="open"))
-                if not self.leaving_soon(a, None) and self.win_set(d, "open")["result"] == "done":
-                    self.win_hot[d.id] = t
-                    self.win_stats["hotOpen"] += 1
+                if not self.leaving_soon(a, None):
+                    if self.win_set(d, "open")["result"] == "done":
+                        self.win_hot[d.id] = t
+                        self.win_stats["hotOpen"] += 1
         self.airing_tick(t)
 
     def airing_tick(self, t):
@@ -1040,14 +1075,21 @@ class AgentRunner:
         if not W:
             return
         out, rooms = outdoor_at(t), self.sim.house.env.rooms
+        outer = self.outer_win()
         for d in list(self.sim.house.devices.values()):
-            if d.type != "window_contact" or not self.win_is_open(d):
+            if d.type != "window_contact" or not self.win_is_open(d) or d is outer:
                 continue
             if (moment == "bedtime" and W.get("sleepOpen") and out["meanTemperature"] >= HEAT_SEASON_MEAN_C
                     and out["weather"] not in ("rain", "snow") and rooms[d.roomId]["temperature"] > out["temperature"]):
                 self.win_stats["sleepOpen"] += 1
                 continue
             if self.win_set(d, "closed")["result"] == "done":
+                self.win_stats["closedAtCheck"] += 1
+        if outer is not None and self.win_is_open(outer):
+            liv = self.win_dev("living_room")
+            if liv is not None and self.win_is_open(liv):
+                pass  # the living room window stays open for the night: so does the outer window
+            elif self.win_set(outer, "closed")["result"] == "done":
                 self.win_stats["closedAtCheck"] += 1
 
     # ----- shower habit and laundry drying (2026-11-21) -----
@@ -1166,8 +1208,7 @@ class AgentRunner:
             mild = D["airMinC"] <= out["temperature"] <= D["airMaxC"] and out["weather"] not in ("rain", "snow")
             if mild:
                 if rk["room"] == "balcony":
-                    if not env.balcony_window_open:
-                        env.balcony_window_open = True
+                    if self.outer_open("dry"):
                         self.dry_stats["balconyWindow"] += 1
                 else:
                     w = self.win_dev("living_room")
@@ -1195,9 +1236,7 @@ class AgentRunner:
                         self.dry_stats["cooling"] += 1
 
     def close_drying_window(self, room):
-        env = self.sim.house.env
-        if room == "balcony" and env.balcony_window_open:
-            env.balcony_window_open = False
+        self.outer_release("dry")
         for did in list(self.dry_window):
             d = self.sim.house.device(did)
             self.dry_window.discard(did)

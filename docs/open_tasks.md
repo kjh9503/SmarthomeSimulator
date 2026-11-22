@@ -14,9 +14,11 @@ Rewritten 2026-11-21: finished items removed (their record is in docs/agent_desi
    the water; the rest stays in the clothes. Showers and other sources still drop what the air cannot hold (it
    condenses and runs off). Racks moved to a real balcony (flats of 84 m2 and more) or the living room, with checks and
    drying actions (done 2026-11-22; 063: 29 racks taken in 10-25 h after hanging, was about 96 h).
-2a. Balcony (2026-11-22): in summer the 063 living room is at 32.8 C (Jul) and 34.0 C (Aug), was 26.6 C before the
-   balcony; the window habit opens the living room window onto a balcony whose outer window stays closed (balcony up to
-   44-48 C). Not decided how the window habit should treat the balcony's outer window. Balcony parameters (U 2.4 only
+2a. Balcony: outer window sensor and pairing with the living room window done 2026-11-23 (063 Jul / Aug living room
+   26.6 / 27.3 C). Open: AC on -> inner side closed for all; laundry inside while the AC runs (personal); laundry
+   brought in during heating; outer window left open when leaving in summer (personal); short airing while heating or
+   cooling; LLM rules opening balcony.door_contact are not paired; glazing of Korean non-expanded balconies (single or
+   double) not checked. Balcony parameters (U 2.4 only
    from a source; SHGC 0.5 since 2026-11-23 (0.7 was glass-only and gave 33.9 C in January; now 19.6 C max,
    January median 11.9 K above outdoors, Shanghai / Nanjing closed balconies +5.7 / +6.1 K, glazing not stated); 0.7 sun into the living room, 1.0 air change an hour, area from sqrt(living area), 35%
    daylight at its sensor) are assumptions; January balcony 15.6 C median at -1.1 C outdoors and up to 33.6 C on sunny

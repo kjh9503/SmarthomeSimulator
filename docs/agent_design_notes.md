@@ -442,6 +442,17 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
     25.4 C. Heating 29.5 -> 17.0 kWh/m2 a. Living room Jul 32.8 C, Aug 34.0 C (before the balcony: Jul-Aug 26.6 C): the
     window habit opens the living room window onto the balcony, whose outer window stays closed (open task). No measured
     Korean balcony temperatures found to compare with.
+- Balcony outer window (agreed 2026-11-23). SHGC 0.5 over glass and frames, as the room windows (0.7 was glass-only:
+  double glazing shading coefficient 0.83, Kim, Moon & Yu 2013, x 0.87; 063 January balcony max 33.9 -> 19.6 C). The outer
+  window has an open/closed sensor only, `balcony.window_contact`, in flats with a real balcony (no motor: no Korean home
+  network rule, builder article or SmartThings capability for window openers found). For everyone: whenever the living
+  room window (onto the balcony) is opened, by the window habit, airing or a rule, the person also opens the outer
+  window, and closes it with the living room window (unless laundry on the balcony still needs it); rain closes both.
+  The window habit does not handle the outer window itself. Check [ours, 063, one year]: minutes with the inner side open
+  and the outer window closed 0 (was 932 before pairing rules too); Jul / Aug living room 26.6 / 27.3 C (before the
+  balcony 26.6, with the balcony and a closed outer window 30.3 / 31.0). Not done yet: closing the inner side when the AC
+  is switched on (the existing closedForCooling covers the living room window), laundry inside while the AC runs (a
+  personal habit), bringing laundry in during heating, opening the outer window when leaving in summer (personal).
 - Python port equals the JS simulator: outdoor values within 1e-12, physics within 1e-15 (`tests/test_port.py`).
 - 2026 weather vs climate normals [ours]: monthly max/min temperature within 0.9 C, PM within 1.2 ug/m3, 86 wet days
   vs 79.3, 1,509 mm vs 1,418 mm.

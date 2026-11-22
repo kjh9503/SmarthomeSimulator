@@ -297,6 +297,7 @@
   "window_contact": {
    "label": "Window contact",
    "rooms": [
+    "balcony",
     "living_room",
     "room1",
     "room2",
@@ -318,7 +319,13 @@
      ],
      "commands": []
     }
-   ]
+   ],
+   "notIn": {
+    "2room": [
+     "balcony"
+    ]
+   },
+   "note": "balcony.window_contact: the balcony's outer window, only in flats with a real balcony (3room-A/B, 4room-A/B/C; not 3room-C)"
   },
   "water_leak_sensor": {
    "label": "Water leak",
