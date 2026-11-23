@@ -93,6 +93,7 @@ class Simulator:
         self.house_id = "house001"
         self.variant = variant
         self.last_step = None
+        self.not_before = 0  # no line stamped before this (the end of an action that ran on into this minute)
         self.background_per_day = background_per_day
         self.pending = dict(raw=[], actions=[], openDay=None, rangeStart=None)
         self.last_saved, self.last_raw = {}, {}
@@ -136,6 +137,7 @@ class Simulator:
 
     def build(self, device, change, source, command, args, time=None, reason=None, channel=None):
         t = self.clock.now() if time is None else time
+        t = max(t, self.not_before)
         return {"time": iso_local(t), "houseId": self.house_id, "houseType": self.type, "houseVariant": self.variant,
                 "weather": outdoor_at(t)["weather"], "deviceId": device.id, "roomId": device.roomId, "device": device.type,
                 "capability": change["capability"], "attribute": change["attribute"], "value": change["value"],

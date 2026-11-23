@@ -54,6 +54,8 @@ DEFER_MAX_MIN = 180  # a daily behaviour waits at most this long after its minut
 # 20-40 min 39.6%; Lee 2010), shorter in the heating season (winter: 75% open 1-2 times a day, under 10 min; Cho & Choi
 # 2013). With these habits the off rules for cooling units and windows are not used.
 COOL_UNUSED_MIN = 30
+MINUTE_FULL_SEC = 44  # a new action starts only before :45 of the minute (an action takes 3-15 s), else it waits for the
+# next minute (agreed 2026-11-23: no actions piled up at :59 when a minute has more to do than 60 s)
 WALK_STEPS = [4, 10]  # steps a room walked through [assume: 3-5 m a room, 0.6-0.7 m a step]
 DRY_CHECK_FIRST_H, DRY_CHECK_EVERY_H = 6, 4  # first check of a rack after hanging, then every this many hours [assume]
 DRY_DONE_SHARE = 0.05  # water left (share of the load's water) at which the laundry counts as dry [assume]
@@ -278,8 +280,26 @@ class AgentRunner:
     def now(self):
         return self.sim.clock.now()
 
+    def minute_full(self, a=None):
+        """the minute has no room for another action (a: the action, to count the rooms walked to reach its device):
+        it waits for the next minute"""
+        return self.sec + self.action_sec(a) > 59
+
+    def action_sec(self, a):
+        """seconds an action may take at most: 15, plus 4 a room walked to the room of its device (by hand)"""
+        if a is None or not isinstance(a, dict):
+            return 59 - MINUTE_FULL_SEC
+        args = a.get("args") or {}
+        room = None
+        if a["do"] in ("home.command", "home.record") and args.get("channel") != "mobile_app" and isinstance(args.get("device"), str):
+            room = self.real_room(args["device"].rsplit(".", 1)[0])
+        elif a["do"] == "person.moveRoom" and isinstance(args.get("room"), str):
+            room = self.real_room(args["room"])
+        hops = len(self.sim.house.path(self.S["room"], room)) - 1 if room and self.S["place"] == "home" and self.S["room"] else 0
+        return 15 + 4 * hops
+
     def advance_seconds(self):
-        self.sec = min(59, self.sec + 3 + int(self.rnd.random() * 13))
+        self.sec = self.sec + 3 + int(self.rnd.random() * 13)  # past :59 it runs on into the next minute
         self.sim.clock.set_to(self.minute_ms + self.sec * 1000)
 
     def trace(self, o):
@@ -536,13 +556,13 @@ class AgentRunner:
 
     def walk(self, room):
         """walk to a room through the rooms between (agreed 2026-11-23: no jumping between rooms that are not joined);
-        each room on the way is sensed, 2-4 s and 4-10 steps a room, the clock moving on with it (capped at :59)"""
+        each room on the way is sensed, 2-4 s and 4-10 steps a room, the clock moving on with it"""
         S = self.S
         if S["place"] != "home" or S["trip"] or S["room"] == room:
             return 0
         n = 0
         for hop in self.sim.house.path(S["room"], room)[1:]:
-            self.sec = min(59, self.sec + 2 + int(self.rnd.random() * 3))
+            self.sec = self.sec + 2 + int(self.rnd.random() * 3)
             self.sim.clock.set_to(self.minute_ms + self.sec * 1000)
             n += self.phone.move_room(hop, WALK_STEPS)
         return n
@@ -855,7 +875,8 @@ class AgentRunner:
         on when it is HEAT_ON_BELOW_K below it, its setpoint put back to the comfort temperature (after a night or a
         departure that lowered it)"""
         H, S = self.heat, self.S
-        if not H or S["place"] != "home" or S["trip"] or S["asleep"] or outdoor_at(t)["meanTemperature"] >= HEAT_SEASON_MEAN_C:
+        if not H or S["place"] != "home" or S["trip"] or S["asleep"] or outdoor_at(t)["meanTemperature"] >= HEAT_SEASON_MEAN_C \
+                or self.minute_full():
             return
         d = self.heat_unit(S["room"])
         if d is None:
@@ -924,7 +945,7 @@ class AgentRunner:
     def cooling_tick(self, t):
         """awake at home: the room the person is in is cooled to setpointC once it reaches onAboveC (its window closed first)"""
         C, S = self.cool, self.S
-        if not C or not C.get("uses") or S["place"] != "home" or S["trip"] or S["asleep"]:
+        if not C or not C.get("uses") or S["place"] != "home" or S["trip"] or S["asleep"] or self.minute_full():
             return
         d = self.cool_unit(S["room"])
         if d is None:
@@ -1020,7 +1041,7 @@ class AgentRunner:
         """awake at home: windows closed for rain; the room's window opened when it is hot inside and cooler outside, closed
         again when cool enough, when outdoor air is hotter or for cooling (only windows the habit opened); airing"""
         W, S = self.win, self.S
-        if not W or S["place"] != "home" or S["trip"] or S["asleep"]:
+        if not W or S["place"] != "home" or S["trip"] or S["asleep"] or self.minute_full():
             return
         out, rooms = outdoor_at(t), self.sim.house.env.rooms
         if out["weather"] in ("rain", "snow"):
@@ -1309,7 +1330,7 @@ class AgentRunner:
         end = self.minute_ms + MIN_MS
         last = self.chain_events(c, end, task)
         if last is not None:
-            self.sec = min(59, max(self.sec, (last - self.minute_ms) // 1000))
+            self.sec = max(self.sec, min(59, (last - self.minute_ms) // 1000))
         self.sim.clock.set_to(self.minute_ms + self.sec * 1000)
         if c["i"] >= len(c["events"]):
             task["chain"] = None
@@ -1349,7 +1370,7 @@ class AgentRunner:
         c = dict(events=events, i=0, at=self.now() + int(events[0][0]))
         last = self.chain_events(c, float("inf"), None)
         if last is not None and last < self.minute_ms + MIN_MS:
-            self.sec = min(59, max(self.sec, (last - self.minute_ms) // 1000))
+            self.sec = max(self.sec, min(59, (last - self.minute_ms) // 1000))
         self.sim.clock.set_to(self.minute_ms + self.sec * 1000)
         return c.get("result") or dict(result="done")
 
@@ -1634,6 +1655,8 @@ class AgentRunner:
                 continue
             if task["until"] and self.now() < task["until"]:
                 return
+            if self.minute_full(acts[task["i"]]):
+                return
             if task["travelTo"]:
                 if self.S["trip"]:
                     return
@@ -1754,6 +1777,8 @@ class AgentRunner:
         return a["do"] in BODY_DO or (a["do"] == "home.command" and (a.get("args") or {}).get("channel") != "mobile_app")
 
     def busy(self, t):
+        if self.minute_full():
+            return True
         for k in self.tasks:
             if k["finished"]:
                 continue
@@ -1822,9 +1847,18 @@ class AgentRunner:
     def run_scheduled(self, t):
         self.scheduled.sort(key=lambda x: x["at"])
         while self.scheduled and self.scheduled[0]["at"] < t + MIN_MS:  # due in this minute: at its own second
+            first = self.scheduled[0]
+            own = max(self.sec, (first["at"] - t) // 1000)  # it starts at its own second at the earliest
+            if own + self.action_sec(first.get("action") if first["kind"] == "revert" else None) > 59 \
+                    and not (first["kind"] == "revert" and first["byDevice"]) and first["kind"] != "eventCheck":
+                for x in self.scheduled:  # everything due this minute that needs the person waits for the next
+                    if x["at"] < t + MIN_MS and not (x["kind"] == "revert" and x["byDevice"]) and x["kind"] != "eventCheck":
+                        x["at"] = t + MIN_MS
+                self.scheduled.sort(key=lambda x: x["at"])
+                continue
             it = self.scheduled.pop(0)
             if it["at"] > t:
-                self.sec = min(59, max(self.sec, (it["at"] - t) // 1000))
+                self.sec = max(self.sec, min(59, (it["at"] - t) // 1000))
                 self.sim.clock.set_to(t + self.sec * 1000)
             if it["kind"] == "revert":
                 if it["byDevice"]:
@@ -1891,9 +1925,13 @@ class AgentRunner:
         last_w = outdoor_at(self.T0)["weather"]
         t = self.T0 + MIN_MS
         while t <= self.TEND:
-            self.minute_ms, self.sec = t, 0
-            self.sim.clock.set_to(t)
+            # an action that ran past :59 of the last minute ends in this one: this minute starts after it, its device
+            # lines too (agreed 2026-11-23: nothing piled up at :59, nothing written before what already happened)
+            self.minute_ms, self.sec = t, max(0, self.sec - 60)
+            self.sim.clock.set_to(t + self.sec * 1000)
+            self.sim.not_before = t + self.sec * 1000 if self.sec else 0
             self.sim.tick()
+            self.sim.not_before = 0
             self.person_changes()
             w = outdoor_at(t)["weather"]
             self.recent_weather.append((t, w))

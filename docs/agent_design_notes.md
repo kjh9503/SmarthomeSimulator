@@ -471,6 +471,13 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
   two rooms at once (M4) 21 -> 0; steps a day median 3,310 -> 3,124. Left: 0 s stays piling up at :59 when a minute is
   full (not an error by itself, agreed), the balcony entered through a closed living room window (M3), lines written
   ahead of the clock (front door on arrival; app tasks outside rules).
+- No actions piled up at :59 (agreed 2026-11-23). The engine's second counter within a minute was capped at 59, so when
+  a minute held more than 60 s of actions the rest were all stamped :59 (063: 972 minutes a year; e.g. 01-06 07:54:59
+  hallway, living room, dining room, living room and floor heating on in one second). Now a new action starts only if
+  it fits (15 s plus 4 s a room to walk to its device; rules resume, scheduled reverts and habits wait a minute); an
+  action that still runs past :59 goes on into the next minute, which starts after it, its physics lines too
+  (Simulator.not_before). Check [ours, 063, one year]: 0 s stays (M2) 821 -> 0; 181 minutes start after an action
+  that ran on (median 7 s); no heating / cooling operating state logged before the mode that causes it.
 - Python port equals the JS simulator: outdoor values within 1e-12, physics within 1e-15 (`tests/test_port.py`).
 - 2026 weather vs climate normals [ours]: monthly max/min temperature within 0.9 C, PM within 1.2 ug/m3, 86 wet days
   vs 79.3, 1,509 mm vs 1,418 mm.
