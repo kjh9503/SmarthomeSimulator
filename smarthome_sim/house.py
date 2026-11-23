@@ -360,6 +360,32 @@ class House:
     def device(self, id):
         return self.devices.get(id)
 
+    def path(self, a, b):
+        """rooms walked through from a to b, both included (CONNECTIONS of the house type, plus living room - balcony);
+        [b] when there is no route"""
+        if a is None or a == b:
+            return [b]
+        adj = {}
+        links = list(CONNECTIONS[self.type]) + ([("door", "living_room", "balcony")] if "balcony" in self.room_ids else [])
+        for c in links:
+            x, y = c[1], c[2]
+            if x in self.room_ids and y in self.room_ids:
+                adj.setdefault(x, []).append(y); adj.setdefault(y, []).append(x)
+        prev, todo = {a: None}, [a]
+        while todo:
+            x = todo.pop(0)
+            if x == b:
+                break
+            for y in adj.get(x, []):
+                if y not in prev:
+                    prev[y] = x; todo.append(y)
+        if b not in prev:
+            return [a, b]
+        out = [b]
+        while out[-1] != a:
+            out.append(prev[out[-1]])
+        return out[::-1]
+
     def room_profile(self, r):
         return self.profile["rooms"].get(r, NO_PROFILE)
 

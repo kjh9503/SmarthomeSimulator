@@ -484,14 +484,14 @@ class Phone:
         tr = self.s["trip"]
         return bool(tr and 0 <= tr["i"] < len(tr["legs"]) and tr["legs"][tr["i"]].get("drives"))
 
-    def move_room(self, room):
+    def move_room(self, room, steps=ROOM_STEPS):
         s = self.s
         if s["place"] != "home" or s["room"] == room:
             return 0
         if not self.sim.house.at(room, "occupancy_sensor"):
             return 0
         s["room"] = room
-        self.add_steps(ROOM_STEPS[0] + js_round(self.sim.rng.random() * (ROOM_STEPS[1] - ROOM_STEPS[0])))
+        self.add_steps(steps[0] + js_round(self.sim.rng.random() * (steps[1] - steps[0])))
         return self.sim.set_presence(room)
 
     def add_steps(self, n):

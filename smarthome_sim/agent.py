@@ -54,6 +54,7 @@ DEFER_MAX_MIN = 180  # a daily behaviour waits at most this long after its minut
 # 20-40 min 39.6%; Lee 2010), shorter in the heating season (winter: 75% open 1-2 times a day, under 10 min; Cho & Choi
 # 2013). With these habits the off rules for cooling units and windows are not used.
 COOL_UNUSED_MIN = 30
+WALK_STEPS = [4, 10]  # steps a room walked through [assume: 3-5 m a room, 0.6-0.7 m a step]
 DRY_CHECK_FIRST_H, DRY_CHECK_EVERY_H = 6, 4  # first check of a rack after hanging, then every this many hours [assume]
 DRY_DONE_SHARE = 0.05  # water left (share of the load's water) at which the laundry counts as dry [assume]
 DRY_DEFAULT = dict(airMinC=10, airMaxC=28)  # mild weather for opening windows to dry laundry, without dryingHabits [assume]
@@ -530,8 +531,21 @@ class AgentRunner:
         S = self.S
         if S["place"] != "home" or S["trip"] or S["asleep"] or S["room"] == room:
             return
-        self.phone.move_room(room)
+        self.walk(room)
         self.person_changes()
+
+    def walk(self, room):
+        """walk to a room through the rooms between (agreed 2026-11-23: no jumping between rooms that are not joined);
+        each room on the way is sensed, 2-4 s and 4-10 steps a room, the clock moving on with it (capped at :59)"""
+        S = self.S
+        if S["place"] != "home" or S["trip"] or S["room"] == room:
+            return 0
+        n = 0
+        for hop in self.sim.house.path(S["room"], room)[1:]:
+            self.sec = min(59, self.sec + 2 + int(self.rnd.random() * 3))
+            self.sim.clock.set_to(self.minute_ms + self.sec * 1000)
+            n += self.phone.move_room(hop, WALK_STEPS)
+        return n
 
     def exec(self, a, in_task=False, raw=False):
         """one action of the person. An action done in an app (raw=False) becomes an app task: open the app, do it,
@@ -593,13 +607,15 @@ class AgentRunner:
                 if S["place"] == "home":
                     self.off_check("leaving", t)
                 self.advance_seconds()
+                if S["place"] == "home" and not S["trip"] and args["to"] != "home":
+                    self.walk("entryway")  # out through the front door
                 n = ph.travel(args["to"], args["mode"])
                 if n > 0 or S["trip"]:
                     out = dict(result="done", block=dict(travelTo=args["to"]))
                 else:
                     out = dict(result="no_change") if args["to"] == S["place"] else refused(sim.last_refusal or "refused")
         elif do == "person.moveRoom":
-            out = done(ph.move_room(self.real_room(args["room"])))
+            out = done(self.walk(self.real_room(args["room"])))
         elif do == "phone.screen":
             out = done(ph.screen(args.get("on") in (True, "true")))
         elif do == "phone.openApp":
@@ -1550,7 +1566,7 @@ class AgentRunner:
             for x in drop:
                 self.gt_revert_done(x, "not_followed", "off_check:" + moment)
         if back and S["room"] != back:
-            self.phone.move_room(back)
+            self.walk(back)
             self.person_changes()
         return left
 

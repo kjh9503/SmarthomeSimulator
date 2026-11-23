@@ -20,6 +20,11 @@ Rewritten 2026-11-21: finished items removed (their record is in docs/agent_desi
    (Brown & Solvason, buoyancy only). 063 Jul / Aug living room 27.8 / 28.6 C (26.6 / 27.3 with the earlier one-way
    window flow). Window sensors per household done the same day: profile windowSensors {rooms, reason}, chosen by the LLM;
    other windows open and close without a line (physics unchanged); entry door for everyone. 063: living room only.
+2c. Order of things in the log (2026-11-23, tools/check_order.py): rooms skipped fixed (walking). Open, agreed order:
+   (2) balcony entered / left through a closed living room window (pairing, laundry checks; 063 1,038 a year);
+   (3) lines written ahead of the engine clock: front door and entryway on arrival (P1 4, was M4 21), app tasks outside
+   rules (F2 / F3 / F4); (4) steps of moves in the first minute of an hour go to the hour before (M10, phone.py
+   (t - MIN_MS)). 0 s / 1 s stays and falling asleep in the living room are not errors (agreed).
 2a. Balcony: outer window sensor and pairing with the living room window done 2026-11-23 (063 Jul / Aug living room
    26.6 / 27.3 C). Open: AC on -> inner side closed for all; laundry inside while the AC runs (personal); laundry
    brought in during heating; outer window left open when leaving in summer (personal); short airing while heating or

@@ -464,6 +464,13 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
   check_profile: a PATTERN may only use listed windows. 063: living room only (p63_a checks it). Check [ours, 063, one
   year]: window lines balcony 1,008 / room1 288 / room2 72 -> 0, living room 1,004 unchanged; connectedDevices
   124-125 -> 120-121; temperatures and window combinations unchanged.
+- Walking between rooms (agreed 2026-11-23). The person walks the shortest route through the rooms between
+  (House.path over CONNECTIONS, plus living room - balcony), each room on the way sensed, 2-4 s and 4-10 steps a room
+  [assume], the engine's second moving on with it (capped at :59 of the minute); going out walks to the entryway first.
+  tools/check_order.py counts order violations in a log. Check [ours, 063, one year]: rooms skipped (M1) 2,888 -> 0,
+  two rooms at once (M4) 21 -> 0; steps a day median 3,310 -> 3,124. Left: 0 s stays piling up at :59 when a minute is
+  full (not an error by itself, agreed), the balcony entered through a closed living room window (M3), lines written
+  ahead of the clock (front door on arrival; app tasks outside rules).
 - Python port equals the JS simulator: outdoor values within 1e-12, physics within 1e-15 (`tests/test_port.py`).
 - 2026 weather vs climate normals [ours]: monthly max/min temperature within 0.9 C, PM within 1.2 ug/m3, 86 wet days
   vs 79.3, 1,509 mm vs 1,418 mm.
