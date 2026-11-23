@@ -409,12 +409,16 @@ class Environment:
             else:
                 q = PHYS["door"]["closedM3h"] / 60
             self._swap(a, b, q, dt)
-        if self.real_balcony:  # living room and balcony, through the balcony door (open: a door-sized opening)
-            d = H.at("balcony", "door_contact")
+        if self.real_balcony:
+            # living room and balcony through the living room window (agreed 2026-11-23: one sliding glass door that is
+            # both the window and the way out; no separate balcony door). Open: half the glass, as a door-height opening.
+            d = H.at("living_room", "window_contact")
             ea, eb = self.rooms["living_room"], self.rooms["balcony"]
             if d is not None and d.state.get("contactSensor.contact") == "open":
-                D = PHYS["door"]
-                q = opening_flow(D["widthM"], D["heightM"], ea["temperature"] - eb["temperature"], (ea["temperature"] + eb["temperature"]) / 2)
+                E = PHYS["envelope"]; lp = H.room_profile("living_room")
+                hgt = E["windowHeightM"]["large"]
+                width = E["openShare"] * E["windowShare"][lp["windowSize"]] * lp["areaM2"] / hgt
+                q = opening_flow(width, hgt, ea["temperature"] - eb["temperature"], (ea["temperature"] + eb["temperature"]) / 2)
             else:
                 q = PHYS["door"]["closedM3h"] / 60
             self._swap("living_room", "balcony", q, dt)
@@ -437,7 +441,6 @@ class Environment:
             if (r != "balcony" or self.real_balcony) and e.get("vapor") is None:
                 e["vapor"] = vapor_from_rh(e["humidity"], e["temperature"])
         self.exchange(dt)
-        balcony_door = H.at("balcony", "door_contact")
         RB = self.real_balcony
         if RB:  # the balcony's state at the start of this minute: what the living room's window and frames face
             bal0 = dict(self.rooms["balcony"])
@@ -459,8 +462,7 @@ class Environment:
                          illuminance=out["daylight"] + (200 if light_on else 0), noise=db_sum([out["noise"], 45] if occ else [out["noise"]]))
                 continue
             win_open = is_("window_contact", "contactSensor", "contact", "open")
-            door_open = r == "living_room" and not RB and balcony_door is not None and balcony_door.state.get("contactSensor.contact") == "open"
-            is_open = win_open or door_open
+            is_open = win_open
             # what the room's windows and frames face: outdoors, or the balcony for the living room of a flat with one
             side = dict(temperature=bal0["temperature"], vapor=bal0["vapor"], pm25=bal0["pm25"], co2=bal0["co2"]) if RB and r == "living_room" else \
                 dict(temperature=out["temperature"], vapor=vapor_from_rh(out["humidity"], out["temperature"]), pm25=out["pm25"], co2=out["co2"])
@@ -476,9 +478,10 @@ class Environment:
                 # open window (2026-11-20): single-sided flow, De Gids & Phaff (1982), the basis of EN 16798-7:
                 # Q = 1/2 A sqrt(0.001 U10^2 + 0.0035 h dT + 0.01), A = open area, h = window height, dT = |in - out|.
                 # Open area = half the glass (one sash of a sliding pair; "half the window", Cho & Choi 2013); the
-                # balcony door counts as the living room's large window. Capped at 0.8 of the room air a minute.
-                size = "large" if door_open else p["windowSize"]
-                a_open = E["openShare"] * (p.get("glassM2") or E["windowShare"][size] * af) if (p["exteriorWalls"] or door_open) else 0.0
+                # living room window of a flat with a real balcony opens onto the balcony: exchange() swaps that air both
+                # ways, so it adds nothing here. Capped at 0.8 of the room air a minute.
+                size = p["windowSize"]
+                a_open = E["openShare"] * (p.get("glassM2") or E["windowShare"][size] * af) if p["exteriorWalls"] and not (RB and r == "living_room") else 0.0
                 h = E["windowHeightM"][size]
                 u_m = math.sqrt(0.001 * out["windSpeed"] ** 2 + 0.0035 * h * abs(e["temperature"] - side["temperature"]) + 0.01)
                 k_open = min(0.8, 0.5 * a_open * u_m * 60 / vol)  # per minute

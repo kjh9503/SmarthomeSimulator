@@ -274,7 +274,6 @@
   "door_contact": {
    "label": "Door contact",
    "rooms": [
-    "balcony",
     "entryway"
    ],
    "capabilities": [

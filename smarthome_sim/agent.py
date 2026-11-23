@@ -577,8 +577,7 @@ class AgentRunner:
             if not d:
                 out = refused("no such device " + did)
             else:
-                if not (d.id == "balcony.door_contact" and S["room"] == "living_room"):
-                    self.go_to(d.roomId)
+                self.go_to(d.roomId)
                 out = done(sim.set_value(did, args["capability"], args["attribute"], args["value"]))
                 if did == "living_room.window_contact" and out["result"] == "done" and sim.house.env.real_balcony:
                     # agreed 2026-11-23, for everyone: the living room window opens onto the balcony, so whoever opens it
@@ -744,7 +743,7 @@ class AgentRunner:
         d = self.sim.house.device(self.dev_id(args["device"]))
         if not d or d.type not in PLAN_MIN:
             return None
-        if d.type == "door_contact" and d.roomId != "balcony":
+        if d.type == "door_contact":
             return None
         if a["do"] == "home.record":
             on = args.get("value") == "open"

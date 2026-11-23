@@ -36,7 +36,7 @@ def keep_on_type(a):
     if a.get("do") not in ("home.command", "home.record") or not isinstance(dev, str):
         return False
     t = dev.rsplit(".", 1)[-1]
-    return t in KEEP_ON_TYPES or (t == "door_contact" and dev.startswith("balcony."))
+    return t in KEEP_ON_TYPES
 
 
 def switches_on(a):

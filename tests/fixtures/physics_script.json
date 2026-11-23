@@ -7,5 +7,5 @@
  [2000, "run", "laundry.washer", "mode", "setMode", ["normal"]], [2000, "run", "laundry.washer", "washerOperatingState", "setMachineState", ["run"]], [2100, "run", "kitchen.dishwasher", "dishwasherOperatingState", "setMachineState", ["run"]],
  [2200, "run", "living_room.robot_vacuum", "robotCleanerOperatingState", "start"], [2300, "run", "kitchen.oven", "mode", "setMode", ["bake"]],
  [2400, "run", "kitchen.oven", "mode", "setMode", ["off"]], [2500, "run", "room1.heating_cooling_unit", "thermostatMode", "setThermostatMode", ["cool"]],
- [2600, "set", "balcony.door_contact", "contactSensor", "contact", "open"], [2700, "set", "balcony.door_contact", "contactSensor", "contact", "closed"],
+ [2600, "set", "living_room.window_contact", "contactSensor", "contact", "open"], [2700, "set", "living_room.window_contact", "contactSensor", "contact", "closed"],
  [2800, "run", "living_room.speaker", "mediaPlayback", "play"], [2900, "run", "laundry.dryer", "dryerOperatingState", "setMachineState", ["run"]]]

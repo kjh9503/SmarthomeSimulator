@@ -154,8 +154,6 @@ class Simulator:
         t = self.clock.now() if time is None else time
         before, after = ACTION_WINDOWS.get(device.type, DEFAULT_WINDOW)
         rooms = [device.roomId]
-        if device.roomId == "balcony" and device.type == "door_contact":
-            rooms.append("living_room")
         self.pending["actions"].append(dict(t=t, frm=t - before * MIN_MS, to=t + after * MIN_MS, rooms=rooms))
 
     def set_presence(self, room_id, time=None):
@@ -183,7 +181,7 @@ class Simulator:
         if s["place"] != "home":
             where = f'on the way ({PLACES[s["place"]]["label"]})' if s["trip"] else f'at {PLACES[s["place"]]["label"]}'
             return f'The person is {where}, not at home: use Control from "Phone app", or travel home first'
-        ok = s["room"] == d.roomId or (d.id == "balcony.door_contact" and s["room"] == "living_room")
+        ok = s["room"] == d.roomId
         if not ok:
             here = f'in {name(s["room"])}' if s["room"] else "at home, room unknown"
             return f"The person is {here}, not in {name(d.roomId)}: move them there first (Phone panel, Go to room), or use the phone app"
