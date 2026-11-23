@@ -453,6 +453,10 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
   balcony 26.6, with the balcony and a closed outer window 30.3 / 31.0). Not done yet: closing the inner side when the AC
   is switched on (the existing closedForCooling covers the living room window), laundry inside while the AC runs (a
   personal habit), bringing laundry in during heating, opening the outer window when leaving in summer (personal).
+- No balcony door (agreed 2026-11-23): doors people walk through carry no sensor (room doors never had one); the
+  balcony door is merged with the living room window, the one sliding glass door between living room and balcony in a
+  flat with a real balcony. Open, living room and balcony swap air both ways through a door-height opening of half its
+  glass (opening_flow, buoyancy only); smaller flats: the living room window opens to outdoors as before.
 - Python port equals the JS simulator: outdoor values within 1e-12, physics within 1e-15 (`tests/test_port.py`).
 - 2026 weather vs climate normals [ours]: monthly max/min temperature within 0.9 C, PM within 1.2 ug/m3, 86 wet days
   vs 79.3, 1,509 mm vs 1,418 mm.

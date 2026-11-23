@@ -14,10 +14,15 @@ Rewritten 2026-11-21: finished items removed (their record is in docs/agent_desi
    the water; the rest stays in the clothes. Showers and other sources still drop what the air cannot hold (it
    condenses and runs off). Racks moved to a real balcony (flats of 84 m2 and more) or the living room, with checks and
    drying actions (done 2026-11-22; 063: 29 racks taken in 10-25 h after hanging, was about 96 h).
+2b. Contact sensors (2026-11-23): balcony door sensor removed (no sensor on doors people walk through, as room doors;
+   physics kept) and merged with the living room window: in a flat with a real balcony that window is the one sliding
+   glass door onto the balcony; open, it swaps air both ways with the balcony as a door-height opening of half its glass
+   (Brown & Solvason, buoyancy only). 063 Jul / Aug living room 27.8 / 28.6 C (26.6 / 27.3 with the earlier one-way
+   window flow). Next: window sensors per household (chosen by the LLM for the persona), entry door for everyone.
 2a. Balcony: outer window sensor and pairing with the living room window done 2026-11-23 (063 Jul / Aug living room
    26.6 / 27.3 C). Open: AC on -> inner side closed for all; laundry inside while the AC runs (personal); laundry
    brought in during heating; outer window left open when leaving in summer (personal); short airing while heating or
-   cooling; LLM rules opening balcony.door_contact are not paired; glazing of Korean non-expanded balconies (single or
+   cooling; glazing of Korean non-expanded balconies (single or
    double) not checked. Balcony parameters (U 2.4 only
    from a source; SHGC 0.5 since 2026-11-23 (0.7 was glass-only and gave 33.9 C in January; now 19.6 C max,
    January median 11.9 K above outdoors, Shanghai / Nanjing closed balconies +5.7 / +6.1 K, glazing not stated); 0.7 sun into the living room, 1.0 air change an hour, area from sqrt(living area), 35%
