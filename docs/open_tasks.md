@@ -21,7 +21,8 @@ Rewritten 2026-11-21: finished items removed (their record is in docs/agent_desi
    window flow). Window sensors per household done the same day: profile windowSensors {rooms, reason}, chosen by the LLM;
    other windows open and close without a line (physics unchanged); entry door for everyone. 063: living room only.
 2c. Order of things in the log (2026-11-23, tools/check_order.py): rooms skipped fixed (walking). Open, agreed order:
-   (2) balcony entered / left through a closed living room window (pairing, laundry checks; 063 1,038 a year);
+   (2) balcony entered / left through a closed living room window: fixed (sliding door opened and closed); found:
+   the person stays where an errand left them (balcony up to 8.7 h, laundry room) and falls asleep wherever they are;
    (3) lines written ahead of the engine clock: front door and entryway on arrival (P1 4, was M4 21), app tasks outside
    rules (F2 / F3 / F4); (4) steps of moves in the first minute of an hour go to the hour before (M10, phone.py
    (t - MIN_MS)). 0 s stays were not short visits: 1,001 of 1,166 were the engine sending the person to the balcony and back in the

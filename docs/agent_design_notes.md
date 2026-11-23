@@ -478,6 +478,13 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
   action that still runs past :59 goes on into the next minute, which starts after it, its physics lines too
   (Simulator.not_before). Check [ours, 063, one year]: 0 s stays (M2) 821 -> 0; 181 minutes start after an action
   that ran on (median 7 s); no heating / cooling operating state logged before the mode that causes it.
+- Sliding door onto the balcony (agreed 2026-11-23). Walking onto the balcony through a closed living room window (the
+  sliding glass door) the person opens it and closes it again on the way back in (no pairing with the outer window
+  for that); closing both, the outer window is closed first, through the still open door; rain closes the outer
+  window first. Check [ours, 063, one year]: balcony crossed through a closed door (M3) 1,108 -> 0. Found with it:
+  the person stays where an errand left them (balcony up to 8.7 h after a laundry check, 25 stays over 1 h; laundry
+  room 56), so the door opened to go out stays open meanwhile (inner open / outer closed 0 -> 2,584 min); falling
+  asleep without walking to a bedroom (laundry room on 12-24). Not fixed yet.
 - Python port equals the JS simulator: outdoor values within 1e-12, physics within 1e-15 (`tests/test_port.py`).
 - 2026 weather vs climate normals [ours]: monthly max/min temperature within 0.9 C, PM within 1.2 ug/m3, 86 wet days
   vs 79.3, 1,509 mm vs 1,418 mm.

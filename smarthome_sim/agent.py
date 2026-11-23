@@ -229,6 +229,8 @@ class AgentRunner:
         self.dry_h = profile.get("dryingHabits")  # None: DRY_DEFAULT
         self.dry_window = set()  # living room windows opened for drying
         self.outer_why = set()  # why the balcony's outer window is open: living / dry
+        self.passing = False  # the sliding door is opened or closed only to walk through (no pairing)
+        self.door_to_close = False  # opened to go out onto the balcony: closed again on the way back in
         self.dry_stats = dict(takenIn=0, balconyWindow=0, livingWindow=0, movedInside=0, heating=0, cooling=0, hoursToDry=[])
         self.vent_minutes = dict(season=0, other=0)
         self.behaviours = []
@@ -562,9 +564,24 @@ class AgentRunner:
             return 0
         n = 0
         for hop in self.sim.house.path(S["room"], room)[1:]:
+            here = S["room"]
+            door = self.win_dev("living_room") if {here, hop} == {"living_room", "balcony"} and self.sim.house.env.real_balcony else None
+            if door is not None and hop == "balcony" and not self.win_is_open(door):
+                # agreed 2026-11-23: the living room window is the sliding glass door onto the balcony; closed, the
+                # person opens it to go out and closes it again on the way back in
+                self.passing = True
+                self.win_set(door, "open")
+                self.passing = False
+                self.door_to_close = True
             self.sec = self.sec + 2 + int(self.rnd.random() * 3)
             self.sim.clock.set_to(self.minute_ms + self.sec * 1000)
             n += self.phone.move_room(hop, WALK_STEPS)
+            if door is not None and hop == "living_room" and self.door_to_close:
+                self.door_to_close = False
+                if self.win_is_open(door):
+                    self.passing = True
+                    self.win_set(door, "closed")
+                    self.passing = False
         return n
 
     def exec(self, a, in_task=False, raw=False):
@@ -612,9 +629,15 @@ class AgentRunner:
             if not d:
                 out = refused("no such device " + did)
             else:
+                pair = did == "living_room.window_contact" and sim.house.env.real_balcony and not self.passing
+                if pair and args["value"] == "closed":
+                    outer = self.outer_win()
+                    if outer is not None and self.win_is_open(outer) and not (self.outer_why - {"living"}):
+                        # both closed: the outer window first, through the still open sliding door, then the door
+                        self.outer_release("living")
                 self.go_to(d.roomId)
                 out = done(sim.set_value(did, args["capability"], args["attribute"], args["value"]))
-                if did == "living_room.window_contact" and out["result"] == "done" and sim.house.env.real_balcony:
+                if pair and out["result"] == "done":
                     # agreed 2026-11-23, for everyone: the living room window opens onto the balcony, so whoever opens it
                     # (habit, airing, a rule) opens the balcony's outer window as well, and closes it with it
                     self.outer_open("living") if args["value"] == "open" else self.outer_release("living")
@@ -1045,8 +1068,10 @@ class AgentRunner:
             return
         out, rooms = outdoor_at(t), self.sim.house.env.rooms
         if out["weather"] in ("rain", "snow"):
-            for d in self.sim.house.devices.values():
-                if d.type == "window_contact" and self.win_is_open(d) and self.win_set(d, "closed")["result"] == "done":
+            wins = sorted((d for d in self.sim.house.devices.values() if d.type == "window_contact"),
+                          key=lambda d: d.id != "balcony.window_contact")  # the outer window before the sliding door
+            for d in wins:
+                if self.win_is_open(d) and self.win_set(d, "closed")["result"] == "done":
                     self.win_stats["closedRain"] += 1
             return
         d = self.win_dev(S["room"])
