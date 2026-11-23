@@ -127,7 +127,7 @@ class Simulator:
         router = next((d for d in h.devices.values() if d.type == "wifi_router"), None)
         if not router:
             return 0
-        smart = len(h.devices) - 1
+        smart = sum(1 for d in h.devices.values() if d.sensor) - 1
         ch = router.set("connectedDevices", "connectedDevices", smart + (1 if self.phone.s["wifi"] == PLACES["home"]["wifi"] else 0))
         if not ch["changed"] or silent:
             return 0
@@ -144,6 +144,10 @@ class Simulator:
 
     def record(self, device, change, source, command, args, time=None, channel=None, reason=None):
         e = self.build(device, change, source, command, args, time, reason, channel)
+        if not device.sensor:  # a window without a sensor: opened or closed, but nothing reports it
+            if source in ("command", "manual", "event"):
+                self.note_action(device, time)
+            return e
         self.log.add(e)
         self.phone.copy_home([e])
         if source in ("command", "manual", "event"):
@@ -171,6 +175,15 @@ class Simulator:
             self.note_action(d, t)
             n += 1
         return n
+
+    def set_window_sensors(self, rooms):
+        """windowSensors of the profile (agreed 2026-11-23): only these rooms' windows carry an open/close sensor; None = all"""
+        if rooms is None:
+            return
+        for d in self.house.devices.values():
+            if d.type == "window_contact":
+                d.sensor = d.roomId in rooms
+        self.sync_router(True)
 
     def where_refusal(self, d):
         from .house import ROOM_LABEL

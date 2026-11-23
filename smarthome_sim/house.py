@@ -255,10 +255,11 @@ def rh_from_vapor(e, t):
 
 
 class Device:
-    __slots__ = ("id", "type", "roomId", "capabilities", "state", "aux", "_caps")
+    __slots__ = ("id", "type", "roomId", "capabilities", "state", "aux", "_caps", "sensor")
 
     def __init__(self, id, type, room_id, capabilities):
         self.id, self.type, self.roomId, self.capabilities = id, type, room_id, capabilities
+        self.sensor = True  # False: a window with no open/close sensor; its state still drives the physics, but writes no line
         self.state, self.aux = {}, {}
         self._caps = {c["capability"]: c for c in capabilities}
         for c in capabilities:

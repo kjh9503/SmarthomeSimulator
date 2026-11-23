@@ -109,6 +109,18 @@ def main():
             if later or starts_at_leave:
                 out.append(("WARN", b["id"], f"actions[{i}] switches on {a['args']['device']} right before leaving or sleep: "
                                              "add \"keepOn\": true if it is meant to stay on, else the engine skips it"))
+    ws = prof.get("windowSensors")
+    if ws is None:
+        out.append(("WARN", "-", "no windowSensors: every window gets a sensor (choose the rooms for the persona)"))
+    else:
+        for b in prof["behaviours"]:
+            if b["kind"] != "pattern":
+                continue
+            for r in ("living_room", "room1", "room2", "room3", "room4", "balcony"):
+                if f"{r}.window_contact" in json.dumps(b) and r not in ws["rooms"]:
+                    out.append(("ERROR", b["id"], f"pattern uses {r}.window_contact but windowSensors has no {r}: that window writes no line"))
+        if "balcony" in ws["rooms"] and prof.get("variant") not in REAL_BALCONY:
+            out.append(("ERROR", "-", f"windowSensors has balcony but {prof.get('variant')} has no real balcony"))
     if "heatingRanges" in prof and "heatingHabits" not in prof:
         out.append(("WARN", "-", "heatingRanges without heatingHabits: run pipeline/sample_heating_person.py"))
     if "dryingRanges" in prof and "dryingHabits" not in prof:

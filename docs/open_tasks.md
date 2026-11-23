@@ -18,7 +18,8 @@ Rewritten 2026-11-21: finished items removed (their record is in docs/agent_desi
    physics kept) and merged with the living room window: in a flat with a real balcony that window is the one sliding
    glass door onto the balcony; open, it swaps air both ways with the balcony as a door-height opening of half its glass
    (Brown & Solvason, buoyancy only). 063 Jul / Aug living room 27.8 / 28.6 C (26.6 / 27.3 with the earlier one-way
-   window flow). Next: window sensors per household (chosen by the LLM for the persona), entry door for everyone.
+   window flow). Window sensors per household done the same day: profile windowSensors {rooms, reason}, chosen by the LLM;
+   other windows open and close without a line (physics unchanged); entry door for everyone. 063: living room only.
 2a. Balcony: outer window sensor and pairing with the living room window done 2026-11-23 (063 Jul / Aug living room
    26.6 / 27.3 C). Open: AC on -> inner side closed for all; laundry inside while the AC runs (personal); laundry
    brought in during heating; outer window left open when leaving in summer (personal); short airing while heating or

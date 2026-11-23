@@ -879,6 +879,36 @@
     "dryingPerson": {
       "type": "object",
       "description": "Written by pipeline/sample_drying_person.py: seed and the ranges used. Not read by the engine."
+    },
+    "windowSensors": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rooms",
+        "reason"
+      ],
+      "description": "Which rooms' windows carry an open/close sensor (the rest open and close without a log line). Chosen by the LLM for the persona; no data on how many households fit window sensors. Missing = every window (old profiles).",
+      "properties": {
+        "rooms": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "living_room",
+              "room1",
+              "room2",
+              "room3",
+              "room4",
+              "balcony"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "reason": {
+          "type": "string",
+          "description": "one sentence from the persona"
+        }
+      }
     }
   }
 }

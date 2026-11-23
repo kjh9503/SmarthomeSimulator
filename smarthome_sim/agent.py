@@ -183,6 +183,7 @@ class AgentRunner:
         self.T0 = local_ms(y0, m0 - 1, d0)
         self.TEND = local_ms(y0, m0 - 1, d0 + self.days)
         self.sim = Simulator(profile["variant"], self.T0, seed=self.seed * 7919 + 1)  # the simulator's own noise
+        self.sim.set_window_sensors((profile.get("windowSensors") or {}).get("rooms"))
         self.sim.jump_to(self.T0)
         self.phone = self.sim.phone
         self.S = self.phone.s

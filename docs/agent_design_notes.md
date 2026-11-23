@@ -457,6 +457,13 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
   balcony door is merged with the living room window, the one sliding glass door between living room and balcony in a
   flat with a real balcony. Open, living room and balcony swap air both ways through a door-height opening of half its
   glass (opening_flow, buoyancy only); smaller flats: the living room window opens to outdoors as before.
+- Window sensors per household (agreed 2026-11-23). Only the entrance door has a sensor in every flat (home security
+  services start there: ADT Caps "캡스홈" base package, Seoul "도어지킴이"; window sensors are an add-on). The profile's
+  `windowSensors.rooms` (LLM, from the persona, with a reason; no data on how common) lists the windows with a sensor;
+  the other windows keep their state for the physics but write no line and are not counted in wifi connectedDevices.
+  check_profile: a PATTERN may only use listed windows. 063: living room only (p63_a checks it). Check [ours, 063, one
+  year]: window lines balcony 1,008 / room1 288 / room2 72 -> 0, living room 1,004 unchanged; connectedDevices
+  124-125 -> 120-121; temperatures and window combinations unchanged.
 - Python port equals the JS simulator: outdoor values within 1e-12, physics within 1e-15 (`tests/test_port.py`).
 - 2026 weather vs climate normals [ours]: monthly max/min temperature within 0.9 C, PM within 1.2 ug/m3, 86 wet days
   vs 79.3, 1,509 mm vs 1,418 mm.
