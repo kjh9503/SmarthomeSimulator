@@ -466,10 +466,10 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
   124-125 -> 120-121; temperatures and window combinations unchanged.
 - Walking between rooms (agreed 2026-11-23). The person walks the shortest route through the rooms between
   (House.path over CONNECTIONS, plus living room - balcony), each room on the way sensed, 2-4 s and 4-10 steps a room
-  [assume], the engine's second moving on with it (capped at :59 of the minute); going out walks to the entryway first.
+  [assume], the engine's second moving on with it (then still capped at :59; fixed below); going out walks to the entryway first.
   tools/check_order.py counts order violations in a log. Check [ours, 063, one year]: rooms skipped (M1) 2,888 -> 0,
   two rooms at once (M4) 21 -> 0; steps a day median 3,310 -> 3,124. Left: 0 s stays piling up at :59 when a minute is
-  full (not an error by itself, agreed), the balcony entered through a closed living room window (M3), lines written
+  full (820 of 821 at :59: an error of the time handling, not short visits; fixed below), the balcony entered through a closed living room window (M3), lines written
   ahead of the clock (front door on arrival; app tasks outside rules).
 - No actions piled up at :59 (agreed 2026-11-23). The engine's second counter within a minute was capped at 59, so when
   a minute held more than 60 s of actions the rest were all stamped :59 (063: 972 minutes a year; e.g. 01-06 07:54:59

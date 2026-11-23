@@ -24,7 +24,9 @@ Rewritten 2026-11-21: finished items removed (their record is in docs/agent_desi
    (2) balcony entered / left through a closed living room window (pairing, laundry checks; 063 1,038 a year);
    (3) lines written ahead of the engine clock: front door and entryway on arrival (P1 4, was M4 21), app tasks outside
    rules (F2 / F3 / F4); (4) steps of moves in the first minute of an hour go to the hour before (M10, phone.py
-   (t - MIN_MS)). 0 s / 1 s stays and falling asleep in the living room are not errors (agreed). Actions piled up at :59 fixed (carry-over).
+   (t - MIN_MS)). 0 s stays were not short visits: 1,001 of 1,166 were the engine sending the person to the balcony and back in the
+   same second, and after walking 820 of 821 were actions piled up at :59; both fixed (walking, carry-over). Falling
+   asleep in the living room (1 a year) is not an error (agreed).
 2a. Balcony: outer window sensor and pairing with the living room window done 2026-11-23 (063 Jul / Aug living room
    26.6 / 27.3 C). Open: AC on -> inner side closed for all; laundry inside while the AC runs (personal); laundry
    brought in during heating; outer window left open when leaving in summer (personal); short airing while heating or
