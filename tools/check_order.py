@@ -14,7 +14,7 @@ Rules (each counted separately; the log is read in file order, lines of the same
       more than 10 minutes.
   M6  coming home: the first room 'present' after Home-WiFi reconnects is the entryway, after the front door opened.
   M7  the front door opens with the person in the entryway (or outside).
-  M8  asleep (HEALTH SLEEP startTime..endTime): no move between rooms and no physical action; asleep in a bedroom.
+  M8  asleep (HEALTH SLEEP startTime..endTime): no move between rooms and no physical action; asleep in a bedroom or on the living-room sofa.
   M9  walking takes time: a stay of 1 s in a room before the next (0 s is M2).
   M10 moving between rooms takes steps: an hour with moves at home but 0 steps (HEALTH HOURLY).
   M11 at home (Home-WiFi connected) the phone does not report IN_VEHICLE / ON_BICYCLE / RUNNING.
@@ -108,7 +108,7 @@ def main():
                 empty_flagged = True
         last_t = max(last_t or t, t)
         while sj < len(sleeps) and sleeps[sj][0] <= t:  # the room 'present' when a sleep starts
-            if room is not None and room not in ("room1", "room2", "room3", "room4"):
+            if room is not None and room not in ("room1", "room2", "room3", "room4", "living_room"):  # the sofa is allowed
                 bad("M8", sleeps[sj][0], f"falls asleep in {room}", key=f"asleep in {room}")
             sj += 1
         if typ == "CONNECTIVITY" and p.get("ssid") == "Home-WiFi":

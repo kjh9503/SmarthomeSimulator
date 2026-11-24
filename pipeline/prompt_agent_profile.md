@@ -151,6 +151,16 @@ at night; long days out on cold days -> keepWhenOutdoorBelowC).
 }
 ```
 
+### Home base (where the person is between things)
+
+Rules and habits say what the person does; between them the engine keeps them in a home-base room. Write
+`homeBaseRanges` from the persona: for weekdays and weekends, for each band (morning 05-09, day 09-18, evening 18-23,
+night 23-05; only the hours they are at home matter), the rooms they spend time in and a weight range for each
+(roles: bedroom, study_room, living_room, kitchen, dining_room). `stayMinutes`: median minutes in a home-base room
+before they may move to another; `errandMinutes`: median minutes left in any other room (laundry room, balcony,
+entryway) after an errand; `sofaSleepShare`: share of bedtimes that start in the living room and end asleep on the sofa.
+A stove on keeps them in the kitchen and a TV on in its room. No data: the LLM's choice; say so in notes.
+
 ### Window sensors
 
 Only the entrance door has an open/close sensor in every flat. A window sensor is something the person buys and fits
@@ -346,7 +356,7 @@ evening at home, ...).
 ### Output
 
 One JSON object valid against SCHEMA: personaId, houseType, variant, roomRoles, simulation, start,
-behaviours (the PATTERNS first, unchanged, then the routines), cookingMinutes, windowSensors, notes.
+behaviours (the PATTERNS first, unchanged, then the routines), cookingMinutes, windowSensors, homeBaseRanges, notes.
 
 SCHEMA:
 {{SCHEMA}}

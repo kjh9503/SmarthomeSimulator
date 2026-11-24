@@ -485,6 +485,19 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
   the person stays where an errand left them (balcony up to 8.7 h after a laundry check, 25 stays over 1 h; laundry
   room 56), so the door opened to go out stays open meanwhile (inner open / outer closed 0 -> 2,584 min); falling
   asleep without walking to a bedroom (laundry room on 12-24). Not fixed yet.
+- Layer A, home base (agreed 2026-11-24; blueprint smarthome_llm_blueprint.md, layer A only). The engine had no idea
+  where the person is between rules and habits: they stayed where the last action left them. Now the LLM writes
+  `homeBaseRanges` (room weights per band: morning 05-09, day 09-18, evening 18-23, night 23-05, weekdays / weekends;
+  stayMinutes, errandMinutes, sofaSleepShare) and pipeline/sample_home_base_person.py draws `homeBaseHabits` (no data).
+  Each minute (home, awake, no task that put them in a room, minute not full): outside the band's rooms they go back
+  after a lognormal stay around errandMinutes; in a home-base room they choose again after one around stayMinutes; a
+  stove on in the kitchen or a TV on holds them. Phone use alone does not hold them. A task step after something else
+  moved the person walks back to the task's room first; sleep only in a bedroom or on the sofa (a bedtime that starts
+  in the living room stays there with sofaSleepShare). On arrival the person's next action starts after the front
+  door lines (written up to +10 s). Check [ours, 063, one year, before -> after]: laundry room 179 -> 10 h, balcony 106
+  -> 3 h; stays over 1 h laundry 56 -> 1, balcony 25 -> 0; longest balcony 8.7 -> 0.1 h, laundry 9.9 -> 1.7 h (phone
+  use there before the fix: 1 h); fell asleep: room1 362 / living 2 / laundry 1 -> room1 352 / living 13 (sofa); order
+  checks M1-M9 and P1 all 0; left: app / screen order (F3, F4) and steps in the first minute of an hour (M10).
 - Python port equals the JS simulator: outdoor values within 1e-12, physics within 1e-15 (`tests/test_port.py`).
 - 2026 weather vs climate normals [ours]: monthly max/min temperature within 0.9 C, PM within 1.2 ug/m3, 86 wet days
   vs 79.3, 1,509 mm vs 1,418 mm.

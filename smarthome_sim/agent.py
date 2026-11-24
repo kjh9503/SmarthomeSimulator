@@ -54,6 +54,8 @@ DEFER_MAX_MIN = 180  # a daily behaviour waits at most this long after its minut
 # 20-40 min 39.6%; Lee 2010), shorter in the heating season (winter: 75% open 1-2 times a day, under 10 min; Cho & Choi
 # 2013). With these habits the off rules for cooling units and windows are not used.
 COOL_UNUSED_MIN = 30
+HOME_BANDS = (("morning", 5, 9), ("day", 9, 18), ("evening", 18, 23), ("night", 23, 5))  # homeBaseHabits bands (local hours)
+SLEEP_ROOMS_EXTRA = ("living_room",)  # besides the bedrooms (room1..4): the sofa (agreed 2026-11-24)
 MINUTE_FULL_SEC = 44  # a new action starts only before :45 of the minute (an action takes 3-15 s), else it waits for the
 # next minute (agreed 2026-11-23: no actions piled up at :59 when a minute has more to do than 60 s)
 WALK_STEPS = [4, 10]  # steps a room walked through [assume: 3-5 m a room, 0.6-0.7 m a step]
@@ -227,6 +229,9 @@ class AgentRunner:
         self.laundry_stats = dict(washes=0, dried=0, racks=0)
         self.laundry_h = profile.get("laundryHabits")  # None: no dryer use by habit (racks only)
         self.dry_h = profile.get("dryingHabits")  # None: DRY_DEFAULT
+        self.hb = profile.get("homeBaseHabits")  # None: no layer A (the person stays where the last action left them)
+        self.hb_room, self.hb_since, self.hb_limit = None, 0, 0
+        self.hb_stats = dict(returns=0, moves=0, held=0, sofaSleep=0, backToTaskRoom=0, walkedToBed=0)
         self.dry_window = set()  # living room windows opened for drying
         self.outer_why = set()  # why the balcony's outer window is open: living / dry
         self.passing = False  # the sliding door is opened or closed only to walk through (no pairing)
@@ -700,6 +705,10 @@ class AgentRunner:
             else:
                 out = done(sum(ph.calendar_delete(e["eventId"]) for e in evs))
         elif do == "phone.sleep":
+            room = S["room"]
+            if S["place"] == "home" and not S["trip"] and room and not (room.startswith("room") or room in SLEEP_ROOMS_EXTRA):
+                self.go_to(self.real_room("bedroom"))  # agreed 2026-11-24: nobody falls asleep in the laundry room
+                self.hb_stats["walkedToBed"] += 1
             out = done(ph.sleep())
         elif do == "phone.wake":
             out = done(ph.wake())
@@ -1030,6 +1039,58 @@ class AgentRunner:
             if d.id == "balcony.window_contact":
                 self.outer_why.clear()
         return out
+
+    def home_band(self, t):
+        h = (t // 3600000 + 9) % 24  # local (KST) hour
+        for name, a, b in HOME_BANDS:
+            if (a <= h < b) if a < b else (h >= a or h < b):
+                return name
+        return "day"
+
+    def home_base_tick(self, t):
+        """layer A (agreed 2026-11-24): where the person is when no rule or habit is doing anything. In a room outside
+        the home-base rooms of the time band (laundry room, balcony...) they go back after errandMinutes; in a home-base
+        room they choose again after stayMinutes (homeBaseHabits); a stove on in the kitchen or a TV on holds them"""
+        H, S = self.hb, self.S
+        if not H or S["place"] != "home" or S["trip"] or S["asleep"] or not S["room"] or self.minute_full():
+            return
+        if any(not k["finished"] and (k.get("room") or k["travelTo"]) for k in self.tasks):
+            return  # a task that put the person in a room (or is travelling) keeps them; phone use alone does not
+        room = S["room"]
+        days = "weekends" if day_ok("weekends", t) else "weekdays"
+        weights = {}
+        for role, w in H[days][self.home_band(t)].items():
+            r = self.real_room(role)
+            if r in self.sim.house.room_ids and w > 0:
+                weights[r] = weights.get(r, 0) + w
+        if not weights:
+            return
+        base = room in weights
+        if room != self.hb_room:  # entered a room: how long they stay
+            med = H["stayMinutes"] if base else H["errandMinutes"]
+            self.hb_room, self.hb_since = room, t
+            self.hb_limit = max(1.0, med * math.exp(0.5 * self.gauss())) * MIN_MS
+        stove = self.sim.house.at("kitchen", "stove")
+        tv = self.sim.house.at(room, "tv")
+        if (room == "kitchen" and stove is not None and stove.get("switch", "switch") == "on") \
+                or (tv is not None and tv.get("switch", "switch") == "on"):
+            self.hb_since = t  # cooking or watching: stays
+            self.hb_stats["held"] += 1
+            return
+        if t - self.hb_since < self.hb_limit:
+            return
+        x, acc, to = self.rnd.random() * sum(weights.values()), 0.0, None
+        for r, w in weights.items():
+            acc += w
+            if x < acc:
+                to = r
+                break
+        to = to or next(iter(weights))
+        self.hb_room = None  # draw a new stay where they end up (also when they stay)
+        if to != room:
+            self.go_to(to)
+            self.hb_stats["returns" if not base else "moves"] += 1
+            self.person_changes()
 
     def outer_win(self):
         """the balcony's outer window (flats with a real balcony), else None"""
@@ -1689,6 +1750,19 @@ class AgentRunner:
             task["until"] = 0
             a = acts[task["i"]]
             task["i"] += 1
+            S = self.S
+            if a["do"] == "person.moveRoom" and self.hb and S["place"] == "home" and S["room"] == "living_room" \
+                    and self.real_room((a.get("args") or {}).get("room")) == self.real_room("bedroom") \
+                    and any(x["do"] == "phone.sleep" for x in acts[task["i"]:]) and self.chance(self.hb.get("sofaSleepShare", 0)):
+                task["room"] = "living_room"  # stays on the sofa and sleeps there (homeBaseHabits.sofaSleepShare)
+                self.hb_stats["sofaSleep"] += 1
+                task["steps"].append([a["do"], "sofa"])
+                continue
+            if task.get("room") and a["do"] not in ("person.moveRoom", "person.travel") and S["place"] == "home" \
+                    and not S["trip"] and S["room"] != task["room"]:
+                # something else moved the person during the task (agreed 2026-11-24): back to the task's room first
+                self.go_to(task["room"])
+                self.hb_stats["backToTaskRoom"] += 1
             if a.get("probability") is not None and not self.chance(a["probability"]):
                 s["steps"]["skipped"] += 1
                 task["steps"].append([a["do"], "skipped"])
@@ -1703,6 +1777,8 @@ class AgentRunner:
                 task["steps"].append([a["do"], "skipped_plan"])
                 continue
             r = self.exec(a, in_task=True)
+            if a["do"] == "person.moveRoom" and r["result"] in ("done", "no_change"):
+                task["room"] = self.S["room"]
             blk = r.get("block") or {}
             if r["result"] != "pending":
                 self.after_step(task, a, r)
@@ -1957,6 +2033,10 @@ class AgentRunner:
             self.sim.not_before = t + self.sec * 1000 if self.sec else 0
             self.sim.tick()
             self.sim.not_before = 0
+            if self.sim.front_door_until > t + self.sec * 1000:
+                # came home this minute: the door lines (open, in, closed) are written up to front_door_until; the
+                # person's next action starts after them (agreed 2026-11-24: nothing written before what already happened)
+                self.sec = (self.sim.front_door_until - t + 999) // 1000
             self.person_changes()
             w = outdoor_at(t)["weather"]
             self.recent_weather.append((t, w))
@@ -1979,6 +2059,7 @@ class AgentRunner:
             self.drying_tick(t)
             self.cooling_tick(t)
             self.window_tick(t)
+            self.home_base_tick(t)
             self.maybe_glance(t)
             self.sim.clock.set_to(t)
             if t % (6 * 3600000) == 0:
@@ -2026,6 +2107,7 @@ class AgentRunner:
                        cooling=dict(habits=self.cool, **self.cool_stats), windows=dict(habits=self.win, **self.win_stats),
                        hood=dict(habits=self.hood, **self.hood_stats), showers=dict(habits=self.prof_shower, **self.shower_stats),
                        laundry=dict(habits=self.laundry_h, **self.laundry_stats),
+                       homeBase=dict(habits=self.hb, **self.hb_stats),
                        drying=dict(habits=self.dry_h, **{k: v for k, v in self.dry_stats.items() if k != "hoursToDry"},
                                    medianHoursToDry=(sorted(self.dry_stats["hoursToDry"])[len(self.dry_stats["hoursToDry"]) // 2] if self.dry_stats["hoursToDry"] else None)),
                        ventilation=dict(habits=self.vent, hoursInHeatingSeason=round(self.vent_minutes["season"] / 60), hoursOtherwise=round(self.vent_minutes["other"] / 60)),

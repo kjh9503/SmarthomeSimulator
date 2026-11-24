@@ -93,6 +93,7 @@ class Simulator:
         self.house_id = "house001"
         self.variant = variant
         self.last_step = None
+        self.front_door_until = 0  # the person is at the front door (written ahead by use_front_door) until then
         self.not_before = 0  # no line stamped before this (the end of an action that ran on into this minute)
         self.background_per_day = background_per_day
         self.pending = dict(raw=[], actions=[], openDay=None, rangeStart=None)
@@ -218,6 +219,7 @@ class Simulator:
             n += 1
 
         put(lock, "lock", "lock", "unlocked", "command", "unlock", 0)
+        self.front_door_until = max(self.front_door_until, t0 + FRONT_DOOR["closeSec"] * 1000)  # busy at the door till then
         put(door, "contactSensor", "contact", "open", "manual", None, FRONT_DOOR["openSec"])
         put(door, "contactSensor", "contact", "closed", "manual", None, FRONT_DOOR["closeSec"])
         if FRONT_DOOR["autoLock"]:

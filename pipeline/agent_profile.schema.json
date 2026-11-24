@@ -909,6 +909,25 @@
           "description": "one sentence from the persona"
         }
       }
+    },
+    "homeBaseRanges": {
+      "type": "object",
+      "description": "Where the person is when no rule or habit acts (layer A): room weights per band (morning 05-09, day 09-18, evening 18-23, night 23-05) for weekdays and weekends, stayMinutes, errandMinutes, sofaSleepShare; pipeline/sample_home_base_person.py draws homeBaseHabits.",
+      "required": [
+        "weekdays",
+        "weekends",
+        "stayMinutes",
+        "errandMinutes",
+        "sofaSleepShare"
+      ]
+    },
+    "homeBaseHabits": {
+      "type": "object",
+      "description": "Written by pipeline/sample_home_base_person.py; read by the engine."
+    },
+    "homeBasePerson": {
+      "type": "object",
+      "description": "Written by pipeline/sample_home_base_person.py: seed and the ranges used. Not read by the engine."
     }
   }
 }

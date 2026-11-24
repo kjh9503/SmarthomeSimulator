@@ -22,8 +22,10 @@ Rewritten 2026-11-21: finished items removed (their record is in docs/agent_desi
    other windows open and close without a line (physics unchanged); entry door for everyone. 063: living room only.
 2c. Order of things in the log (2026-11-23, tools/check_order.py): rooms skipped fixed (walking). Open, agreed order:
    (2) balcony entered / left through a closed living room window: fixed (sliding door opened and closed); found:
-   the person stays where an errand left them (balcony up to 8.7 h, laundry room) and falls asleep wherever they are;
-   (3) lines written ahead of the engine clock: front door and entryway on arrival (P1 4, was M4 21), app tasks outside
+   the person stays where an errand left them and falls asleep wherever they are: fixed by layer A (home base,
+   2026-11-24); layers B-D of the blueprint wait for layer A's results (open: background rules vs ground truth, one
+   shared random stream);
+   (3) lines written ahead of the engine clock: front door on arrival fixed 2026-11-24; app tasks outside
    rules (F2 / F3 / F4); (4) steps of moves in the first minute of an hour go to the hour before (M10, phone.py
    (t - MIN_MS)). 0 s stays were not short visits: 1,001 of 1,166 were the engine sending the person to the balcony and back in the
    same second, and after walking 820 of 821 were actions piled up at :59; both fixed (walking, carry-over). Falling
