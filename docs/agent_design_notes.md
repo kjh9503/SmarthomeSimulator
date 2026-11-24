@@ -513,6 +513,19 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
   / 189 -> 13 / 8 / 70 / 2; awake living-room stays >= 4 h 23 / 46 / 52 / 107 -> 3 / 32 / 7 / 34; order checks
   M1-M9 still 0. Left: a lognormal tail makes some long goes (office TV 5.3 h on 11-04); the office persona does
   most things in the living room; the remote worker's study room is the work routine.
+- One app in front at a time; none after the screen is off (agreed 2026-11-24). An app task outside a rule (off checks,
+  reverts, heating/cooling from the app) ran all its events at once: the close, up to 10 min ahead, was written with its
+  later time while the phone already had no app in front, so the next app came to the foreground with SmartThings never
+  sent back (F4) and SmartThings went back after the screen was off (F3). The log's FOREGROUND/BACKGROUND are Android
+  ACTIVITY_RESUMED/ACTIVITY_PAUSED (moved to / from the front), not starting or quitting the app. Now open + the task run
+  at once (the caller needs the result; the person's next action waits for it), the close runs in time order with what
+  the person does next (due_loose: before each action, walk step and chain event); a task in the app still open from such
+  a task keeps it open and closes it after itself. Check [measured, 1 year each, 063 / office / remote / retiree]: F4
+  37/39/24/6 -> 0, F3 22/26/19/23 -> 0, F2 0/0/1/0 -> 0; SmartThings in front median 11/13/11/11 s -> 12/12/10/15 s
+  (retiree: fewer, longer opens, 604 -> 517, as several commands share one open).
+- Steps in the first minute of an hour (agreed 2026-11-24). A walk at hh:00-hh:01 went into the past hour's sum (the
+  minute step uses t - 1 min) after that hour's HOURLY line was written, and the sum was dropped (no samples): steps lost,
+  an hour with moves and 0 steps. Now a walk counts in its own hour. Check [measured, 1 year each]: M10 9/18/18/29 -> 0.
 - Python port equals the JS simulator: outdoor values within 1e-12, physics within 1e-15 (`tests/test_port.py`).
 - 2026 weather vs climate normals [ours]: monthly max/min temperature within 0.9 C, PM within 1.2 ug/m3, 86 wet days
   vs 79.3, 1,509 mm vs 1,418 mm.
