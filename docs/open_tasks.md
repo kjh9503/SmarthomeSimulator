@@ -22,6 +22,8 @@ Rewritten 2026-11-21: finished items removed (their record is in docs/agent_desi
    other windows open and close without a line (physics unchanged); entry door for everyone. 063: living room only.
 2c. Order of things in the log (2026-11-23, tools/check_order.py): rooms skipped fixed (walking). Open, agreed order:
    (2) balcony entered / left through a closed living room window: fixed (sliding door opened and closed); found:
+   idle time filled with activities from a pool (2026-11-24); open: long lognormal tails (TV 5.3 h), activity
+   weights have no data (time-use microdata from MDIS would give episode lengths);
    the person stays where an errand left them and falls asleep wherever they are: fixed by layer A (home base,
    2026-11-24); layers B-D of the blueprint wait for layer A's results (open: background rules vs ground truth, one
    shared random stream);

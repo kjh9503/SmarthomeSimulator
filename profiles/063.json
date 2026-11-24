@@ -1,6 +1,6 @@
 {
   "personaId": "063",
-  "notes": "University student living alone in a 3-room flat. Weekdays on Campus, evenings mostly at home. Only pattern p63_a is included; p63_b (Campus) is not in this profile. Heating ranges: a student living alone on a budget: off when leaving more often than kept, comfort 21-24 C. Ventilation: no persona reason to differ from the survey's about-half users; on a budget, so running it only while home is weighted over always. Cooling: on a budget, so a little less likely to use it and a higher switch-on temperature (29-31 C) than the measured 29.8 C average; mostly off when leaving. Windows: survey airing counts; opening for heat likely for someone saving on cooling. Range hood: cooks simple meals and does not always think of it, so a middle range (0.3-0.8 of cookings). Showers: a student with morning classes, mostly one shower a day, more often in the morning. Laundry: one person, 2-3 washes a week, mostly on weekends when home; has a dryer (dryerLoad) and uses it for most washes, some are hung to save power. Drying: opens a window to finish drying in mild weather, otherwise brings the rack inside. Window sensors: living room only (p63_a uses it); no data on how common window sensors are. Home base: a student in the bedroom or study, the living room in the evening and at weekends; no data.",
+  "notes": "University student living alone in a 3-room flat. Weekdays on Campus, evenings mostly at home. Only pattern p63_a is included; p63_b (Campus) is not in this profile. Heating ranges: a student living alone on a budget: off when leaving more often than kept, comfort 21-24 C. Ventilation: no persona reason to differ from the survey's about-half users; on a budget, so running it only while home is weighted over always. Cooling: on a budget, so a little less likely to use it and a higher switch-on temperature (29-31 C) than the measured 29.8 C average; mostly off when leaving. Windows: survey airing counts; opening for heat likely for someone saving on cooling. Range hood: cooks simple meals and does not always think of it, so a middle range (0.3-0.8 of cookings). Showers: a student with morning classes, mostly one shower a day, more often in the morning. Laundry: one person, 2-3 washes a week, mostly on weekends when home; has a dryer (dryerLoad) and uses it for most washes, some are hung to save power. Drying: opens a window to finish drying in mild weather, otherwise brings the rack inside. Window sensors: living room only (p63_a uses it); no data on how common window sensors are. Home base: a student in the bedroom or study, the living room in the evening and at weekends; no data. Idle time: phone video and games, study, some TV; no data.",
   "houseType": "3room",
   "variant": "3room-A",
   "roomRoles": {
@@ -2589,6 +2589,1147 @@
       "sofaSleepShare": {
         "min": 0,
         "max": 0.1
+      }
+    },
+    "source": "ranges chosen by the LLM for this persona (no data found)"
+  },
+  "idleActivityRanges": {
+    "toilet": {
+      "weights": {
+        "morning": {
+          "min": 0.15,
+          "max": 0.25
+        },
+        "day": {
+          "min": 0.1,
+          "max": 0.2
+        },
+        "evening": {
+          "min": 0.1,
+          "max": 0.2
+        },
+        "night": {
+          "min": 0.1,
+          "max": 0.2
+        }
+      },
+      "minutes": {
+        "min": 3,
+        "max": 8
+      },
+      "rooms": [
+        "bathroom"
+      ]
+    },
+    "snack": {
+      "weights": {
+        "morning": {
+          "min": 0.05,
+          "max": 0.1
+        },
+        "day": {
+          "min": 0.05,
+          "max": 0.15
+        },
+        "evening": {
+          "min": 0.05,
+          "max": 0.15
+        },
+        "night": {
+          "min": 0.05,
+          "max": 0.1
+        }
+      },
+      "minutes": {
+        "min": 5,
+        "max": 15
+      },
+      "rooms": [
+        "kitchen",
+        "dining_room"
+      ]
+    },
+    "tidying": {
+      "weights": {
+        "morning": {
+          "min": 0.02,
+          "max": 0.06
+        },
+        "day": {
+          "min": 0.03,
+          "max": 0.08
+        },
+        "evening": {
+          "min": 0.02,
+          "max": 0.06
+        },
+        "night": {
+          "min": 0,
+          "max": 0
+        }
+      },
+      "minutes": {
+        "min": 10,
+        "max": 25
+      },
+      "rooms": [
+        "bedroom",
+        "living_room"
+      ]
+    },
+    "rest": {
+      "weights": {
+        "morning": {
+          "min": 0.05,
+          "max": 0.15
+        },
+        "day": {
+          "min": 0.05,
+          "max": 0.15
+        },
+        "evening": {
+          "min": 0.05,
+          "max": 0.15
+        },
+        "night": {
+          "min": 0.05,
+          "max": 0.1
+        }
+      },
+      "minutes": {
+        "min": 15,
+        "max": 40
+      },
+      "rooms": [
+        "bedroom",
+        "living_room"
+      ]
+    },
+    "folding": {
+      "weights": {
+        "morning": {
+          "min": 0,
+          "max": 0
+        },
+        "day": {
+          "min": 0.02,
+          "max": 0.05
+        },
+        "evening": {
+          "min": 0.02,
+          "max": 0.05
+        },
+        "night": {
+          "min": 0,
+          "max": 0
+        }
+      },
+      "minutes": {
+        "min": 10,
+        "max": 20
+      },
+      "rooms": [
+        "bedroom",
+        "living_room"
+      ]
+    },
+    "video": {
+      "weights": {
+        "morning": {
+          "min": 0.05,
+          "max": 0.1
+        },
+        "day": {
+          "min": 0.15,
+          "max": 0.25
+        },
+        "evening": {
+          "min": 0.15,
+          "max": 0.25
+        },
+        "night": {
+          "min": 0.2,
+          "max": 0.3
+        }
+      },
+      "minutes": {
+        "min": 20,
+        "max": 50
+      },
+      "rooms": [
+        "bedroom",
+        "living_room"
+      ],
+      "apps": {
+        "com.google.android.youtube": 3,
+        "com.netflix.mediaclient": 1
+      }
+    },
+    "game": {
+      "weights": {
+        "morning": {
+          "min": 0,
+          "max": 0
+        },
+        "day": {
+          "min": 0.05,
+          "max": 0.1
+        },
+        "evening": {
+          "min": 0.05,
+          "max": 0.1
+        },
+        "night": {
+          "min": 0.05,
+          "max": 0.15
+        }
+      },
+      "minutes": {
+        "min": 15,
+        "max": 40
+      },
+      "rooms": [
+        "bedroom"
+      ],
+      "apps": {
+        "com.supercell.brawlstars": 1
+      }
+    },
+    "study": {
+      "weights": {
+        "morning": {
+          "min": 0,
+          "max": 0
+        },
+        "day": {
+          "min": 0.1,
+          "max": 0.2
+        },
+        "evening": {
+          "min": 0.05,
+          "max": 0.15
+        },
+        "night": {
+          "min": 0.02,
+          "max": 0.05
+        }
+      },
+      "minutes": {
+        "min": 40,
+        "max": 90
+      },
+      "rooms": [
+        "study_room"
+      ]
+    },
+    "tv": {
+      "weights": {
+        "morning": {
+          "min": 0,
+          "max": 0
+        },
+        "day": {
+          "min": 0.03,
+          "max": 0.08
+        },
+        "evening": {
+          "min": 0.05,
+          "max": 0.12
+        },
+        "night": {
+          "min": 0.02,
+          "max": 0.05
+        }
+      },
+      "minutes": {
+        "min": 40,
+        "max": 90
+      },
+      "rooms": [
+        "living_room"
+      ]
+    },
+    "music": {
+      "weights": {
+        "morning": {
+          "min": 0.02,
+          "max": 0.05
+        },
+        "day": {
+          "min": 0.03,
+          "max": 0.08
+        },
+        "evening": {
+          "min": 0.03,
+          "max": 0.08
+        },
+        "night": {
+          "min": 0.02,
+          "max": 0.05
+        }
+      },
+      "minutes": {
+        "min": 15,
+        "max": 40
+      },
+      "rooms": [
+        "bedroom",
+        "study_room"
+      ]
+    },
+    "call": {
+      "weights": {
+        "morning": {
+          "min": 0,
+          "max": 0
+        },
+        "day": {
+          "min": 0.02,
+          "max": 0.05
+        },
+        "evening": {
+          "min": 0.03,
+          "max": 0.06
+        },
+        "night": {
+          "min": 0.01,
+          "max": 0.03
+        }
+      },
+      "minutes": {
+        "min": 5,
+        "max": 20
+      },
+      "rooms": [
+        "bedroom",
+        "living_room"
+      ]
+    },
+    "shopping": {
+      "weights": {
+        "morning": {
+          "min": 0,
+          "max": 0
+        },
+        "day": {
+          "min": 0.02,
+          "max": 0.04
+        },
+        "evening": {
+          "min": 0.02,
+          "max": 0.05
+        },
+        "night": {
+          "min": 0.02,
+          "max": 0.04
+        }
+      },
+      "minutes": {
+        "min": 5,
+        "max": 15
+      },
+      "rooms": [
+        "bedroom"
+      ],
+      "apps": {
+        "com.coupang.mobile": 1
+      }
+    },
+    "dishes": {
+      "weights": {
+        "morning": {
+          "min": 0,
+          "max": 0
+        },
+        "day": {
+          "min": 0.02,
+          "max": 0.05
+        },
+        "evening": {
+          "min": 0.03,
+          "max": 0.06
+        },
+        "night": {
+          "min": 0,
+          "max": 0
+        }
+      },
+      "minutes": {
+        "min": 8,
+        "max": 15
+      },
+      "rooms": [
+        "kitchen"
+      ],
+      "dishwasherShare": {
+        "min": 0,
+        "max": 0
+      }
+    },
+    "cleaning": {
+      "weights": {
+        "morning": {
+          "min": 0,
+          "max": 0
+        },
+        "day": {
+          "min": 0.02,
+          "max": 0.05
+        },
+        "evening": {
+          "min": 0.01,
+          "max": 0.03
+        },
+        "night": {
+          "min": 0,
+          "max": 0
+        }
+      },
+      "minutes": {
+        "min": 15,
+        "max": 30
+      },
+      "rooms": [
+        "living_room",
+        "bedroom",
+        "kitchen"
+      ],
+      "robotShare": {
+        "min": 0,
+        "max": 0
+      }
+    },
+    "nap": {
+      "weights": {
+        "morning": {
+          "min": 0,
+          "max": 0
+        },
+        "day": {
+          "min": 0.02,
+          "max": 0.06
+        },
+        "evening": {
+          "min": 0,
+          "max": 0
+        },
+        "night": {
+          "min": 0,
+          "max": 0
+        }
+      },
+      "minutes": {
+        "min": 20,
+        "max": 60
+      },
+      "rooms": [
+        "bedroom"
+      ]
+    },
+    "plants": {
+      "weights": {
+        "morning": {
+          "min": 0.0,
+          "max": 0.02
+        },
+        "day": {
+          "min": 0.0,
+          "max": 0.02
+        },
+        "evening": {
+          "min": 0,
+          "max": 0
+        },
+        "night": {
+          "min": 0,
+          "max": 0
+        }
+      },
+      "minutes": {
+        "min": 5,
+        "max": 10
+      },
+      "rooms": [
+        "balcony"
+      ]
+    }
+  },
+  "idleActivityHabits": {
+    "call": {
+      "weights": {
+        "morning": 0.0,
+        "day": 0.037,
+        "evening": 0.058,
+        "night": 0.012
+      },
+      "minutes": 20.0,
+      "rooms": [
+        "bedroom",
+        "living_room"
+      ]
+    },
+    "cleaning": {
+      "weights": {
+        "morning": 0.0,
+        "day": 0.036,
+        "evening": 0.021,
+        "night": 0.0
+      },
+      "minutes": 15.3,
+      "rooms": [
+        "living_room",
+        "bedroom",
+        "kitchen"
+      ],
+      "robotShare": 0.0
+    },
+    "dishes": {
+      "weights": {
+        "morning": 0.0,
+        "day": 0.023,
+        "evening": 0.044,
+        "night": 0.0
+      },
+      "minutes": 9.0,
+      "rooms": [
+        "kitchen"
+      ],
+      "dishwasherShare": 0.0
+    },
+    "folding": {
+      "weights": {
+        "morning": 0.0,
+        "day": 0.028,
+        "evening": 0.039,
+        "night": 0.0
+      },
+      "minutes": 13.2,
+      "rooms": [
+        "bedroom",
+        "living_room"
+      ]
+    },
+    "game": {
+      "weights": {
+        "morning": 0.0,
+        "day": 0.051,
+        "evening": 0.088,
+        "night": 0.113
+      },
+      "minutes": 22.8,
+      "rooms": [
+        "bedroom"
+      ],
+      "apps": {
+        "com.supercell.brawlstars": 1
+      }
+    },
+    "music": {
+      "weights": {
+        "morning": 0.03,
+        "day": 0.066,
+        "evening": 0.064,
+        "night": 0.044
+      },
+      "minutes": 32.6,
+      "rooms": [
+        "bedroom",
+        "study_room"
+      ]
+    },
+    "nap": {
+      "weights": {
+        "morning": 0.0,
+        "day": 0.042,
+        "evening": 0.0,
+        "night": 0.0
+      },
+      "minutes": 41.9,
+      "rooms": [
+        "bedroom"
+      ]
+    },
+    "plants": {
+      "weights": {
+        "morning": 0.006,
+        "day": 0.013,
+        "evening": 0.0,
+        "night": 0.0
+      },
+      "minutes": 8.4,
+      "rooms": [
+        "balcony"
+      ]
+    },
+    "rest": {
+      "weights": {
+        "morning": 0.117,
+        "day": 0.136,
+        "evening": 0.114,
+        "night": 0.091
+      },
+      "minutes": 38.7,
+      "rooms": [
+        "bedroom",
+        "living_room"
+      ]
+    },
+    "shopping": {
+      "weights": {
+        "morning": 0.0,
+        "day": 0.022,
+        "evening": 0.029,
+        "night": 0.033
+      },
+      "minutes": 9.2,
+      "rooms": [
+        "bedroom"
+      ],
+      "apps": {
+        "com.coupang.mobile": 1
+      }
+    },
+    "snack": {
+      "weights": {
+        "morning": 0.087,
+        "day": 0.125,
+        "evening": 0.086,
+        "night": 0.063
+      },
+      "minutes": 10.4,
+      "rooms": [
+        "kitchen",
+        "dining_room"
+      ]
+    },
+    "study": {
+      "weights": {
+        "morning": 0.0,
+        "day": 0.147,
+        "evening": 0.081,
+        "night": 0.022
+      },
+      "minutes": 57.4,
+      "rooms": [
+        "study_room"
+      ]
+    },
+    "tidying": {
+      "weights": {
+        "morning": 0.049,
+        "day": 0.044,
+        "evening": 0.023,
+        "night": 0.0
+      },
+      "minutes": 18.9,
+      "rooms": [
+        "bedroom",
+        "living_room"
+      ]
+    },
+    "toilet": {
+      "weights": {
+        "morning": 0.195,
+        "day": 0.193,
+        "evening": 0.141,
+        "night": 0.108
+      },
+      "minutes": 4.3,
+      "rooms": [
+        "bathroom"
+      ]
+    },
+    "tv": {
+      "weights": {
+        "morning": 0.0,
+        "day": 0.044,
+        "evening": 0.099,
+        "night": 0.033
+      },
+      "minutes": 85.5,
+      "rooms": [
+        "living_room"
+      ]
+    },
+    "video": {
+      "weights": {
+        "morning": 0.059,
+        "day": 0.24,
+        "evening": 0.158,
+        "night": 0.266
+      },
+      "minutes": 48.8,
+      "rooms": [
+        "bedroom",
+        "living_room"
+      ],
+      "apps": {
+        "com.google.android.youtube": 3,
+        "com.netflix.mediaclient": 1
+      }
+    }
+  },
+  "idleActivityPerson": {
+    "seed": 63,
+    "ranges": {
+      "toilet": {
+        "weights": {
+          "morning": {
+            "min": 0.15,
+            "max": 0.25
+          },
+          "day": {
+            "min": 0.1,
+            "max": 0.2
+          },
+          "evening": {
+            "min": 0.1,
+            "max": 0.2
+          },
+          "night": {
+            "min": 0.1,
+            "max": 0.2
+          }
+        },
+        "minutes": {
+          "min": 3,
+          "max": 8
+        },
+        "rooms": [
+          "bathroom"
+        ]
+      },
+      "snack": {
+        "weights": {
+          "morning": {
+            "min": 0.05,
+            "max": 0.1
+          },
+          "day": {
+            "min": 0.05,
+            "max": 0.15
+          },
+          "evening": {
+            "min": 0.05,
+            "max": 0.15
+          },
+          "night": {
+            "min": 0.05,
+            "max": 0.1
+          }
+        },
+        "minutes": {
+          "min": 5,
+          "max": 15
+        },
+        "rooms": [
+          "kitchen",
+          "dining_room"
+        ]
+      },
+      "tidying": {
+        "weights": {
+          "morning": {
+            "min": 0.02,
+            "max": 0.06
+          },
+          "day": {
+            "min": 0.03,
+            "max": 0.08
+          },
+          "evening": {
+            "min": 0.02,
+            "max": 0.06
+          },
+          "night": {
+            "min": 0,
+            "max": 0
+          }
+        },
+        "minutes": {
+          "min": 10,
+          "max": 25
+        },
+        "rooms": [
+          "bedroom",
+          "living_room"
+        ]
+      },
+      "rest": {
+        "weights": {
+          "morning": {
+            "min": 0.05,
+            "max": 0.15
+          },
+          "day": {
+            "min": 0.05,
+            "max": 0.15
+          },
+          "evening": {
+            "min": 0.05,
+            "max": 0.15
+          },
+          "night": {
+            "min": 0.05,
+            "max": 0.1
+          }
+        },
+        "minutes": {
+          "min": 15,
+          "max": 40
+        },
+        "rooms": [
+          "bedroom",
+          "living_room"
+        ]
+      },
+      "folding": {
+        "weights": {
+          "morning": {
+            "min": 0,
+            "max": 0
+          },
+          "day": {
+            "min": 0.02,
+            "max": 0.05
+          },
+          "evening": {
+            "min": 0.02,
+            "max": 0.05
+          },
+          "night": {
+            "min": 0,
+            "max": 0
+          }
+        },
+        "minutes": {
+          "min": 10,
+          "max": 20
+        },
+        "rooms": [
+          "bedroom",
+          "living_room"
+        ]
+      },
+      "video": {
+        "weights": {
+          "morning": {
+            "min": 0.05,
+            "max": 0.1
+          },
+          "day": {
+            "min": 0.15,
+            "max": 0.25
+          },
+          "evening": {
+            "min": 0.15,
+            "max": 0.25
+          },
+          "night": {
+            "min": 0.2,
+            "max": 0.3
+          }
+        },
+        "minutes": {
+          "min": 20,
+          "max": 50
+        },
+        "rooms": [
+          "bedroom",
+          "living_room"
+        ],
+        "apps": {
+          "com.google.android.youtube": 3,
+          "com.netflix.mediaclient": 1
+        }
+      },
+      "game": {
+        "weights": {
+          "morning": {
+            "min": 0,
+            "max": 0
+          },
+          "day": {
+            "min": 0.05,
+            "max": 0.1
+          },
+          "evening": {
+            "min": 0.05,
+            "max": 0.1
+          },
+          "night": {
+            "min": 0.05,
+            "max": 0.15
+          }
+        },
+        "minutes": {
+          "min": 15,
+          "max": 40
+        },
+        "rooms": [
+          "bedroom"
+        ],
+        "apps": {
+          "com.supercell.brawlstars": 1
+        }
+      },
+      "study": {
+        "weights": {
+          "morning": {
+            "min": 0,
+            "max": 0
+          },
+          "day": {
+            "min": 0.1,
+            "max": 0.2
+          },
+          "evening": {
+            "min": 0.05,
+            "max": 0.15
+          },
+          "night": {
+            "min": 0.02,
+            "max": 0.05
+          }
+        },
+        "minutes": {
+          "min": 40,
+          "max": 90
+        },
+        "rooms": [
+          "study_room"
+        ]
+      },
+      "tv": {
+        "weights": {
+          "morning": {
+            "min": 0,
+            "max": 0
+          },
+          "day": {
+            "min": 0.03,
+            "max": 0.08
+          },
+          "evening": {
+            "min": 0.05,
+            "max": 0.12
+          },
+          "night": {
+            "min": 0.02,
+            "max": 0.05
+          }
+        },
+        "minutes": {
+          "min": 40,
+          "max": 90
+        },
+        "rooms": [
+          "living_room"
+        ]
+      },
+      "music": {
+        "weights": {
+          "morning": {
+            "min": 0.02,
+            "max": 0.05
+          },
+          "day": {
+            "min": 0.03,
+            "max": 0.08
+          },
+          "evening": {
+            "min": 0.03,
+            "max": 0.08
+          },
+          "night": {
+            "min": 0.02,
+            "max": 0.05
+          }
+        },
+        "minutes": {
+          "min": 15,
+          "max": 40
+        },
+        "rooms": [
+          "bedroom",
+          "study_room"
+        ]
+      },
+      "call": {
+        "weights": {
+          "morning": {
+            "min": 0,
+            "max": 0
+          },
+          "day": {
+            "min": 0.02,
+            "max": 0.05
+          },
+          "evening": {
+            "min": 0.03,
+            "max": 0.06
+          },
+          "night": {
+            "min": 0.01,
+            "max": 0.03
+          }
+        },
+        "minutes": {
+          "min": 5,
+          "max": 20
+        },
+        "rooms": [
+          "bedroom",
+          "living_room"
+        ]
+      },
+      "shopping": {
+        "weights": {
+          "morning": {
+            "min": 0,
+            "max": 0
+          },
+          "day": {
+            "min": 0.02,
+            "max": 0.04
+          },
+          "evening": {
+            "min": 0.02,
+            "max": 0.05
+          },
+          "night": {
+            "min": 0.02,
+            "max": 0.04
+          }
+        },
+        "minutes": {
+          "min": 5,
+          "max": 15
+        },
+        "rooms": [
+          "bedroom"
+        ],
+        "apps": {
+          "com.coupang.mobile": 1
+        }
+      },
+      "dishes": {
+        "weights": {
+          "morning": {
+            "min": 0,
+            "max": 0
+          },
+          "day": {
+            "min": 0.02,
+            "max": 0.05
+          },
+          "evening": {
+            "min": 0.03,
+            "max": 0.06
+          },
+          "night": {
+            "min": 0,
+            "max": 0
+          }
+        },
+        "minutes": {
+          "min": 8,
+          "max": 15
+        },
+        "rooms": [
+          "kitchen"
+        ],
+        "dishwasherShare": {
+          "min": 0,
+          "max": 0
+        }
+      },
+      "cleaning": {
+        "weights": {
+          "morning": {
+            "min": 0,
+            "max": 0
+          },
+          "day": {
+            "min": 0.02,
+            "max": 0.05
+          },
+          "evening": {
+            "min": 0.01,
+            "max": 0.03
+          },
+          "night": {
+            "min": 0,
+            "max": 0
+          }
+        },
+        "minutes": {
+          "min": 15,
+          "max": 30
+        },
+        "rooms": [
+          "living_room",
+          "bedroom",
+          "kitchen"
+        ],
+        "robotShare": {
+          "min": 0,
+          "max": 0
+        }
+      },
+      "nap": {
+        "weights": {
+          "morning": {
+            "min": 0,
+            "max": 0
+          },
+          "day": {
+            "min": 0.02,
+            "max": 0.06
+          },
+          "evening": {
+            "min": 0,
+            "max": 0
+          },
+          "night": {
+            "min": 0,
+            "max": 0
+          }
+        },
+        "minutes": {
+          "min": 20,
+          "max": 60
+        },
+        "rooms": [
+          "bedroom"
+        ]
+      },
+      "plants": {
+        "weights": {
+          "morning": {
+            "min": 0.0,
+            "max": 0.02
+          },
+          "day": {
+            "min": 0.0,
+            "max": 0.02
+          },
+          "evening": {
+            "min": 0,
+            "max": 0
+          },
+          "night": {
+            "min": 0,
+            "max": 0
+          }
+        },
+        "minutes": {
+          "min": 5,
+          "max": 10
+        },
+        "rooms": [
+          "balcony"
+        ]
       }
     },
     "source": "ranges chosen by the LLM for this persona (no data found)"

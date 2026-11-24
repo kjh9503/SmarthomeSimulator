@@ -218,6 +218,24 @@
    "about": "taxi",
    "uid": 10205,
    "mbPerMin": 0.5
+  },
+  "com.netflix.mediaclient": {
+   "label": "Netflix",
+   "about": "video streaming (OTT)",
+   "uid": 10206,
+   "mbPerMin": 12
+  },
+  "com.supercell.brawlstars": {
+   "label": "Brawl Stars",
+   "about": "mobile game",
+   "uid": 10207,
+   "mbPerMin": 0.5
+  },
+  "com.kbstar.kbbank": {
+   "label": "KB Star Banking",
+   "about": "banking",
+   "uid": 10208,
+   "mbPerMin": 0.3
   }
  },
  "phoneSignals": {

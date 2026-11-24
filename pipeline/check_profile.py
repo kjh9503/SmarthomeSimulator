@@ -123,6 +123,8 @@ def main():
             out.append(("ERROR", "-", f"windowSensors has balcony but {prof.get('variant')} has no real balcony"))
     if "heatingRanges" in prof and "heatingHabits" not in prof:
         out.append(("WARN", "-", "heatingRanges without heatingHabits: run pipeline/sample_heating_person.py"))
+    if "idleActivityRanges" in prof and "idleActivityHabits" not in prof:
+        out.append(("WARN", "-", "idleActivityRanges without idleActivityHabits: run pipeline/sample_idle_person.py"))
     if "homeBaseRanges" in prof and "homeBaseHabits" not in prof:
         out.append(("WARN", "-", "homeBaseRanges without homeBaseHabits: run pipeline/sample_home_base_person.py"))
     if "dryingRanges" in prof and "dryingHabits" not in prof:

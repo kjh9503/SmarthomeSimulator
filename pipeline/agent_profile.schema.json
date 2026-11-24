@@ -928,6 +928,40 @@
     "homeBasePerson": {
       "type": "object",
       "description": "Written by pipeline/sample_home_base_person.py: seed and the ranges used. Not read by the engine."
+    },
+    "idleActivityRanges": {
+      "type": "object",
+      "description": "Idle-time activities the persona does (keys from the engine pool IDLE_POOL): weights per band, median minutes, rooms, and per activity apps / kinds / dishwasherShare / robotShare; pipeline/sample_idle_person.py draws idleActivityHabits.",
+      "propertyNames": {
+        "enum": [
+          "tv",
+          "reading",
+          "study",
+          "snack",
+          "toilet",
+          "dishes",
+          "cleaning",
+          "music",
+          "video",
+          "game",
+          "shopping",
+          "call",
+          "workout",
+          "nap",
+          "plants",
+          "folding",
+          "tidying",
+          "rest"
+        ]
+      }
+    },
+    "idleActivityHabits": {
+      "type": "object",
+      "description": "Written by pipeline/sample_idle_person.py; read by the engine."
+    },
+    "idleActivityPerson": {
+      "type": "object",
+      "description": "Written by pipeline/sample_idle_person.py: seed and the ranges used. Not read by the engine."
     }
   }
 }

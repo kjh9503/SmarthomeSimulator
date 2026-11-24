@@ -111,7 +111,11 @@ CADENCE_SD = 0.08
 ROOM_STEPS = [10, 30]
 BODY = dict(STILL=dict(steps=0, m=0, kcal=0.3), WALKING=dict(steps=100, m=75, kcal=4), RUNNING=dict(steps=160, m=175, kcal=11),
             ON_BICYCLE=dict(steps=0, m=250, kcal=7), IN_VEHICLE=dict(steps=0, m=0, kcal=0.2), ASLEEP=dict(steps=0, m=0, kcal=0))
-EXERCISES = dict(Running=dict(code=56, activity="RUNNING"), Walking=dict(code=79, activity="WALKING"), Cycling=dict(code=8, activity="ON_BICYCLE"))
+EXERCISES = dict(Running=dict(code=56, activity="RUNNING"), Walking=dict(code=79, activity="WALKING"), Cycling=dict(code=8, activity="ON_BICYCLE"),
+                 # home workouts (2026-11-24): Health Connect androidx ExerciseSessionRecord EXERCISE_TYPE_YOGA 83,
+                 # STRENGTH_TRAINING 70, STRETCHING 71; the phone reports STILL
+                 Yoga=dict(code=83, activity="STILL"), StrengthTraining=dict(code=70, activity="STILL"),
+                 Stretching=dict(code=71, activity="STILL"))
 
 
 def _bp(v):

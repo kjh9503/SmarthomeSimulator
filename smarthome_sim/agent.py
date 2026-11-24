@@ -55,6 +55,32 @@ DEFER_MAX_MIN = 180  # a daily behaviour waits at most this long after its minut
 # 2013). With these habits the off rules for cooling units and windows are not used.
 COOL_UNUSED_MIN = 30
 HOME_BANDS = (("morning", 5, 9), ("day", 9, 18), ("evening", 18, 23), ("night", 23, 5))  # homeBaseHabits bands (local hours)
+# What the person does at home when no rule or habit acts (agreed 2026-11-24). Pool from the time-use survey's
+# activity classes (Statistics Korea, middle classes of 2009: Kim et al. 2013 appendix 2-3): rooms it may happen in
+# (role names) and what it does to devices / the phone. The persona's profile picks which it does and how often and
+# long (idleActivityHabits, pipeline/sample_idle_person.py).
+IDLE_POOL = dict(
+    tv=dict(rooms=("living_room",), dev="tv"),
+    reading=dict(rooms=("living_room", "bedroom", "study_room"), dev="lamp"),
+    study=dict(rooms=("study_room",), dev="lamp"),
+    snack=dict(rooms=("kitchen", "dining_room"), light=True),
+    toilet=dict(rooms=("bathroom",), light=True, alwaysLight=True),
+    dishes=dict(rooms=("kitchen",), light=True),
+    cleaning=dict(rooms=("living_room", "bedroom", "kitchen", "study_room", "dining_room"), multi=True),
+    music=dict(rooms=("living_room", "bedroom", "study_room", "kitchen")),
+    video=dict(rooms=("bedroom", "living_room"), app=True),
+    game=dict(rooms=("bedroom", "living_room"), app=True),
+    shopping=dict(rooms=("bedroom", "living_room", "study_room"), app=True),
+    call=dict(rooms=("bedroom", "living_room", "study_room", "balcony")),
+    workout=dict(rooms=("living_room", "bedroom")),
+    nap=dict(rooms=("bedroom", "living_room")),
+    plants=dict(rooms=("balcony",)),
+    folding=dict(rooms=("bedroom", "living_room")),
+    tidying=dict(rooms=("bedroom", "living_room", "study_room")),
+    rest=dict(rooms=("bedroom", "living_room")),
+)
+IDLE_AGAIN = 0.3  # weight of the activity just done, so the same thing is less likely right again [assume, agreed]
+IDLE_DARK_LUX = 50  # a short task turns the room light on below this [assume]
 SLEEP_ROOMS_EXTRA = ("living_room",)  # besides the bedrooms (room1..4): the sofa (agreed 2026-11-24)
 MINUTE_FULL_SEC = 44  # a new action starts only before :45 of the minute (an action takes 3-15 s), else it waits for the
 # next minute (agreed 2026-11-23: no actions piled up at :59 when a minute has more to do than 60 s)
@@ -231,6 +257,9 @@ class AgentRunner:
         self.dry_h = profile.get("dryingHabits")  # None: DRY_DEFAULT
         self.hb = profile.get("homeBaseHabits")  # None: no layer A (the person stays where the last action left them)
         self.hb_room, self.hb_since, self.hb_limit = None, 0, 0
+        self.idle = profile.get("idleActivityHabits")  # None: layer A by room weights only (homeBaseHabits bands)
+        self.act, self.last_act, self.in_idle = None, None, False
+        self.idle_stats = {}
         self.hb_stats = dict(returns=0, moves=0, held=0, sofaSleep=0, backToTaskRoom=0, walkedToBed=0, draws=0, drawsBase=0,
                              drawsErrand=0, drawsSameRoom=0)
         self.dry_window = set()  # living room windows opened for drying
@@ -568,6 +597,8 @@ class AgentRunner:
         S = self.S
         if S["place"] != "home" or S["trip"] or S["room"] == room:
             return 0
+        if self.act and not self.in_idle and room != self.act["room"]:
+            self.end_act()  # something else needs the person: the activity ends where it is
         n = 0
         for hop in self.sim.house.path(S["room"], room)[1:]:
             here = S["room"]
@@ -706,6 +737,8 @@ class AgentRunner:
             else:
                 out = done(sum(ph.calendar_delete(e["eventId"]) for e in evs))
         elif do == "phone.sleep":
+            if self.act:
+                self.end_act()
             room = S["room"]
             if S["place"] == "home" and not S["trip"] and room and not (room.startswith("room") or room in SLEEP_ROOMS_EXTRA):
                 self.go_to(self.real_room("bedroom"))  # agreed 2026-11-24: nobody falls asleep in the laundry room
@@ -1052,6 +1085,8 @@ class AgentRunner:
         """layer A (agreed 2026-11-24): where the person is when no rule or habit is doing anything. In a room outside
         the home-base rooms of the time band (laundry room, balcony...) they go back after errandMinutes; in a home-base
         room they choose again after stayMinutes (homeBaseHabits); a stove on in the kitchen or a TV on holds them"""
+        if self.idle:
+            return self.idle_tick(t)
         H, S = self.hb, self.S
         if not H or S["place"] != "home" or S["trip"] or S["asleep"] or not S["room"] or self.minute_full():
             return
@@ -1096,6 +1131,146 @@ class AgentRunner:
             self.go_to(to)
             self.hb_stats["returns" if not base else "moves"] += 1
             self.person_changes()
+
+    def idle_rooms(self, act):
+        rooms = []
+        for role in self.idle[act].get("rooms") or IDLE_POOL[act]["rooms"]:
+            r = self.real_room(role)
+            if r in self.sim.house.room_ids and r not in rooms:
+                rooms.append(r)
+        return rooms
+
+    def idle_tick(self, t):
+        """what the person does at home when no rule or habit acts (agreed 2026-11-24): one activity at a time from
+        idleActivityHabits, weighted by the time band, the one just done at IDLE_AGAIN; walk to its room, do its start
+        actions, stay its time, do its end actions. A rule or habit moving the person ends it (walk()); a stove on in
+        the kitchen or a TV left on by a rule holds them; after an errand outside every activity room they wait
+        errandMinutes first."""
+        S = self.S
+        if S["place"] != "home" or S["trip"] or S["asleep"]:
+            self.act = None  # left or asleep: leaving / bedtime checks dealt with the devices
+            return
+        if not S["room"] or self.minute_full():
+            return
+        if any(not k["finished"] and (k.get("room") or k["travelTo"]) for k in self.tasks):
+            if self.act:
+                self.end_act()
+            return
+        a = self.act
+        if a:
+            if S["room"] != a["room"]:
+                self.act = None
+            elif t < a["end"]:
+                if a.get("queue") and t >= a["next"]:  # cleaning: on to the next room
+                    room = a["queue"].pop(0)
+                    self.in_idle = True
+                    self.go_to(room)
+                    self.in_idle = False
+                    a["room"], a["next"] = S["room"], t + (a["end"] - t) / (len(a["queue"]) + 1)
+                return
+            else:
+                self.end_act()
+        room = S["room"]
+        everywhere = {r for k in self.idle for r in self.idle_rooms(k)}
+        if room not in everywhere:  # after an errand (laundry room, entryway...): a moment before the next thing
+            if room != self.hb_room:
+                med = (self.hb or {}).get("errandMinutes", 3)
+                self.hb_room, self.hb_since = room, t
+                self.hb_limit = max(1.0, med * math.exp(0.5 * self.gauss())) * MIN_MS
+            if t - self.hb_since < self.hb_limit:
+                return
+        stove, tv = self.sim.house.at("kitchen", "stove"), self.sim.house.at(room, "tv")
+        if (room == "kitchen" and stove is not None and stove.get("switch", "switch") == "on") \
+                or (tv is not None and tv.get("switch", "switch") == "on"):
+            self.hb_stats["held"] += 1
+            return
+        band = self.home_band(t)
+        w = {k: h["weights"].get(band, 0) * (IDLE_AGAIN if k == self.last_act else 1) for k, h in self.idle.items()
+             if k in IDLE_POOL and self.idle_rooms(k)}
+        tot = sum(w.values())
+        if tot <= 0:
+            return
+        x, acc, act = self.rnd.random() * tot, 0.0, None
+        for k, v in w.items():
+            acc += v
+            if x < acc:
+                act = k
+                break
+        self.start_act(act or next(iter(w)), t)
+
+    def start_act(self, act, t):
+        H, P = self.idle[act], IDLE_POOL[act]
+        rooms = self.idle_rooms(act)
+        room = rooms[int(self.rnd.random() * len(rooms))]
+        self.in_idle = True
+        self.go_to(room)
+        self.in_idle = False
+        room = self.S["room"]
+        mins = max(2.0, H["minutes"] * math.exp(0.5 * self.gauss()))
+        a = dict(id=act, room=room, start=t, end=t + mins * MIN_MS, endActs=[])
+        cmd = lambda dev, c, cap="switch", args=None: {"do": "home.command", "args": {
+            "device": dev, "capability": cap, "command": c, "args": args or [], "channel": "physical"}}
+        H_ = self.sim.house
+        if P.get("dev") and H_.at(room, P["dev"]) is not None:
+            d = f"{room}.{P['dev']}"
+            self.exec(cmd(d, "on"))
+            a["endActs"].append(cmd(d, "off"))
+        if P.get("light") and H_.at(room, "light") is not None:
+            ls = H_.at(room, "light_sensor")
+            dark = ls is None or (ls.get("illuminanceMeasurement", "illuminance") or 0) <= IDLE_DARK_LUX
+            if (P.get("alwaysLight") or dark) and H_.at(room, "light").get("switch", "switch") != "on":
+                self.exec(cmd(f"{room}.light", "on"))
+                a["endActs"].append(cmd(f"{room}.light", "off"))
+        if act == "dishes" and H_.at("kitchen", "dishwasher") is not None and self.chance(H.get("dishwasherShare", 0)):
+            self.exec(cmd("kitchen.dishwasher", "setMachineState", "dishwasherOperatingState", ["run"]))
+        if act == "cleaning":
+            robot = H_.at("living_room", "robot_vacuum")
+            if robot is not None and self.chance(H.get("robotShare", 0)):
+                self.exec(cmd("living_room.robot_vacuum", "start", "robotCleanerOperatingState"))
+            others = [r for r in rooms if r != room]
+            self.rnd.shuffle(others)
+            a["queue"] = others[:2]
+            a["next"] = t + mins * MIN_MS / (len(a["queue"]) + 1)
+        if act == "music":
+            self.exec({"do": "phone.media", "args": {"state": "PLAYING", "title": self.rnd.choice(
+                ["Daily Mix 1", "Chill Vibes", "K-Pop Hits", "Acoustic Morning", "Focus Flow"]), "artist": "Various"}})
+            a["endActs"].append({"do": "phone.media", "args": {"state": "PAUSED"}})
+        if P.get("app") and H.get("apps"):
+            self.exec({"do": "phone.openApp", "args": {"package": self.wpick(H["apps"])}})
+            a["endActs"].append({"do": "phone.closeApp", "args": {}})
+        if act == "call":
+            self.exec({"do": "phone.call", "args": {"state": "OFFHOOK"}})
+            a["endActs"].append({"do": "phone.call", "args": {"state": "IDLE"}})
+        if act == "workout" and H.get("kinds"):
+            self.exec({"do": "phone.exerciseStart", "args": {"kind": self.wpick(H["kinds"])}})
+            a["endActs"].append({"do": "phone.exerciseEnd", "args": {}})
+        if act == "nap":
+            for dev in ("light", "lamp"):
+                if H_.at(room, dev) is not None and H_.at(room, dev).get("switch", "switch") == "on":
+                    self.exec(cmd(f"{room}.{dev}", "off"))
+        a["room"] = self.S["room"]  # where the start actions left them (a robot button in the living room...)
+        self.act = a
+        st = self.idle_stats.setdefault(act, dict(times=0, minutes=0.0))
+        st["times"] += 1
+
+    def wpick(self, weights):
+        ks = list(weights)
+        x, acc = self.rnd.random() * sum(weights.values()), 0.0
+        for k in ks:
+            acc += weights[k]
+            if x < acc:
+                return k
+        return ks[-1]
+
+    def end_act(self):
+        """end the current activity where it is: its end actions (TV off, lamp off, app closed...)"""
+        a, self.act = self.act, None
+        if not a:
+            return
+        self.last_act = a["id"]
+        self.idle_stats[a["id"]]["minutes"] += (self.now() - a["start"]) / MIN_MS
+        for x in a["endActs"]:
+            self.exec(x)
 
     def outer_win(self):
         """the balcony's outer window (flats with a real balcony), else None"""
@@ -2113,6 +2288,7 @@ class AgentRunner:
                        hood=dict(habits=self.hood, **self.hood_stats), showers=dict(habits=self.prof_shower, **self.shower_stats),
                        laundry=dict(habits=self.laundry_h, **self.laundry_stats),
                        homeBase=dict(habits=self.hb, **self.hb_stats),
+                       idleActivities={k: dict(times=v["times"], hours=round(v["minutes"] / 60, 1)) for k, v in sorted(self.idle_stats.items())},
                        drying=dict(habits=self.dry_h, **{k: v for k, v in self.dry_stats.items() if k != "hoursToDry"},
                                    medianHoursToDry=(sorted(self.dry_stats["hoursToDry"])[len(self.dry_stats["hoursToDry"]) // 2] if self.dry_stats["hoursToDry"] else None)),
                        ventilation=dict(habits=self.vent, hoursInHeatingSeason=round(self.vent_minutes["season"] / 60), hoursOtherwise=round(self.vent_minutes["other"] / 60)),

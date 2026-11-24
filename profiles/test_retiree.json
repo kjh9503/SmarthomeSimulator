@@ -1347,6 +1347,407 @@
     "asleep": true,
     "battery": 100
   },
+  "idleActivityRanges": {
+    "toilet": {
+      "weights": {
+        "morning": {
+          "min": 0.15,
+          "max": 0.25
+        },
+        "day": {
+          "min": 0.1,
+          "max": 0.2
+        },
+        "evening": {
+          "min": 0.1,
+          "max": 0.2
+        },
+        "night": {
+          "min": 0.1,
+          "max": 0.2
+        }
+      },
+      "minutes": {
+        "min": 3,
+        "max": 8
+      },
+      "rooms": [
+        "bathroom"
+      ]
+    },
+    "snack": {
+      "weights": {
+        "morning": {
+          "min": 0.05,
+          "max": 0.1
+        },
+        "day": {
+          "min": 0.05,
+          "max": 0.15
+        },
+        "evening": {
+          "min": 0.05,
+          "max": 0.15
+        },
+        "night": {
+          "min": 0.05,
+          "max": 0.1
+        }
+      },
+      "minutes": {
+        "min": 5,
+        "max": 15
+      },
+      "rooms": [
+        "kitchen",
+        "dining_room"
+      ]
+    },
+    "tidying": {
+      "weights": {
+        "morning": {
+          "min": 0.02,
+          "max": 0.06
+        },
+        "day": {
+          "min": 0.03,
+          "max": 0.08
+        },
+        "evening": {
+          "min": 0.02,
+          "max": 0.06
+        },
+        "night": {
+          "min": 0,
+          "max": 0
+        }
+      },
+      "minutes": {
+        "min": 10,
+        "max": 25
+      },
+      "rooms": [
+        "bedroom",
+        "living_room"
+      ]
+    },
+    "rest": {
+      "weights": {
+        "morning": {
+          "min": 0.05,
+          "max": 0.15
+        },
+        "day": {
+          "min": 0.05,
+          "max": 0.15
+        },
+        "evening": {
+          "min": 0.05,
+          "max": 0.15
+        },
+        "night": {
+          "min": 0.05,
+          "max": 0.1
+        }
+      },
+      "minutes": {
+        "min": 15,
+        "max": 40
+      },
+      "rooms": [
+        "bedroom",
+        "living_room"
+      ]
+    },
+    "folding": {
+      "weights": {
+        "morning": {
+          "min": 0,
+          "max": 0
+        },
+        "day": {
+          "min": 0.02,
+          "max": 0.05
+        },
+        "evening": {
+          "min": 0.02,
+          "max": 0.05
+        },
+        "night": {
+          "min": 0,
+          "max": 0
+        }
+      },
+      "minutes": {
+        "min": 10,
+        "max": 20
+      },
+      "rooms": [
+        "bedroom",
+        "living_room"
+      ]
+    },
+    "tv": {
+      "weights": {
+        "morning": {
+          "min": 0.15,
+          "max": 0.25
+        },
+        "day": {
+          "min": 0.25,
+          "max": 0.4
+        },
+        "evening": {
+          "min": 0.3,
+          "max": 0.45
+        },
+        "night": {
+          "min": 0.05,
+          "max": 0.1
+        }
+      },
+      "minutes": {
+        "min": 60,
+        "max": 120
+      },
+      "rooms": [
+        "living_room"
+      ]
+    },
+    "reading": {
+      "weights": {
+        "morning": {
+          "min": 0.05,
+          "max": 0.1
+        },
+        "day": {
+          "min": 0.05,
+          "max": 0.1
+        },
+        "evening": {
+          "min": 0.03,
+          "max": 0.06
+        },
+        "night": {
+          "min": 0.02,
+          "max": 0.05
+        }
+      },
+      "minutes": {
+        "min": 20,
+        "max": 50
+      },
+      "rooms": [
+        "living_room",
+        "study_room"
+      ]
+    },
+    "plants": {
+      "weights": {
+        "morning": {
+          "min": 0.04,
+          "max": 0.08
+        },
+        "day": {
+          "min": 0.04,
+          "max": 0.08
+        },
+        "evening": {
+          "min": 0,
+          "max": 0
+        },
+        "night": {
+          "min": 0,
+          "max": 0
+        }
+      },
+      "minutes": {
+        "min": 10,
+        "max": 25
+      },
+      "rooms": [
+        "balcony"
+      ]
+    },
+    "nap": {
+      "weights": {
+        "morning": {
+          "min": 0,
+          "max": 0
+        },
+        "day": {
+          "min": 0.08,
+          "max": 0.15
+        },
+        "evening": {
+          "min": 0.02,
+          "max": 0.05
+        },
+        "night": {
+          "min": 0,
+          "max": 0
+        }
+      },
+      "minutes": {
+        "min": 30,
+        "max": 75
+      },
+      "rooms": [
+        "living_room",
+        "bedroom"
+      ]
+    },
+    "call": {
+      "weights": {
+        "morning": {
+          "min": 0.02,
+          "max": 0.04
+        },
+        "day": {
+          "min": 0.03,
+          "max": 0.06
+        },
+        "evening": {
+          "min": 0.03,
+          "max": 0.06
+        },
+        "night": {
+          "min": 0,
+          "max": 0
+        }
+      },
+      "minutes": {
+        "min": 10,
+        "max": 30
+      },
+      "rooms": [
+        "living_room"
+      ]
+    },
+    "dishes": {
+      "weights": {
+        "morning": {
+          "min": 0.03,
+          "max": 0.06
+        },
+        "day": {
+          "min": 0.04,
+          "max": 0.08
+        },
+        "evening": {
+          "min": 0.04,
+          "max": 0.08
+        },
+        "night": {
+          "min": 0,
+          "max": 0
+        }
+      },
+      "minutes": {
+        "min": 10,
+        "max": 20
+      },
+      "rooms": [
+        "kitchen"
+      ],
+      "dishwasherShare": {
+        "min": 0,
+        "max": 0
+      }
+    },
+    "cleaning": {
+      "weights": {
+        "morning": {
+          "min": 0.03,
+          "max": 0.06
+        },
+        "day": {
+          "min": 0.03,
+          "max": 0.06
+        },
+        "evening": {
+          "min": 0,
+          "max": 0
+        },
+        "night": {
+          "min": 0,
+          "max": 0
+        }
+      },
+      "minutes": {
+        "min": 20,
+        "max": 45
+      },
+      "rooms": [
+        "living_room",
+        "bedroom",
+        "kitchen",
+        "dining_room"
+      ],
+      "robotShare": {
+        "min": 0,
+        "max": 0
+      }
+    },
+    "workout": {
+      "weights": {
+        "morning": {
+          "min": 0.03,
+          "max": 0.06
+        },
+        "day": {
+          "min": 0.01,
+          "max": 0.03
+        },
+        "evening": {
+          "min": 0,
+          "max": 0
+        },
+        "night": {
+          "min": 0,
+          "max": 0
+        }
+      },
+      "minutes": {
+        "min": 10,
+        "max": 25
+      },
+      "rooms": [
+        "living_room"
+      ],
+      "kinds": {
+        "Stretching": 1
+      }
+    },
+    "music": {
+      "weights": {
+        "morning": {
+          "min": 0.02,
+          "max": 0.05
+        },
+        "day": {
+          "min": 0.02,
+          "max": 0.05
+        },
+        "evening": {
+          "min": 0,
+          "max": 0
+        },
+        "night": {
+          "min": 0,
+          "max": 0
+        }
+      },
+      "minutes": {
+        "min": 20,
+        "max": 60
+      },
+      "rooms": [
+        "living_room",
+        "kitchen"
+      ]
+    }
+  },
   "phoneHabits": {
     "screenTimeoutSeconds": 60,
     "manualScreenOff": 0.999,
@@ -1813,6 +2214,596 @@
       "sofaSleepShare": {
         "min": 0.1,
         "max": 0.25
+      }
+    },
+    "source": "ranges chosen by the LLM for this persona (no data found)"
+  },
+  "idleActivityHabits": {
+    "call": {
+      "weights": {
+        "morning": 0.033,
+        "day": 0.044,
+        "evening": 0.035,
+        "night": 0.0
+      },
+      "minutes": 28.4,
+      "rooms": [
+        "living_room"
+      ]
+    },
+    "cleaning": {
+      "weights": {
+        "morning": 0.043,
+        "day": 0.055,
+        "evening": 0.0,
+        "night": 0.0
+      },
+      "minutes": 22.5,
+      "rooms": [
+        "living_room",
+        "bedroom",
+        "kitchen",
+        "dining_room"
+      ],
+      "robotShare": 0.0
+    },
+    "dishes": {
+      "weights": {
+        "morning": 0.047,
+        "day": 0.069,
+        "evening": 0.074,
+        "night": 0.0
+      },
+      "minutes": 17.8,
+      "rooms": [
+        "kitchen"
+      ],
+      "dishwasherShare": 0.0
+    },
+    "folding": {
+      "weights": {
+        "morning": 0.0,
+        "day": 0.039,
+        "evening": 0.049,
+        "night": 0.0
+      },
+      "minutes": 11.2,
+      "rooms": [
+        "bedroom",
+        "living_room"
+      ]
+    },
+    "music": {
+      "weights": {
+        "morning": 0.037,
+        "day": 0.031,
+        "evening": 0.0,
+        "night": 0.0
+      },
+      "minutes": 33.0,
+      "rooms": [
+        "living_room",
+        "kitchen"
+      ]
+    },
+    "nap": {
+      "weights": {
+        "morning": 0.0,
+        "day": 0.117,
+        "evening": 0.021,
+        "night": 0.0
+      },
+      "minutes": 42.3,
+      "rooms": [
+        "living_room",
+        "bedroom"
+      ]
+    },
+    "plants": {
+      "weights": {
+        "morning": 0.062,
+        "day": 0.074,
+        "evening": 0.0,
+        "night": 0.0
+      },
+      "minutes": 18.9,
+      "rooms": [
+        "balcony"
+      ]
+    },
+    "reading": {
+      "weights": {
+        "morning": 0.093,
+        "day": 0.087,
+        "evening": 0.055,
+        "night": 0.031
+      },
+      "minutes": 41.4,
+      "rooms": [
+        "living_room",
+        "study_room"
+      ]
+    },
+    "rest": {
+      "weights": {
+        "morning": 0.062,
+        "day": 0.067,
+        "evening": 0.106,
+        "night": 0.076
+      },
+      "minutes": 35.3,
+      "rooms": [
+        "bedroom",
+        "living_room"
+      ]
+    },
+    "snack": {
+      "weights": {
+        "morning": 0.09,
+        "day": 0.082,
+        "evening": 0.067,
+        "night": 0.062
+      },
+      "minutes": 6.4,
+      "rooms": [
+        "kitchen",
+        "dining_room"
+      ]
+    },
+    "tidying": {
+      "weights": {
+        "morning": 0.055,
+        "day": 0.047,
+        "evening": 0.06,
+        "night": 0.0
+      },
+      "minutes": 17.8,
+      "rooms": [
+        "bedroom",
+        "living_room"
+      ]
+    },
+    "toilet": {
+      "weights": {
+        "morning": 0.186,
+        "day": 0.162,
+        "evening": 0.14,
+        "night": 0.101
+      },
+      "minutes": 7.7,
+      "rooms": [
+        "bathroom"
+      ]
+    },
+    "tv": {
+      "weights": {
+        "morning": 0.25,
+        "day": 0.259,
+        "evening": 0.446,
+        "night": 0.095
+      },
+      "minutes": 64.3,
+      "rooms": [
+        "living_room"
+      ]
+    },
+    "workout": {
+      "weights": {
+        "morning": 0.037,
+        "day": 0.022,
+        "evening": 0.0,
+        "night": 0.0
+      },
+      "minutes": 20.4,
+      "rooms": [
+        "living_room"
+      ],
+      "kinds": {
+        "Stretching": 1
+      }
+    }
+  },
+  "idleActivityPerson": {
+    "seed": 903,
+    "ranges": {
+      "toilet": {
+        "weights": {
+          "morning": {
+            "min": 0.15,
+            "max": 0.25
+          },
+          "day": {
+            "min": 0.1,
+            "max": 0.2
+          },
+          "evening": {
+            "min": 0.1,
+            "max": 0.2
+          },
+          "night": {
+            "min": 0.1,
+            "max": 0.2
+          }
+        },
+        "minutes": {
+          "min": 3,
+          "max": 8
+        },
+        "rooms": [
+          "bathroom"
+        ]
+      },
+      "snack": {
+        "weights": {
+          "morning": {
+            "min": 0.05,
+            "max": 0.1
+          },
+          "day": {
+            "min": 0.05,
+            "max": 0.15
+          },
+          "evening": {
+            "min": 0.05,
+            "max": 0.15
+          },
+          "night": {
+            "min": 0.05,
+            "max": 0.1
+          }
+        },
+        "minutes": {
+          "min": 5,
+          "max": 15
+        },
+        "rooms": [
+          "kitchen",
+          "dining_room"
+        ]
+      },
+      "tidying": {
+        "weights": {
+          "morning": {
+            "min": 0.02,
+            "max": 0.06
+          },
+          "day": {
+            "min": 0.03,
+            "max": 0.08
+          },
+          "evening": {
+            "min": 0.02,
+            "max": 0.06
+          },
+          "night": {
+            "min": 0,
+            "max": 0
+          }
+        },
+        "minutes": {
+          "min": 10,
+          "max": 25
+        },
+        "rooms": [
+          "bedroom",
+          "living_room"
+        ]
+      },
+      "rest": {
+        "weights": {
+          "morning": {
+            "min": 0.05,
+            "max": 0.15
+          },
+          "day": {
+            "min": 0.05,
+            "max": 0.15
+          },
+          "evening": {
+            "min": 0.05,
+            "max": 0.15
+          },
+          "night": {
+            "min": 0.05,
+            "max": 0.1
+          }
+        },
+        "minutes": {
+          "min": 15,
+          "max": 40
+        },
+        "rooms": [
+          "bedroom",
+          "living_room"
+        ]
+      },
+      "folding": {
+        "weights": {
+          "morning": {
+            "min": 0,
+            "max": 0
+          },
+          "day": {
+            "min": 0.02,
+            "max": 0.05
+          },
+          "evening": {
+            "min": 0.02,
+            "max": 0.05
+          },
+          "night": {
+            "min": 0,
+            "max": 0
+          }
+        },
+        "minutes": {
+          "min": 10,
+          "max": 20
+        },
+        "rooms": [
+          "bedroom",
+          "living_room"
+        ]
+      },
+      "tv": {
+        "weights": {
+          "morning": {
+            "min": 0.15,
+            "max": 0.25
+          },
+          "day": {
+            "min": 0.25,
+            "max": 0.4
+          },
+          "evening": {
+            "min": 0.3,
+            "max": 0.45
+          },
+          "night": {
+            "min": 0.05,
+            "max": 0.1
+          }
+        },
+        "minutes": {
+          "min": 60,
+          "max": 120
+        },
+        "rooms": [
+          "living_room"
+        ]
+      },
+      "reading": {
+        "weights": {
+          "morning": {
+            "min": 0.05,
+            "max": 0.1
+          },
+          "day": {
+            "min": 0.05,
+            "max": 0.1
+          },
+          "evening": {
+            "min": 0.03,
+            "max": 0.06
+          },
+          "night": {
+            "min": 0.02,
+            "max": 0.05
+          }
+        },
+        "minutes": {
+          "min": 20,
+          "max": 50
+        },
+        "rooms": [
+          "living_room",
+          "study_room"
+        ]
+      },
+      "plants": {
+        "weights": {
+          "morning": {
+            "min": 0.04,
+            "max": 0.08
+          },
+          "day": {
+            "min": 0.04,
+            "max": 0.08
+          },
+          "evening": {
+            "min": 0,
+            "max": 0
+          },
+          "night": {
+            "min": 0,
+            "max": 0
+          }
+        },
+        "minutes": {
+          "min": 10,
+          "max": 25
+        },
+        "rooms": [
+          "balcony"
+        ]
+      },
+      "nap": {
+        "weights": {
+          "morning": {
+            "min": 0,
+            "max": 0
+          },
+          "day": {
+            "min": 0.08,
+            "max": 0.15
+          },
+          "evening": {
+            "min": 0.02,
+            "max": 0.05
+          },
+          "night": {
+            "min": 0,
+            "max": 0
+          }
+        },
+        "minutes": {
+          "min": 30,
+          "max": 75
+        },
+        "rooms": [
+          "living_room",
+          "bedroom"
+        ]
+      },
+      "call": {
+        "weights": {
+          "morning": {
+            "min": 0.02,
+            "max": 0.04
+          },
+          "day": {
+            "min": 0.03,
+            "max": 0.06
+          },
+          "evening": {
+            "min": 0.03,
+            "max": 0.06
+          },
+          "night": {
+            "min": 0,
+            "max": 0
+          }
+        },
+        "minutes": {
+          "min": 10,
+          "max": 30
+        },
+        "rooms": [
+          "living_room"
+        ]
+      },
+      "dishes": {
+        "weights": {
+          "morning": {
+            "min": 0.03,
+            "max": 0.06
+          },
+          "day": {
+            "min": 0.04,
+            "max": 0.08
+          },
+          "evening": {
+            "min": 0.04,
+            "max": 0.08
+          },
+          "night": {
+            "min": 0,
+            "max": 0
+          }
+        },
+        "minutes": {
+          "min": 10,
+          "max": 20
+        },
+        "rooms": [
+          "kitchen"
+        ],
+        "dishwasherShare": {
+          "min": 0,
+          "max": 0
+        }
+      },
+      "cleaning": {
+        "weights": {
+          "morning": {
+            "min": 0.03,
+            "max": 0.06
+          },
+          "day": {
+            "min": 0.03,
+            "max": 0.06
+          },
+          "evening": {
+            "min": 0,
+            "max": 0
+          },
+          "night": {
+            "min": 0,
+            "max": 0
+          }
+        },
+        "minutes": {
+          "min": 20,
+          "max": 45
+        },
+        "rooms": [
+          "living_room",
+          "bedroom",
+          "kitchen",
+          "dining_room"
+        ],
+        "robotShare": {
+          "min": 0,
+          "max": 0
+        }
+      },
+      "workout": {
+        "weights": {
+          "morning": {
+            "min": 0.03,
+            "max": 0.06
+          },
+          "day": {
+            "min": 0.01,
+            "max": 0.03
+          },
+          "evening": {
+            "min": 0,
+            "max": 0
+          },
+          "night": {
+            "min": 0,
+            "max": 0
+          }
+        },
+        "minutes": {
+          "min": 10,
+          "max": 25
+        },
+        "rooms": [
+          "living_room"
+        ],
+        "kinds": {
+          "Stretching": 1
+        }
+      },
+      "music": {
+        "weights": {
+          "morning": {
+            "min": 0.02,
+            "max": 0.05
+          },
+          "day": {
+            "min": 0.02,
+            "max": 0.05
+          },
+          "evening": {
+            "min": 0,
+            "max": 0
+          },
+          "night": {
+            "min": 0,
+            "max": 0
+          }
+        },
+        "minutes": {
+          "min": 20,
+          "max": 60
+        },
+        "rooms": [
+          "living_room",
+          "kitchen"
+        ]
       }
     },
     "source": "ranges chosen by the LLM for this persona (no data found)"

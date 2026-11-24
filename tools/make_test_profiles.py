@@ -195,6 +195,11 @@ tv = copy.deepcopy(R["r_evening_tv"])  # a second TV block in the afternoon
 tv["id"], tv["trigger"]["window"] = "r_afternoon_tv", {"from": "14:30", "to": "16:00"}
 retiree["behaviours"].append(tv)
 
+import sys
+sys.path.insert(0, HERE)
+from idle_ranges import IDLE
+for p in (office, remote, retiree):
+    p["idleActivityRanges"] = IDLE[p["personaId"]]
 for p in (office, remote, retiree):
     out = os.path.join(ROOT, "profiles", p["personaId"] + ".json")
     json.dump(p, open(out, "w", encoding="utf-8"), ensure_ascii=False, indent=2)

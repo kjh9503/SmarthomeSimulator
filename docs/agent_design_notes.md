@@ -498,6 +498,21 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
   -> 3 h; stays over 1 h laundry 56 -> 1, balcony 25 -> 0; longest balcony 8.7 -> 0.1 h, laundry 9.9 -> 1.7 h (phone
   use there before the fix: 1 h); fell asleep: room1 362 / living 2 / laundry 1 -> room1 352 / living 13 (sofa); order
   checks M1-M9 and P1 all 0; left: app / screen order (F3, F4) and steps in the first minute of an hour (M10).
+- Idle-time activities (agreed 2026-11-24). Layer A only chose rooms, so between rules nothing happened in the log
+  for hours (four profiles: gaps of 4 h and more with no device action while home and awake 62 / 82 / 192 / 189 a
+  year). Now the engine has a pool of 18 activities from the time-use survey's activity classes (Statistics Korea
+  2009 middle classes, Kim et al. 2013 appendix 2-3): tv, reading, study, snack, toilet, dishes, cleaning, music,
+  video, game, shopping, call, workout, nap, plants, folding, tidying, rest, each with rooms and device / phone
+  actions (agent.py IDLE_POOL). The LLM writes `idleActivityRanges` for the ones the persona does (weights per band,
+  median minutes, rooms, apps / kinds / dishwasherShare / robotShare); pipeline/sample_idle_person.py draws
+  `idleActivityHabits` (no data). One activity at a time, picked by band weight, the one just done x 0.3 [assume]; a
+  rule or habit moving the person ends it with its end actions. New extra apps (Netflix, Brawl Stars, KB Star
+  Banking) and home workouts (Health Connect EXERCISE_TYPE_YOGA 83, STRENGTH_TRAINING 70, STRETCHING 71). Three TEST
+  profiles (tools/make_test_profiles.py: office worker 2room-A, remote worker 3room-B, retiree 4room-B; no patterns).
+  Check [ours, one year each, layer A only -> activities; 063 / office / remote / retiree]: gaps >= 4 h 62 / 82 / 192
+  / 189 -> 13 / 8 / 70 / 2; awake living-room stays >= 4 h 23 / 46 / 52 / 107 -> 3 / 32 / 7 / 34; order checks
+  M1-M9 still 0. Left: a lognormal tail makes some long goes (office TV 5.3 h on 11-04); the office persona does
+  most things in the living room; the remote worker's study room is the work routine.
 - Python port equals the JS simulator: outdoor values within 1e-12, physics within 1e-15 (`tests/test_port.py`).
 - 2026 weather vs climate normals [ours]: monthly max/min temperature within 0.9 C, PM within 1.2 ug/m3, 86 wet days
   vs 79.3, 1,509 mm vs 1,418 mm.

@@ -161,6 +161,20 @@ before they may move to another; `errandMinutes`: median minutes left in any oth
 entryway) after an errand; `sofaSleepShare`: share of bedtimes that start in the living room and end asleep on the sofa.
 A stove on keeps them in the kitchen and a TV on in its room. No data: the LLM's choice; say so in notes.
 
+### Idle-time activities (what the person does at home between rules)
+
+Between rules and habits the engine runs one activity at a time from a fixed pool, picked by weight for the time
+band, the one just done less likely: tv, reading, study, snack, toilet, dishes, cleaning, music, video, game,
+shopping, call, workout, nap, plants, folding, tidying, rest (from the time-use survey's activity classes). Each has
+its rooms and device / phone actions (TV on/off, lamp on/off, room light for short tasks in the dark, dishwasher run,
+robot vacuum start, music play/pause, an app open/closed, a call, a workout record; plants, folding, tidying and
+rest only move the person). Write `idleActivityRanges` from the persona with only the activities they do: per
+activity `weights` per band (morning, day, evening, night; relative within the band), `minutes` (median length of
+one go) and `rooms` (role names from the pool's rooms); `apps` for video / game / shopping, `kinds` for workout
+(Yoga, StrengthTraining, Stretching), `dishwasherShare` / `robotShare` (0 when they do not own one). Every person
+goes to the toilet and has snacks. No data on how people switch: say so in notes. With idleActivityRanges the room
+weights of homeBaseRanges are not used (errandMinutes and sofaSleepShare still are).
+
 ### Window sensors
 
 Only the entrance door has an open/close sensor in every flat. A window sensor is something the person buys and fits
@@ -356,7 +370,7 @@ evening at home, ...).
 ### Output
 
 One JSON object valid against SCHEMA: personaId, houseType, variant, roomRoles, simulation, start,
-behaviours (the PATTERNS first, unchanged, then the routines), cookingMinutes, windowSensors, homeBaseRanges, notes.
+behaviours (the PATTERNS first, unchanged, then the routines), cookingMinutes, windowSensors, homeBaseRanges, idleActivityRanges, notes.
 
 SCHEMA:
 {{SCHEMA}}
