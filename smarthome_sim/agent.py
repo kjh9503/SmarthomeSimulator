@@ -2261,6 +2261,7 @@ class AgentRunner:
             self.cooling_tick(t)
             self.window_tick(t)
             self.home_base_tick(t)
+            self.run_loose_chains()  # app tasks started this minute (checks, habits) close in it, not a minute late
             self.maybe_glance(t)
             self.sim.clock.set_to(t)
             if t % (6 * 3600000) == 0:
