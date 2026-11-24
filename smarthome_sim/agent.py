@@ -231,6 +231,7 @@ class AgentRunner:
         self.gt_ctx = None  # the ground-truth line a person revert outside its rule belongs to
         self.happenings, self.recent_phone, self.recent_weather, self.action_history = [], [], [], []
         self.scheduled, self.tasks = [], []
+        self.loose_chains = []  # the rest (closing the app) of app tasks started outside a rule; run_loose_chains
         self.minute_ms, self.sec = self.T0, 0
         self.stats, self.cook_times, self.left_overnight = {}, [], []
         self.check_stats = {k: dict(checked=0, turnedOff=0, leftOn=0) for k in ("bedtime", "leaving", "morning")}
@@ -1625,20 +1626,39 @@ class AgentRunner:
                     self.gt_step(None, p, r["result"])
             elif kind == "close" or (kind == "closeIf" and self.S["foreground"] == p):
                 ph.close_app()
+            elif kind == "closeIf" and final and self.S["screenOn"] and not self.S["foreground"]:
+                ph.end_use(c["at"])  # the app went back earlier (another app, by hand): the use ends now that the chain does
             c["i"] += 1
             if c["i"] < len(ev):
                 c["at"] += int(ev[c["i"]][0])
         return last
 
     def run_events_now(self, events):
-        """an app task outside a running rule (off checks, reverts): its events run now, one after another"""
-        self.phone.chains += 1
-        c = dict(events=events, i=0, at=self.now() + int(events[0][0]))
+        """an app task outside a running rule (off checks, reverts, habits): open the app and do the task now (the
+        caller needs its result); the person's next action comes after it. Closing the app comes at its own time, run
+        by the minute loop (run_loose_chains) - not written ahead with a later time while the person goes on with
+        the phone (agreed 2026-11-24: one app in front at a time, none after the screen is off)"""
+        k = next((i for i, e in enumerate(events) if e[1] == "do"), len(events) - 1)
+        self.phone.chains += 2 if k + 1 < len(events) else 1  # one is released at the do, one when the app is closed
+        c = dict(events=events[:k + 1], i=0, at=self.now() + int(events[0][0]))
         last = self.chain_events(c, float("inf"), None)
-        if last is not None and last < self.minute_ms + MIN_MS:
-            self.sec = max(self.sec, min(59, (last - self.minute_ms) // 1000))
+        if last is not None:
+            self.sec = max(self.sec, (last - self.minute_ms) // 1000)  # past :59 it runs on into the next minute
         self.sim.clock.set_to(self.minute_ms + self.sec * 1000)
+        if k + 1 < len(events):
+            self.loose_chains.append(dict(events=events[k + 1:], i=0, at=(last or self.now()) + int(events[k + 1][0])))
         return c.get("result") or dict(result="done")
+
+    def run_loose_chains(self):
+        """the rest of app tasks started outside a rule (closing the app) at their own seconds, this minute"""
+        end = self.minute_ms + MIN_MS
+        for c in list(self.loose_chains):
+            last = self.chain_events(c, end, None)
+            if last is not None:
+                self.sec = max(self.sec, (last - self.minute_ms) // 1000)
+            self.sim.clock.set_to(self.minute_ms + self.sec * 1000)
+            if c["i"] >= len(c["events"]):
+                self.loose_chains.remove(c)
 
     # ----- apps that a task needs: the person opens the app, does the task, closes the app -----
     def task_app(self, a):
@@ -2224,6 +2244,7 @@ class AgentRunner:
                 self.happenings.append(("weather", dict(frm=last_w, to=w, **{"from": last_w})))
                 last_w = w
             self.process_happenings()
+            self.run_loose_chains()
             self.run_scheduled(t)
             self.time_triggers(t)
             self.process_happenings()

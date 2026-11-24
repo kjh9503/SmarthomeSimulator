@@ -245,6 +245,7 @@ class Phone:
         self.rand = None              # the person's random source (set by the agent runner); None = always turn off by hand
         self.chains = 0               # app chains running (phone.useApps, app tasks): a closed app is not the end of the use
         self.acc = None
+        self.early_steps = {}  # steps walked in an hour whose per-minute sum (acc) step() has not started yet: {hour start: [steps, m, kcal]}
         self.last_step_t = None
         self.timeline = []
         self.timeline_t = []
@@ -327,6 +328,8 @@ class Phone:
             self.acc = None
         if not self.acc:
             self.acc = dict(start=mh, steps=0, m=0, kcal=0, hr=0, n=0, apps={})
+            for k, v in zip(("steps", "m", "kcal"), self.early_steps.pop(mh, (0, 0, 0))):
+                self.acc[k] += v
         b = BODY["ASLEEP" if s["asleep"] else s["activity"]]
         A = self.acc
         target = heart_target(s, t)
@@ -499,14 +502,20 @@ class Phone:
         return self.sim.set_presence(room)
 
     def add_steps(self, n):
+        """steps walked at the present second (moving between rooms) go to the hour of that second. step(t) sums the
+        minute before t, so its hour is that of t - 1 min; a walk is not a past minute, so no minute is taken off here.
+        Before 2026-11-24 a walk in the first minute of an hour went to the past hour, whose line was written: lost."""
         t = self.now()
-        mh = (t - MIN_MS) // 3600000 * 3600000
-        if not self.acc:
-            self.acc = dict(start=mh, steps=0, m=0, kcal=0, hr=0, n=0, apps={})
+        h = t // 3600000 * 3600000
         w = BODY["WALKING"]
-        self.acc["steps"] += n
-        self.acc["m"] += n * w["m"] / w["steps"]
-        self.acc["kcal"] += n * w["kcal"] / w["steps"]
+        add = (n, n * w["m"] / w["steps"], n * w["kcal"] / w["steps"])
+        if self.acc and self.acc["start"] == h:
+            for k, v in zip(("steps", "m", "kcal"), add):
+                self.acc[k] += v
+        else:  # step() has not started this hour's sum yet: kept until it does
+            e = self.early_steps.setdefault(h, [0, 0, 0])
+            for i, v in enumerate(add):
+                e[i] += v
 
     def net(self, state, ssid, t=None):
         t = self.now() if t is None else t
