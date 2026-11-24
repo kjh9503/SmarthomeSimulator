@@ -1706,6 +1706,14 @@ class AgentRunner:
         d = TASK_SECONDS[kind]
         dwell = max(d["min"], min(600, d["median"] * math.exp(d["sigma"] * self.gauss())))
         delay = min(dwell - 1, 2 + 3 * self.rnd.random()) if kind == "tap" else max(1, dwell - (1 + 2 * self.rnd.random()))
+        pending = [c for c in self.loose_chains if any(e[1] in ("close", "closeIf") and e[2] == pkg for e in c["events"][c["i"]:])]
+        if S["foreground"] == pkg and pending:
+            # still in the app from a check or habit whose close is due later: the person stays in it for this task
+            # and closes it after this one (else the close, run first in time order, leaves the task without the app)
+            for c in pending:
+                self.loose_chains.remove(c)
+                self.phone.chains -= 1
+            return [[0, "open", pkg], [int(delay * 1000), "do", a], [int((dwell - delay) * 1000), "closeIf", pkg]]
         if S["foreground"] == pkg:  # already in front: the task only (whoever opened the app closes it)
             return [[int(delay * 1000), "do", a]]
         return [[0, "open", pkg], [int(delay * 1000), "do", a], [int((dwell - delay) * 1000), "closeIf", pkg]]
