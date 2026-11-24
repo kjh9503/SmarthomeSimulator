@@ -231,7 +231,8 @@ class AgentRunner:
         self.dry_h = profile.get("dryingHabits")  # None: DRY_DEFAULT
         self.hb = profile.get("homeBaseHabits")  # None: no layer A (the person stays where the last action left them)
         self.hb_room, self.hb_since, self.hb_limit = None, 0, 0
-        self.hb_stats = dict(returns=0, moves=0, held=0, sofaSleep=0, backToTaskRoom=0, walkedToBed=0)
+        self.hb_stats = dict(returns=0, moves=0, held=0, sofaSleep=0, backToTaskRoom=0, walkedToBed=0, draws=0, drawsBase=0,
+                             drawsErrand=0, drawsSameRoom=0)
         self.dry_window = set()  # living room windows opened for drying
         self.outer_why = set()  # why the balcony's outer window is open: living / dry
         self.passing = False  # the sliding door is opened or closed only to walk through (no pairing)
@@ -1086,6 +1087,10 @@ class AgentRunner:
                 to = r
                 break
         to = to or next(iter(weights))
+        self.hb_stats["draws"] += 1
+        self.hb_stats["drawsBase" if base else "drawsErrand"] += 1
+        if to == room:
+            self.hb_stats["drawsSameRoom"] += 1
         self.hb_room = None  # draw a new stay where they end up (also when they stay)
         if to != room:
             self.go_to(to)
