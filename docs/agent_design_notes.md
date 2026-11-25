@@ -534,6 +534,19 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
   glass (glassM2); elsewhere no room, no devices, no way to it from the living room. vocabulary.json: balcony out of the
   2room rooms, a note on 3room-C. check_profile: an error when such a plan's rules use the balcony, a warning when its
   room weights or activities name it.
+- One-minute step with a window open (2026-11-25). The room air was one explicit step a minute. With a window open the
+  air's time constant is under a minute (office living room 53 s), so the step overshot: 10 min airing at 0.6 C outdoors
+  gave 6.0 C after 1 min where the converged answer (600 steps a minute) is 16.3 C. Now the air node is solved exactly over
+  the step (surface node eliminated, mass and gains held), the mass uses the step's mean air temperature, air swaps use
+  1 - exp(-k dt) (was k dt), and the minute is split into 6 while any window is open. Same airing: 15.7 / 12.4 / 11.0 C
+  after 1 / 3 / 10 min vs converged 16.3 / 12.8 / 11.3. Other parts checked by time constant (mass 2.6 h, floor layer
+  74 min, air conditioner already in 10 s steps, room-to-room swaps already exact): no change needed. The open-window
+  cap (0.8 of the room air a minute) is kept. Check [ours, 1 year each, before -> after; 10-min samples]: office (no
+  balcony) living room with the window open at under 5 C outdoors, median 7.2 -> 12.2 C (10.1 K above outdoors); the
+  flats with a balcony (window onto the balcony) 20.2 -> 20.2 / 20.4 -> 20.5 / 21.2 -> 21.2 C; lowest room temperature
+  of the year 063 -0.3 -> 3.8 C, retiree 0.3 -> 4.0 C. January humidity, cooling humidity, August temperatures within
+  0.5 %p / 1.9 %p / 0.5 K of before. Order checks all 0. Run time: office 30 days 15.9 -> 17.1 s.
+  Still faster than measured: the temperature difference halves in about 3 min vs about 7 min (Fitzner & Finke 2012).
 - Python port equals the JS simulator: outdoor values within 1e-12, physics within 1e-15 (`tests/test_port.py`).
 - 2026 weather vs climate normals [ours]: monthly max/min temperature within 0.9 C, PM within 1.2 ug/m3, 86 wet days
   vs 79.3, 1,509 mm vs 1,418 mm.
