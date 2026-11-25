@@ -396,6 +396,9 @@ class House:
         return self.by_room.get(r, {}).get(type)
 
 
+WINDOW_SUBSTEPS = 6  # physics steps a minute while any window is open (Environment.step)
+
+
 class Environment:
     def __init__(self, house, ms):
         self.house = house
@@ -460,6 +463,16 @@ class Environment:
             ea[k], eb[k] = m + d * vb / (va + vb), m - d * va / (va + vb)
 
     def step(self, ms, dt):
+        """advance the physics by dt minutes. With a window open the air of the rooms changes within seconds and the rooms
+        swap air quickly, so the minute is split into WINDOW_SUBSTEPS steps (2026-11-25: one step a minute gave 9.3 C
+        after 10 min of airing in the office living room, 6 steps 11.0 C, 600 steps 11.3 C)"""
+        H = self.house
+        n = WINDOW_SUBSTEPS if any(d.type == "window_contact" and d.state.get("contactSensor.contact") == "open"
+                                   for d in H.devices.values()) else 1
+        for i in range(n):
+            self._step(ms, dt / n)
+
+    def _step(self, ms, dt):
         out = outdoor_at(ms)
         H = self.house
         for r in H.room_ids:
@@ -520,7 +533,7 @@ class Environment:
             k = k_side + k_out
             if e.get("mass") is None:
                 e["mass"] = e["temperature"]
-            # 5R1C heat balance, explicit in one-minute steps (air time constant about 3 min)
+            # 5R1C heat balance in one-minute steps: the air node exact over the step (below), the mass node explicit (hours)
             a_win = (p.get("glassM2") or E["windowShare"][p["windowSize"]] * af) if p["exteriorWalls"] else 0.0
             a_wall = max(0.0, p["exteriorWalls"] * math.sqrt(af) * PHYS["ceilingM"] - a_win)
             h_win, h_op = E["uWindow"] * a_win, E["uWall"] * a_wall
@@ -573,19 +586,33 @@ class Environment:
             phi_st = (1 - a_m / a_tot - h_win / (E["hMs"] * a_tot)) * (0.5 * phi_int + phi_sol) + phi_floor_up
             t_out, ta, tm = out["temperature"], e["temperature"], e["mass"]
             t_side = side["temperature"]
-            ts = (h_is * ta + h_ms * tm + h_win * t_side + phi_st) / (h_is + h_ms + h_win)
             sec = dt * 60
             h_side, h_outv = 1206 * vol * k_side / 60, 1206 * vol * k_out / 60
-            e["temperature"] = ta + (h_side * (t_side - ta) + h_outv * (t_out - ta) + h_is * (ts - ta) + phi_ia) * sec / c_air
+            # air node over the step (2026-11-25): exact for the step, with the mass, the outdoor / side air and the gains
+            # held. Before, one explicit Euler step a minute: with a window open the air's time constant is under a minute
+            # (office living room 53 s), so the air overshot (10 min airing at 0.6 C outdoors: 6.0 C after 1 min vs 16.2 C
+            # stepped 600 times a minute). With the surface node ts = (h_is ta + B) / D eliminated, the air follows
+            # c_air dta/dt = b - a ta.
+            d_s = h_is + h_ms + h_win
+            b_s = h_ms * tm + h_win * t_side + phi_st
+            a_air = h_side + h_outv + h_is * (h_ms + h_win) / d_s
+            t_inf = (h_side * t_side + h_outv * t_out + h_is * b_s / d_s + phi_ia) / a_air
+            x = a_air * sec / c_air
+            decay = math.exp(-x)
+            e["temperature"] = t_inf + (ta - t_inf) * decay
+            ta_mean = t_inf + (ta - t_inf) * ((1 - decay) / x if x > 1e-9 else 1.0)  # mean air temperature over the step
+            ts = (h_is * ta_mean + b_s) / d_s
             # the downward share of the floor heating leaves to the flat below; the slabs exchange heat with heated neighbours
             phi_nb = E["uPartyFloor"] * 2 * af * (E["neighbourC"] - tm) if out["meanTemperature"] < E["neighbourHeatingBelowMeanC"] and r != "balcony" else 0.0
             e["mass"] = tm + (h_ms * (ts - tm) + h_em * (t_side - tm) + phi_m + phi_nb) * sec / c_m
             if e.get("vapor") is None:
                 e["vapor"] = vapor_from_rh(e["humidity"], e["temperature"])
-            e["vapor"] += (side["vapor"] - e["vapor"]) * min(1, k_side * dt)
-            e["vapor"] += (vapor_from_rh(out["humidity"], out["temperature"]) - e["vapor"]) * min(1, k_out * dt)
-            e["pm25"] += (side["pm25"] - e["pm25"]) * (min(1.0, k_open * dt) if is_open else PHYS["pmInfiltration"] * wall_share * dt)
-            e["co2"] += (side["co2"] - e["co2"]) * (min(1.0, k_open * dt) if is_open else 0.003 * dt)
+            # air swapped over the step: 1 - exp(-k dt), exact for the step (2026-11-25; before k dt capped at 1, which
+            # swapped 0.8 of the air in a minute at k = 0.8 / min where the exact share is 0.55)
+            e["vapor"] += (side["vapor"] - e["vapor"]) * (1 - math.exp(-k_side * dt))
+            e["vapor"] += (vapor_from_rh(out["humidity"], out["temperature"]) - e["vapor"]) * (1 - math.exp(-k_out * dt))
+            e["pm25"] += (side["pm25"] - e["pm25"]) * ((1 - math.exp(-k_open * dt)) if is_open else PHYS["pmInfiltration"] * wall_share * dt)
+            e["co2"] += (side["co2"] - e["co2"]) * ((1 - math.exp(-k_open * dt)) if is_open else 0.003 * dt)
             if k_vent:
                 e["pm25"] += (out["pm25"] * (1 - V["filter"]) - e["pm25"]) * k_vent * dt
                 e["co2"] += (out["co2"] - e["co2"]) * k_vent * dt
