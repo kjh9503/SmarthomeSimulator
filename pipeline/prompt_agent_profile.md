@@ -180,7 +180,9 @@ weights of homeBaseRanges are not used (errandMinutes and sofaSleepShare still a
 Only the entrance door has an open/close sensor in every flat. A window sensor is something the person buys and fits
 (a home security service offers it as an add-on, e.g. ADT Caps "캡스홈"; alarm kits come with 1, 4 or 8). Choose
 `windowSensors.rooms` from the persona: often none, sometimes a few (living room, a bedroom), rarely every window;
-`balcony` means the balcony's outer window (flats of 84 m2 and more only). Windows without a sensor still open and close
+`balcony` means the balcony's outer window (flats of 84 m2 and more only). Only 3room-A/B and 4room-A/B/C have a
+balcony; 2room-A/B/C and 3room-C are expanded and have no balcony at all (no room, devices or way to it): no rule,
+room weight or activity room may use it there. Windows without a sensor still open and close
 (the physics is the same), they only write no line. A PATTERN may use a window_contact only of a room in this list.
 Give one sentence in `windowSensors.reason`. No data on how common window sensors are: say so in notes.
 

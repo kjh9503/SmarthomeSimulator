@@ -428,7 +428,7 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
   [assume], outer glass 2.2 m high [assume], clear double glazing U 2.4 (integrated 2.407, Yoon, An & Kim 2007), SHGC 0.7,
   0.7 of the sun passing on into the living room, 1.0 air change an hour through its frames [all assume], no heating. The
   living room's windows face the balcony instead of outdoors; the balcony door exchanges air with the living room. Smaller
-  plans keep the old balcony (outdoor values copied). Racks stand on the balcony, else in the living room. The person checks
+  plans keep the old balcony (outdoor values copied) -> fixed 2026-11-25, see "No balcony in the small plans". Racks stand on the balcony, else in the living room. The person checks
   a rack 6 h after hanging and every 4 h after that when home and awake (the check writes no line); dry = water left at
   most 5% [assume: stands for touching the clothes]. Not dry: outdoor air between `dryingHabits.airMinC` and `airMaxC`
   and no rain -> the window of the rack's room is opened (balcony outer window: no sensor, no line; living room: logged);
@@ -526,6 +526,14 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
 - Steps in the first minute of an hour (agreed 2026-11-24). A walk at hh:00-hh:01 went into the past hour's sum (the
   minute step uses t - 1 min) after that hour's HOURLY line was written, and the sum was dropped (no samples): steps lost,
   an hour with moves and 0 steps. Now a walk counts in its own hour. Check [measured, 1 year each]: M10 9/18/18/29 -> 0.
+- No balcony in the small plans (agreed 2026-11-25). The four plans under 84 m2 (2room-A/B/C, 3room-C) are expanded and
+  have no balcony space (agreed 2026-11-20: "all expanded"). The room list came from the house type alone, so they still
+  had a 'balcony' nobody could reach, whose sensors (temperature, humidity, air quality, noise, occupancy) and light wrote
+  the outdoor values (office 2room-A: 21,356 lines a year, never occupied). Writing "smaller plans keep the old balcony" on
+  2026-11-22 I did not check it against the 11-20 agreement. Now a balcony exists only where room_profiles.json gives it
+  glass (glassM2); elsewhere no room, no devices, no way to it from the living room. vocabulary.json: balcony out of the
+  2room rooms, a note on 3room-C. check_profile: an error when such a plan's rules use the balcony, a warning when its
+  room weights or activities name it.
 - Python port equals the JS simulator: outdoor values within 1e-12, physics within 1e-15 (`tests/test_port.py`).
 - 2026 weather vs climate normals [ours]: monthly max/min temperature within 0.9 C, PM within 1.2 ug/m3, 86 wet days
   vs 79.3, 1,509 mm vs 1,418 mm.

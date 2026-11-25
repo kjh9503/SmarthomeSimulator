@@ -1,5 +1,5 @@
 {
- "_about": "Names the structured patterns may use. Generated from the simulator (smarthome-sim.html). Do not invent names outside this file except where a field says 'free text'.",
+ "_about": "Names the structured patterns may use. Edited by hand since 2026-11-25 (2room has no balcony; 3room-C note). Generated from the simulator (smarthome-sim.html). Do not invent names outside this file except where a field says 'free text'.",
  "houseTypes": {
   "2room": {
    "rooms": [
@@ -11,8 +11,7 @@
     "bathroom",
     "laundry",
     "closet",
-    "entryway",
-    "balcony"
+    "entryway"
    ],
    "variants": [
     "2room-A",
@@ -40,7 +39,8 @@
     "3room-A",
     "3room-B",
     "3room-C"
-   ]
+   ],
+   "note": "balcony: only 3room-A and 3room-B have one (84 m2, a real front balcony); 3room-C (74 m2) is expanded and has no balcony room, devices or way to it"
   },
   "4room": {
    "rooms": [

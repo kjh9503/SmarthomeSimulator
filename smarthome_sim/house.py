@@ -331,12 +331,15 @@ class House:
         self.variant = variant
         self.profile = ROOM_PROFILES[variant]
         self.type = self.profile["houseType"]
-        self.room_ids = [r for r in ALL_ROOMS if r not in HOUSE_EXCLUDE[self.type]]
+        # a balcony only where the plan has one (agreed 2026-11-25): the plans of 84 m2 and more have a real front balcony
+        # (room_profiles.json glassM2); the smaller ones (2room-A/B/C, 3room-C) are expanded, so there is no balcony space,
+        # no sensors or light on it and no way to it. Before, they kept an unreachable 'balcony' whose sensors wrote the
+        # outdoor values (office 2room-A: 21,356 lines a year).
+        has_balcony = bool(self.profile["rooms"].get("balcony", {}).get("glassM2"))
+        self.room_ids = [r for r in ALL_ROOMS if r not in HOUSE_EXCLUDE[self.type] and (r != "balcony" or has_balcony)]
         by_room = {r: [] for r in self.room_ids}
         for d in spec:
             for i, r in enumerate(d["rooms"]):
-                if d["device"] == "window_contact" and r == "balcony" and not self.profile["rooms"].get("balcony", {}).get("glassM2"):
-                    continue  # the balcony's outer window sensor: only flats with a real balcony (84 m2 and more)
                 if r in by_room and (d["device"], r) not in DEVICE_EXCLUDE[self.type]:
                     by_room[r].append(Device(d["deviceIds"][i], d["device"], r, d["capabilities"]))
         self.devices = {}
@@ -403,18 +406,14 @@ class Environment:
         self.hood = False  # the kitchen range hood running (set by the agent from hoodHabits; no device)
         self.shower = None  # (room, until ms): a shower running (agent action person.shower)
         self.racks = []  # laundry drying indoors: dict(room, start, gMin, leftG) (agent, after a wash not dried in the dryer)
-        self.real_balcony = bool(house.room_profile("balcony").get("glassM2")) and "balcony" in house.room_ids
+        self.real_balcony = "balcony" in house.room_ids  # only plans with a real balcony have one (House.room_ids)
         for r in house.room_ids:
-            self.rooms[r] = (dict(temperature=out["temperature"], humidity=out["humidity"], pm25=out["pm25"], co2=out["co2"],
-                                  illuminance=out["daylight"], noise=out["noise"]) if r == "balcony" and not self.real_balcony
-                             else dict(temperature=22, mass=22, humidity=45, pm25=15, co2=600, illuminance=0, noise=30))
+            self.rooms[r] = dict(temperature=22, mass=22, humidity=45, pm25=15, co2=600, illuminance=0, noise=30)
         self.settle(ms)
 
     def settle(self, ms):
         out = outdoor_at(ms)
         for r, e in self.rooms.items():
-            if r == "balcony" and not self.real_balcony:
-                continue
             t = free_indoor_temp(out, self.house.room_profile(r))
             vapor = min(sat_vapor(t), vapor_from_rh(out["humidity"], out["temperature"]))
             e.update(temperature=t, mass=t, vapor=vapor, humidity=rh_from_vapor(vapor, t), pm25=out["pm25"], co2=out["co2"])
@@ -465,7 +464,7 @@ class Environment:
         H = self.house
         for r in H.room_ids:
             e = self.rooms[r]
-            if (r != "balcony" or self.real_balcony) and e.get("vapor") is None:
+            if e.get("vapor") is None:
                 e["vapor"] = vapor_from_rh(e["humidity"], e["temperature"])
         self.exchange(dt)
         RB = self.real_balcony
@@ -484,10 +483,6 @@ class Environment:
 
             occ = is_("occupancy_sensor", "presenceSensor", "presence", "present")
             light_on = is_("light", "switch", "switch", "on")
-            if r == "balcony" and not RB:
-                e.update(temperature=out["temperature"], humidity=out["humidity"], pm25=out["pm25"], co2=out["co2"],
-                         illuminance=out["daylight"] + (200 if light_on else 0), noise=db_sum([out["noise"], 45] if occ else [out["noise"]]))
-                continue
             win_open = is_("window_contact", "contactSensor", "contact", "open")
             is_open = win_open
             # what the room's windows and frames face: outdoors, or the balcony for the living room of a flat with one

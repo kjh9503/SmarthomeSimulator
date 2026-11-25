@@ -79,8 +79,12 @@ def main():
     elif prof["variant"] not in vocab["houseTypes"][prof["houseType"]]["variants"]:
         out.append(("ERROR", "-", f"variant {prof['variant']} not in {vocab['houseTypes'][prof['houseType']]['variants']}"))
     REAL_BALCONY = {"3room-A", "3room-B", "4room-A", "4room-B", "4room-C"}  # room_profiles.json: balcony with glassM2
-    if prof.get("variant") not in REAL_BALCONY and "balcony.window_contact" in json.dumps(prof["behaviours"]):
-        out.append(("ERROR", "-", f"balcony.window_contact used but {prof.get('variant')} has no real balcony"))
+    if prof.get("variant") not in REAL_BALCONY and "balcony" in json.dumps(prof["behaviours"]):
+        # agreed 2026-11-25: plans under 84 m2 are expanded and have no balcony at all (no room, devices or way to it)
+        out.append(("ERROR", "-", f"the behaviours use the balcony but {prof.get('variant')} has none (only 3room-A/B, 4room-A/B/C)"))
+    for k in ("homeBaseRanges", "homeBaseHabits", "idleActivityRanges", "idleActivityHabits"):
+        if prof.get("variant") not in REAL_BALCONY and "balcony" in json.dumps(prof.get(k)):
+            out.append(("WARN", k, f"names the balcony, which {prof.get('variant')} does not have (the engine skips it)"))
     if prof["start"]["place"] not in vocab["places"]:
         out.append(("ERROR", "start", f"unknown place {prof['start']['place']}"))
     ids = [b["id"] for b in prof["behaviours"]]
