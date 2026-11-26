@@ -6,7 +6,7 @@ import random
 
 from .timeutil import DAY_MS, MIN_MS, iso_local, start_of_day, js_round
 from .weather import outdoor_at
-from .house import (House, SPEC, ROOM_PROFILES, DEFAULT_VARIANT, PHYS, SENSOR_ATTRS, round_to, vapor_from_rh, OP_STATE, CYCLE_MINUTES)
+from .house import (House, Neighbours, SPEC, ROOM_PROFILES, DEFAULT_VARIANT, PHYS, SENSOR_ATTRS, round_to, vapor_from_rh, OP_STATE, CYCLE_MINUTES)
 from .phone import Phone, PLACES
 
 DEFAULT_BACKGROUND_PER_DAY = 500
@@ -101,6 +101,7 @@ class Simulator:
         self.last_refusal = None
         self.phone = Phone(self)
         self.house = House(variant, spec, start_ms)
+        self.house.env.neighbours = Neighbours(seed)  # the flats above and below drift with this run's seed
         self.type = ROOM_PROFILES[variant]["houseType"]
         self.sync_router(True)
         devs = list(self.house.devices.values())

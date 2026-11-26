@@ -83,8 +83,8 @@ PHYS = dict(
     # ceiling light 10 W/m2 (ibid., bedroom), TV 100, oven 2000, dryer 300, washer 150, dishwasher 300. Stove: see stove=.
     # Neighbours (2026-11-05): the flat is a middle floor; its floor and ceiling slabs (each the room's floor area) pass heat to
     # the flats below and above at U 0.810 W/m2K (design standard, floor between storeys, notice 2025-738), into the mass node;
-    # side neighbours are left out (about 1% of the heat, Lee, Koo & Hong 2016). The neighbours are heated to 22 C while the
-    # outdoor daily mean is below 15 C [our assumption; Lee et al. 2016 used 20 and 24 C], otherwise no heat flows to them.
+    # side neighbours are left out (about 1% of the heat, Lee, Koo & Hong 2016). Their temperature: NEIGHBOUR (measured, all year;
+    # until 2026-11-26 22 C below a 15 C outdoor daily mean [our assumption], otherwise no heat flow).
     envelope=dict(uWall=0.170, uWindow=1.0, windowShare=dict(large=0.40, medium=0.25, small=0.15, none=0.0), shgc=0.5,
                   luxPerW=110, ach=3.51 / 20, hIs=3.45, aTotPerFloor=4.5, hMs=9.1, aMassPerFloor=3.0, cMassPerFloor=260000,
                   # floor heating (ondol, 2026-11-05): heat into the slab (mass node) at 52 W/m2 of floor for 40 C supply water and a
@@ -96,7 +96,7 @@ PHYS = dict(
                   # downward share 0.21 so that 40 C supply and a 22 C room give 52 W/m2 up and 10.8 down at a 26.7 C floor
                   # (Jang et al. 2007: wood 52.0 up, 10.8 down, mean surface 26.8 C). Downward heat goes to the flat below.
                   floor=dict(supplyC=40.0, bandK=0.5, cPerM2=80000, hUp=11.1, kPipe=4.72, downShare=10.8 / 52.0),
-                  uPartyFloor=0.810, neighbourC=22.0, neighbourHeatingBelowMeanC=15.0,
+                  uPartyFloor=0.810,
                   gains=dict(person=65, lightPerM2=10, tv=100, oven=2000, dryer=300, washer=150, dishwasher=300),
                   # stove (2026-11-21): one large burner at full flame while the stove is on [assume], 4.07 kW of gas
                   # (Rinnai RBR-S3000, city gas; seller's table); of a gas range's energy 30% heats the room air and 20%
@@ -398,6 +398,79 @@ class House:
 
 WINDOW_SUBSTEPS = 6  # physics steps a minute while any window is open (Environment.step)
 
+# The flats above and below (agreed 2026-11-26): their indoor temperature all year from measurement, drawn rather than
+# simulated. Yun et al. 2020 (IJERPH 17(19) 7334, table 3; 8 Seoul apartments, Mar 2016 - Mar 2017, hourly, all hours,
+# cooling on and off): winter (Dec-Feb) 20.0 +- 2.1 C, spring / autumn (Mar-May, Sep-Nov) 23.0 +- 2.5 C, summer (Jun-Aug)
+# 26.6 +- 2.0 C. Our assumptions: the seasonal mean follows a line through one point per season (mid-January, mid-April,
+# mid-July, mid-October), the points set so that each season's mean is the measured one; the SD runs linearly between the
+# same points; each flat (above, below) moves by its own day-to-day AR(1) z (correlation 0.7, hour by hour on a line between
+# days) and sits at mean + SD x tanh(0.5 z), so it stays within one SD of the seasonal mean (agreed: "move a little within
+# the deviation") [no data on how a flat's temperature drifts]. Before (2026-11-05 - 11-26): 22 C [our assumption] while the outdoor daily mean
+# was below 15 C, otherwise no heat flow, so a closed flat in summer kept all its heat (remote Aug living room 14 K above
+# outdoors).
+NEIGHBOUR = dict(seasons=(((12, 1, 2), 20.0, 2.1), ((3, 4, 5), 23.0, 2.5), ((6, 7, 8), 26.6, 2.0), ((9, 10, 11), 23.0, 2.5)),
+                 nodeDoy=(14.5, 104.5, 196.5, 287.5), rhoDay=0.7, zScale=0.5)
+
+
+def _neighbour_nodes():
+    """values at nodeDoy so that the piecewise-linear yearly curve has the measured mean in each season"""
+    import datetime as _d
+    doys = [(_d.date(2025, 1, 1) + _d.timedelta(i)) for i in range(365)]
+    X = NEIGHBOUR["nodeDoy"]
+
+    def curve(v, x):
+        for i in range(4):
+            a, b = X[i], X[(i + 1) % 4] + (365 if i == 3 else 0)
+            xx = x + 365 if x < X[0] else x
+            if a <= xx < b:
+                return v[i] + (v[(i + 1) % 4] - v[i]) * (xx - a) / (b - a)
+        return v[0]
+    S = NEIGHBOUR["seasons"]
+    v = [s[1] for s in S]
+    for _ in range(200):
+        means = [sum(curve(v, i + 0.5) for i, d in enumerate(doys) if d.month in s[0]) /
+                 sum(1 for d in doys if d.month in s[0]) for s in S]
+        v = [v[i] + S[i][1] - means[i] for i in range(4)]
+    return v, curve
+
+
+NEIGHBOUR_NODES, _neighbour_curve = _neighbour_nodes()
+
+
+class Neighbours:
+    """indoor temperature of the flats above and below (NEIGHBOUR): a seasonal curve plus a seeded day-to-day drift"""
+    ORIGIN = 20454  # day index (local) of 2026-01-01; the drift is drawn forward from it, so any start gives the same days
+
+    def __init__(self, seed=0):
+        import random
+        self.rng = random.Random(f"neighbours/{seed}")
+        r = NEIGHBOUR["rhoDay"]
+        self.k = (r, math.sqrt(1 - r * r))
+        self.z = [(self.rng.gauss(0, 1), self.rng.gauss(0, 1))]
+
+    def _z(self, day):
+        i = max(0, day - self.ORIGIN)
+        while len(self.z) <= i + 1:
+            r, s = self.k
+            a, b = self.z[-1]
+            self.z.append((r * a + s * self.rng.gauss(0, 1), r * b + s * self.rng.gauss(0, 1)))
+        return self.z[i], self.z[i + 1]
+
+    def temps(self, ms):
+        """(above, below) in C at ms"""
+        import datetime as _d
+        x = (ms + 9 * 3600000) / 86400000
+        day = int(x // 1)
+        f = x - day
+        date = _d.date(1970, 1, 1) + _d.timedelta(day)
+        doy = min(364.999, (date - _d.date(date.year, 1, 1)).days + f)
+        mean = _neighbour_curve(NEIGHBOUR_NODES, doy)
+        sd = _neighbour_curve([s[2] for s in NEIGHBOUR["seasons"]], doy)
+        (a0, b0), (a1, b1) = self._z(day)
+        g = NEIGHBOUR["zScale"]
+        return mean + sd * math.tanh(g * (a0 + (a1 - a0) * f)), mean + sd * math.tanh(g * (b0 + (b1 - b0) * f))
+
+
 
 class Environment:
     def __init__(self, house, ms):
@@ -410,6 +483,7 @@ class Environment:
         self.shower = None  # (room, until ms): a shower running (agent action person.shower)
         self.racks = []  # laundry drying indoors: dict(room, start, gMin, leftG) (agent, after a wash not dried in the dryer)
         self.real_balcony = "balcony" in house.room_ids  # only plans with a real balcony have one (House.room_ids)
+        self.neighbours = Neighbours(0)  # the flats above and below; the Simulator gives it its seed
         for r in house.room_ids:
             self.rooms[r] = dict(temperature=22, mass=22, humidity=45, pm25=15, co2=600, illuminance=0, noise=30)
         self.settle(ms)
@@ -480,6 +554,7 @@ class Environment:
             if e.get("vapor") is None:
                 e["vapor"] = vapor_from_rh(e["humidity"], e["temperature"])
         self.exchange(dt)
+        nb_above, nb_below = self.neighbours.temps(ms)
         RB = self.real_balcony
         if RB:  # the balcony's state at the start of this minute: what the living room's window and frames face
             bal0 = dict(self.rooms["balcony"])
@@ -602,8 +677,9 @@ class Environment:
             e["temperature"] = t_inf + (ta - t_inf) * decay
             ta_mean = t_inf + (ta - t_inf) * ((1 - decay) / x if x > 1e-9 else 1.0)  # mean air temperature over the step
             ts = (h_is * ta_mean + b_s) / d_s
-            # the downward share of the floor heating leaves to the flat below; the slabs exchange heat with heated neighbours
-            phi_nb = E["uPartyFloor"] * 2 * af * (E["neighbourC"] - tm) if out["meanTemperature"] < E["neighbourHeatingBelowMeanC"] and r != "balcony" else 0.0
+            # the downward share of the floor heating leaves to the flat below; the floor and ceiling slabs exchange heat with
+            # the flats below and above (NEIGHBOUR), all year
+            phi_nb = E["uPartyFloor"] * af * ((nb_above - tm) + (nb_below - tm)) if r != "balcony" else 0.0
             e["mass"] = tm + (h_ms * (ts - tm) + h_em * (t_side - tm) + phi_m + phi_nb) * sec / c_m
             if e.get("vapor") is None:
                 e["vapor"] = vapor_from_rh(e["humidity"], e["temperature"])
