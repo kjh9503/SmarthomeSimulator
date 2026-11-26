@@ -548,6 +548,9 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
   of the year 063 -0.3 -> 3.8 C, retiree 0.3 -> 4.0 C. January humidity, cooling humidity, August temperatures within
   0.5 %p / 1.9 %p / 0.5 K of before. Order checks all 0. Run time: office 30 days 15.9 -> 17.1 s.
   Still faster than measured: the temperature difference halves in about 3 min vs about 7 min (Fitzner & Finke 2012).
+  -> checked 2026-11-26: not like for like (our 14 m2 room with 2.8 m2 open vs their 180 m3 office with 6.3 m2). Our
+  physics on their room: CO2 halves in 4 min (3 measured), air change 15 -> 7 /h (10-14), temperature difference not
+  halved in 14 min (7 min measured). No change; see open_tasks 6b.
 - Neighbours above and below, all year from measurement (agreed 2026-11-26). Before (2026-11-05): 22 C [our assumption]
   while the outdoor daily mean was below 15 C, otherwise no heat flow at all (the old "same temperature as this flat"
   assumption left over, never decided for summer), so a closed flat kept all its summer heat. Now Yun et al. 2020 table 3

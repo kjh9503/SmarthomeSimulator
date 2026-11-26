@@ -54,8 +54,14 @@ Rewritten 2026-11-21: finished items removed (their record is in docs/agent_desi
    kg/day a person measured, Zemitis et al. 2016), ventilation unit use (063 always on). Open without measured data:
    hand dishwashing, floor mopping, plants (BS 5250 values only); re-evaporation from bathroom surfaces after a shower
    (the air's excess is deleted, 404-464 g/day; adding it all back is about +1-3 %p by interpolation, not run).
-6b. Open-window cooling faster than measured: temperature difference halves in about 3 min vs about 7 min (Fitzner &
-   Finke 2012). Next.
+6b. (checked 2026-11-26, not an error) Open-window cooling "faster than measured" compared a 14 m2 living room with a
+   window half open (2.8 m2, about 48 /h, at the 0.8 a minute cap) with Fitzner & Finke 2012's 180 m3 office (6.3 m2
+   open, 12.5 /h). Our physics on their room (80 m2, six 0.71 x 1.48 m sashes, 21 C flat, 6.9 C outdoors): CO2
+   difference halves in 4 min (measured about 3), air change 15 -> 7 /h falling as the room cools (measured 10-14 /h,
+   about constant), temperature difference 13.9 -> 8.1 K in 14 min, not halved (measured halved in about 7 min); the
+   formula gives about 18 /h at their 14 K. Open: how wide people open windows (we open half the glass every time;
+   habitual openings measured 0.8-3 /h: Beijing bedrooms over 3 cm, Liu et al. 2022; Finnish rooms, Kayo & Suzuki 2023;
+   Danish bedrooms at night, Fan et al. 2022).
 7. Device reservations (timers) for air conditioner, purifier, TV: not built, no SmartThings definition found; 7 items
    listed in the conversation of 2026-11-04.
 8. Wifi router `connectedDevices` is our own attribute name: to be marked in the docs (agreed, not done).
