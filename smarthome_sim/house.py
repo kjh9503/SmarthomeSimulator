@@ -166,12 +166,15 @@ CONNECTIONS["4room"] = CONNECTIONS["3room"] + [("room", "hallway", "room4")]
 
 
 # Air conditioning units (Korean home system air conditioning, Samsung WindFree 1Way, 2026-11-04):
-# rated cooling kW by place: rooms and the 4room kitchen 6-pyeong 2.3 kW (AJ023MB1PBC1, airflow 6.0 m3/min high);
+# rated cooling kW by place: rooms and the 4room kitchen 6-pyeong 2.3 kW;
 # living room 2room 8-pyeong 3.2 kW (AJ032MB1PBC1), 3room / 4room 18-pyeong 7.2 kW (AJ072MB1PBC1).
-# Airflow of the 3.2 / 7.2 kW units not found: taken in proportion to 2.3 kW (2.61 m3/min per kW) [our assumption].
-# Inverter range min / max = 0.79 / 3.70 of 2.30 kW (single 1Way AC023CN1PBH1), used for every size [our assumption].
+# The 2.3 kW unit from one model (2026-11-26; before, the airflow 6.0 / 5.0 / 4.0 came from AJ023MB1PBC1 and the range from
+# AC023CN1PBH1, so the maximum 3.7 kW went through 6.0 m3/min and the air left at 5-9 C): Wind-Free 1Way AC023CN1PBH1,
+# cooling min / rated / max 0.79 / 2.30 / 3.70 kW, sensible 1.8 kW, airflow high / mid / low 7.2 / 6.6 / 6.3 m3/min.
+# Airflow of the 3.2 / 7.2 kW units not found: in proportion to 2.3 kW (3.13 m3/min per kW), and the same range for every
+# size [our assumptions].
 AC_KW = {"2room": dict(living_room=3.2), "3room": dict(living_room=7.2), "4room": dict(living_room=7.2)}
-AC_ROOM_KW, AC_M3MIN_PER_KW, AC_MIN, AC_MAX = 2.3, 6.0 / 2.3, 0.79 / 2.30, 3.70 / 2.30
+AC_ROOM_KW, AC_M3MIN_PER_KW, AC_MIN, AC_MAX, AC_FAN_LOW = 2.3, 7.2 / 2.3, 0.79 / 2.30, 3.70 / 2.30, 6.3 / 7.2
 P_HPA = 1013.25
 
 
@@ -758,10 +761,10 @@ class Environment:
                     if over <= 0:
                         break
                     kw = max(AC_MIN, min(1, over) * AC_MAX) * rated
-                    # fan speed follows the output: low (4.0 of 6.0 m3/min, AJ023MB1PBC1 high / mid / low 6.0 / 5.0 / 4.0) at the
-                    # inverter minimum, high at its maximum, in proportion between [our assumption, agreed 2026-11-05]
+                    # fan speed follows the output: low (6.3 of 7.2 m3/min, AC023CN1PBH1) at the inverter minimum, high at its
+                    # maximum, in proportion between [our assumption, agreed 2026-11-05; airflows from one model 2026-11-26]
                     share = (kw / rated - AC_MIN) / (AC_MAX - AC_MIN)
-                    fan = m3 * (4.0 / 6.0 + 2.0 / 6.0 * max(0.0, min(1.0, share)))
+                    fan = m3 * (AC_FAN_LOW + (1 - AC_FAN_LOW) * max(0.0, min(1.0, share)))
                     t_out, e_out = coil_outlet(e["temperature"], e["vapor"], kw, fan, rated)
                     f = min(1, fan * dt / n / (p["areaM2"] * PHYS["ceilingM"]))  # share of the room's air through the coil
                     w_room = w_from_e(e["vapor"])
