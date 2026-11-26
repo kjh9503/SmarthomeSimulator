@@ -322,7 +322,8 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
   separated") in flats built 1991-2008. Seoul end-use metering (Jin et al. 2019): heating 83.5, hot water 24.8 kWh/m2 a,
   so heating alone in Lee's figure is about 81. 063 with older U-values (wall 0.47, window 3.84): 72.9; plus 0.5 air
   changes/h: 79.5 [ours, one year]. So the gap is mostly the envelope standard and the hot water. Neighbours at 22 C are
-  not the cause: 063 heats above 23 C and loses heat to them (-5.0); without them 21.7. No measured figure found for flats
+  not the cause: 063 heats above 23 C and loses heat to them (-5.0); without them 21.7. (2026-11-26: the neighbours are now 20.0 C in winter, measured; see
+  "Neighbours above and below".) No measured figure found for flats
   built to the 2018+ standard. Heating-season balance (063, kWh/m2): windows -17.6, ventilation/infiltration -10.9,
   floor heating downwards -5.2, neighbours -5.0, walls -4.1, sun +9.8, internal +4.5, floor heating 29.2.
 - Sun on windows (2026-11-20). Before: daylight (clear noon 25,000 lux x sin altitude) / 110 x an azimuth factor
@@ -547,6 +548,20 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
   of the year 063 -0.3 -> 3.8 C, retiree 0.3 -> 4.0 C. January humidity, cooling humidity, August temperatures within
   0.5 %p / 1.9 %p / 0.5 K of before. Order checks all 0. Run time: office 30 days 15.9 -> 17.1 s.
   Still faster than measured: the temperature difference halves in about 3 min vs about 7 min (Fitzner & Finke 2012).
+- Neighbours above and below, all year from measurement (agreed 2026-11-26). Before (2026-11-05): 22 C [our assumption]
+  while the outdoor daily mean was below 15 C, otherwise no heat flow at all (the old "same temperature as this flat"
+  assumption left over, never decided for summer), so a closed flat kept all its summer heat. Now Yun et al. 2020 table 3
+  (8 Seoul apartments, Mar 2016 - Mar 2017, hourly, all hours): winter 20.0 +- 2.1, spring / autumn 23.0 +- 2.5, summer
+  26.6 +- 2.0 C (house.py NEIGHBOUR). Joined between seasons by a line through one point per season, set so that each
+  season keeps the measured mean [our assumption]; each flat drifts by its own day-to-day AR(1) (0.7) within one SD
+  (mean + SD x tanh(0.5 z)) [our assumption], drawn, not simulated. Drawn year: season means 19.8-20.0 / 22.9-23.2 /
+  26.6-26.7 C over three seeds. Check [ours, 1 year each, before -> after; living room, kitchen, bedrooms, all hours]:
+  remote (closed in summer, no cooling) summer 39.3 -> 30.0 C, 14.6 -> 5.2 K above outdoors (measured 26.6 C, +3.0 K),
+  Aug living room max 43.0 -> 33.0 C, spring / autumn 29.0 +- 7.3 (max 45.4) -> 25.2 +- 3.0 C (measured 23.0 +- 2.5);
+  063 / office / retiree summer 26.8 / 27.6 / 28.0 C (+2.1 / +2.9 / +3.3 K); winter all hours 22.1 / 21.8 / 20.6 /
+  21.7 C (was 0.4-0.7 K warmer; measured 20.0). Heating energy up: 19.3 -> 23.3, 11.0 -> 14.8, 10.1 -> 15.3, 14.3 -> 20.1
+  kWh/m2 (063 / office / remote / retiree). Cooling hours down: office 2,687 -> 1,468, retiree 556 -> 259. Order checks
+  all 0. Still above the measured summer: remote +5.2 K vs +3.0 (sun, envelope: see the closed-flat variants).
 - Python port equals the JS simulator: outdoor values within 1e-12, physics within 1e-15 (`tests/test_port.py`).
 - 2026 weather vs climate normals [ours]: monthly max/min temperature within 0.9 C, PM within 1.2 ug/m3, 86 wet days
   vs 79.3, 1,509 mm vs 1,418 mm.
