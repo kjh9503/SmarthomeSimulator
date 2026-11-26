@@ -39,8 +39,12 @@ Rewritten 2026-11-21: finished items removed (their record is in docs/agent_desi
    double) not checked. Balcony parameters (U 2.4 only
    from a source; SHGC 0.5 since 2026-11-23 (0.7 was glass-only and gave 33.9 C in January; now 19.6 C max,
    January median 11.9 K above outdoors, Shanghai / Nanjing closed balconies +5.7 / +6.1 K, glazing not stated); 0.7 sun into the living room, 1.0 air change an hour, area from sqrt(living area), 35%
-   daylight at its sensor) are assumptions; January balcony 15.6 C median at -1.1 C outdoors and up to 33.6 C on sunny
-   days, no Korean measurements found to compare.
+   daylight at its sensor) are assumptions. January checked 2026-11-26, not an error: where the balcony sits between the
+   room and outdoors, (balcony - outdoor) / (room - outdoor), ours 0.43-0.49 (Jan median; 21-10 h 0.42-0.47, p10-p90
+   0.34-0.59). Seo et al. 2007 (KJACR 19(5), Uiwang, 2005-01-24/25 21:00-10:30, empty flat, bedroom heated to 24 C,
+   outdoor -2 to 2 C): balcony air about 8-10 C read from fig. 6, balcony surfaces 10.1-13.7 C, balcony MRT 12.1 C
+   (table 5, 6) -> about 0.35-0.5; Shanghai closed balcony 0.46 (Frontiers 2022, table 5). The earlier "+5.7 / +6.1 K"
+   comparison in kelvin was not like for like (their outdoor 5-6 C, rooms 11-18 C).
 3. Humidifier: `humidifierMode` auto / low / medium / high instead of `humiditySetpoint` (agreed 2026-11-04, not built);
    the effect of each mode on room humidity is still to decide.
 4. "Cooling at 100% RH" seen earlier: not reproduced (85-90% at 16 C on three older commits); where it came from is

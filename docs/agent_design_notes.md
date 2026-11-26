@@ -551,6 +551,12 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
   -> checked 2026-11-26: not like for like (our 14 m2 room with 2.8 m2 open vs their 180 m3 office with 6.3 m2). Our
   physics on their room: CO2 halves in 4 min (3 measured), air change 15 -> 7 /h (10-14), temperature difference not
   halved in 14 min (7 min measured). No change; see open_tasks 6b.
+- January balcony (checked 2026-11-26, not an error). Ours +10.0-11.5 K above outdoors (Jan median), so "too warm" next
+  to Shanghai / Nanjing +5.7 / +6.1 K; but kelvin depends on the climate and the room temperature. As a position between
+  room and outdoors, (balcony - outdoor) / (room - outdoor): ours 0.43-0.49 (21-10 h 0.42-0.47); Seo et al. 2007
+  (KJACR 19(5); Uiwang, January 2005, one night, bedroom heated to 24 C, outdoor -2 to 2 C; balcony air about 8-10 C
+  read from fig. 6, MRT 12.1 C) about 0.35-0.5; Shanghai 0.46. One flat each, so a loose check. Room temperature
+  differences within a room are not modelled (one air node; agreed 2026-11-26 not to add them).
 - Neighbours above and below, all year from measurement (agreed 2026-11-26). Before (2026-11-05): 22 C [our assumption]
   while the outdoor daily mean was below 15 C, otherwise no heat flow at all (the old "same temperature as this flat"
   assumption left over, never decided for summer), so a closed flat kept all its summer heat. Now Yun et al. 2020 table 3
