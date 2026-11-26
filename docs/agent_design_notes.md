@@ -575,7 +575,24 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
   humidity: the room dew point while cooling stays 4-8 K below outdoors because little outdoor air comes in (0.18 /h
   frames, ventilation unit 0.5 /h with 27% recovery) [interpretation]. Still open: output above rated at the high fan
   (6 m3/min for up to 3.7 kW) gives outlets of 5-9 C, no data on airflow or outlet at maximum; the unit stops at the
-  setpoint (real inverters keep running at low output; no data found yet).
+  setpoint (real inverters keep running at low output; no data found yet). -> both done 2026-11-26, below.
+- Air conditioner airflow and range from one model, compressor below the setpoint (agreed 2026-11-26). (1) The 2.3 kW unit
+  took its airflow (6.0 / 5.0 / 4.0 m3/min) from AJ023MB1PBC1 and its range (0.79-3.70 kW) from AC023CN1PBH1, so the
+  maximum went through 6.0 m3/min and left at 5-9 C (no measured outlet temperature found). Now all from AC023CN1PBH1:
+  airflow 7.2 / 6.6 / 6.3 m3/min, sensible 1.8 kW (our coil gives 1.72 at 7.2 m3/min, rated point). Low fan 6.3 at the
+  minimum output, high 7.2 at the maximum. (2) It stopped at the setpoint. LG support: at the setpoint "the compressor
+  and outdoor fan slow down and stay on at low speed"; "the outdoor unit goes OFF when the room is 1.5-2 C or more below
+  the setpoint". Samsung support: the outdoor unit may take about 3 min to start. Now it keeps the minimum output at and
+  below the setpoint, stops 1.5 K below, restarts above the setpoint [assume; not stated] after at least 3 min. Nothing
+  passes the coil while stopped (fan and water left on the coil not modelled). Check [ours, 1 year, office / retiree,
+  while cooling; before -> (1) -> (2)]: living room RH 47.8 -> 49.6 -> 62.1% / 43.1 -> 45.4 -> 61.1%; bedroom (room1 /
+  room2) 56.8 -> 59.1 -> 66.1% / 45.4 -> 56.7 -> 64.1%; living room temperature 25.9 -> 25.9 -> 24.8 C / 24.8 -> 24.8 ->
+  23.5 C (now below the setpoint while at the minimum); outlet at or below 9 C 14.3 -> 4.5 -> 0.1% / 10.3 -> 2.6 -> 0.3%
+  of coil steps; water a running hour (3.2 / 7.2 kW living unit) 0.71 -> 0.57 -> 0.24 / 2.22 -> 2.09 -> 2.21 kg. Order
+  checks all 0. Why RH rose [interpretation]: at the minimum (0.79 kW of 2.3) through 6.3 m3/min the coil is dry below
+  about 55% RH, so the unit holds the temperature without taking water out (as Mitsubishi and Daikin describe for steady
+  running; NREL/DOE 2017: a mini-split at low load in standard mode above 60% RH 65% of the hours). Now near Yun et al.
+  2020 (68.3% AC on) and above Ryu & Kim 2021 (45-46%).
 - Python port equals the JS simulator: outdoor values within 1e-12, physics within 1e-15 (`tests/test_port.py`).
 - 2026 weather vs climate normals [ours]: monthly max/min temperature within 0.9 C, PM within 1.2 ug/m3, 86 wet days
   vs 79.3, 1,509 mm vs 1,418 mm.
