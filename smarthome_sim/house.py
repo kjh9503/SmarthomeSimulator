@@ -114,7 +114,10 @@ PHYS = dict(
                   # summer (Kim, Park & Sohn 2005). Chosen each minute by which air is warmer (agreed 2026-11-19): outdoor
                   # colder than the room -> 46%, outdoor warmer -> 27%; so spring and autumn switch between the two within
                   # a day (the exchanger is passive: heat goes from the warmer stream to the colder). Using the two
-                  # seasonal averages in between seasons, and the same factor for moisture, are [assume]. Lab ratings are
+                  # seasonal averages in between seasons is [assume]. Moisture while outdoors is colder (2026-11-26): 59%,
+                  # the mean of the three measured band means 55.1 / 57.4 / 65.8% (Choi & Song 2017, KJACR 29(2): an ERV
+                  # in a Korean flat, 20 winter days, latent exchange 20-80%); before, the heat factor 46% [assume]. When
+                  # outdoors is warmer, moisture keeps the heat factor 27% [assume, no summer data]. Lab ratings are
                   # higher (certified units 2014: cooling 45-71.4%, mean 52.7; heating 70-87%, mean 73.5; Shin et al.
                   # 2014). Outdoor-air filter 60% (annex 1-5, KS B 6141, counting method), applied to PM2.5 [assume].
                   # open windows (2026-11-20, see k_open): open share of the glass, window height (m) [assume: balcony-type
@@ -129,7 +132,7 @@ PHYS = dict(
                   # before gave the balcony 33.9 C in January). 0.7 of the sun passing on into the living room [assume]; air change 1.0 an hour through the balcony frames [assume].
                   # No heating; slabs face the neighbours' balconies (no exchange). luxShare: daylight reaching its sensor.
                   balcony=dict(uGlass=2.4, shgc=0.5, tau=0.7, ach=1.0, glassHeightM=2.2, luxShare=0.35),
-                  ventilator=dict(ach=0.5, recoveryHeating=0.46, recoveryCooling=0.27, filter=0.60)),
+                  ventilator=dict(ach=0.5, recoveryHeating=0.46, recoveryCooling=0.27, latentHeating=0.59, filter=0.60)),
     # air between rooms (2026-11-04). Open door / open plan: buoyancy flow through an opening, one direction
     # Q = Cd/3 * W * H * sqrt(g * H * dT / T) (Brown & Solvason 1962), Cd = 0.0835 * (dT/T)^-0.313 measured through a
     # doorway (Riffat 1989, ASHRAE Trans. 95(2); a doorway between floors), dT held within the measured 0.5-13 K (below 0.5 K
@@ -654,9 +657,12 @@ class Environment:
             if r == "balcony":
                 k_vent = 0.0  # the ventilation unit serves the heated rooms
             k_side = k_open + k_inf  # air through the windows and frames (from outdoors, or from the balcony), per minute
-            k_out = k_vent * (1 - rec)  # outdoor air from the ventilation unit (heat and moisture), per minute
+            k_out = k_vent * (1 - rec)  # outdoor air from the ventilation unit (heat), per minute
+            # moisture: its own recovery while outdoors is colder (Choi & Song 2017), else the same as heat
+            k_out_v = k_vent * (1 - (V["latentHeating"] if out["temperature"] < e["temperature"] else rec))
             if self.hood and r == "kitchen" and is_("stove", "switch", "switch", "on"):
                 k_out += E["hood"]["m3s"] * 60 / vol  # range hood exhaust, made up by outdoor air
+                k_out_v += E["hood"]["m3s"] * 60 / vol
             k = k_side + k_out
             if e.get("mass") is None:
                 e["mass"] = e["temperature"]
@@ -738,7 +744,7 @@ class Environment:
             # air swapped over the step: 1 - exp(-k dt), exact for the step (2026-11-25; before k dt capped at 1, which
             # swapped 0.8 of the air in a minute at k = 0.8 / min where the exact share is 0.55)
             e["vapor"] += (side["vapor"] - e["vapor"]) * (1 - math.exp(-k_side * dt))
-            e["vapor"] += (vapor_from_rh(out["humidity"], out["temperature"]) - e["vapor"]) * (1 - math.exp(-k_out * dt))
+            e["vapor"] += (vapor_from_rh(out["humidity"], out["temperature"]) - e["vapor"]) * (1 - math.exp(-k_out_v * dt))
             e["pm25"] += (side["pm25"] - e["pm25"]) * ((1 - math.exp(-k_open * dt)) if is_open else PHYS["pmInfiltration"] * wall_share * dt)
             e["co2"] += (side["co2"] - e["co2"]) * ((1 - math.exp(-k_open * dt)) if is_open else 0.003 * dt)
             if k_vent:
