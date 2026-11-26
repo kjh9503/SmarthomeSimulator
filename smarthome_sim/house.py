@@ -175,6 +175,7 @@ CONNECTIONS["4room"] = CONNECTIONS["3room"] + [("room", "hallway", "room4")]
 # size [our assumptions].
 AC_KW = {"2room": dict(living_room=3.2), "3room": dict(living_room=7.2), "4room": dict(living_room=7.2)}
 AC_ROOM_KW, AC_M3MIN_PER_KW, AC_MIN, AC_MAX, AC_FAN_LOW = 2.3, 7.2 / 2.3, 0.79 / 2.30, 3.70 / 2.30, 6.3 / 7.2
+AC_OFF_BELOW_K, AC_RESTART_MS = 1.5, 3 * 60000  # compressor off below the setpoint, shortest off time (see Environment)
 P_HPA = 1013.25
 
 
@@ -534,6 +535,7 @@ class Environment:
         self.racks = []  # laundry drying indoors: dict(room, start, gMin, leftG) (agent, after a wash not dried in the dryer)
         self.real_balcony = "balcony" in house.room_ids  # only plans with a real balcony have one (House.room_ids)
         self.neighbours = Neighbours(0)  # the flats above and below; the Simulator gives it its seed
+        self.ac_hold = {}  # room -> compressor state of its air conditioner below the setpoint (dict(on, offAt))
         for r in house.room_ids:
             self.rooms[r] = dict(temperature=22, mass=22, humidity=45, pm25=15, co2=600, illuminance=0, noise=30)
         self.settle(ms)
@@ -747,20 +749,33 @@ class Environment:
                 e["vapor"] += g_to_hpa(PHYS["moisture"]["personGh"] / 60 * dt, vol)
             hvac = devs.get("heating_cooling_unit")
             mode = hvac.state.get("thermostatMode.thermostatMode") if hvac else None
+            if mode != "cool":
+                self.ac_hold.pop(r, None)  # switched off or another mode: starts at once next time
             if mode == "cool":
                 # capacity-based cooling (2026-11-04): the unit draws room air through its coil at its airflow and removes
                 # heat up to its capacity; how much goes to cooling and how much to condensing water follows from the
                 # coil (coil_outlet). Control: full output (max) at >= 1 K above the setpoint, in proportion below,
-                # off at or below the setpoint; never below the inverter's minimum while running.
+                # never below the inverter's minimum while running. At and below the setpoint the compressor keeps
+                # running at its minimum and stops when the room is 1.5 K below it (2026-11-26; LG support: "the
+                # compressor and outdoor fan slow down and stay on at low speed; the outdoor unit goes OFF when the room
+                # is 1.5-2 C or more below the setpoint", lower bound taken). It restarts when the room is back above the
+                # setpoint [our assumption; not stated] and has been off at least 3 min (Samsung support: the outdoor unit
+                # may take about 3 min to start, to protect it). Before: off at the setpoint. While off nothing goes
+                # through the coil (fan and the water left on the coil not modelled).
                 target = hvac.state.get("thermostatCoolingSetpoint.coolingSetpoint")
+                hold = self.ac_hold.setdefault(r, dict(on=True, offAt=0))
                 rated = AC_KW[H.type].get(r, AC_ROOM_KW)
                 m3 = AC_M3MIN_PER_KW * rated
                 n = 6  # 10 s sub-steps, so the room does not overshoot the setpoint within a minute
                 for _ in range(n):
                     over = e["temperature"] - target
-                    if over <= 0:
+                    if hold["on"] and over <= -AC_OFF_BELOW_K:
+                        hold.update(on=False, offAt=ms)
+                    elif not hold["on"] and over > 0 and ms - hold["offAt"] >= AC_RESTART_MS:
+                        hold["on"] = True
+                    if not hold["on"]:
                         break
-                    kw = max(AC_MIN, min(1, over) * AC_MAX) * rated
+                    kw = max(AC_MIN, min(1, max(0.0, over)) * AC_MAX) * rated
                     # fan speed follows the output: low (6.3 of 7.2 m3/min, AC023CN1PBH1) at the inverter minimum, high at its
                     # maximum, in proportion between [our assumption, agreed 2026-11-05; airflows from one model 2026-11-26]
                     share = (kw / rated - AC_MIN) / (AC_MAX - AC_MIN)
