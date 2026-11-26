@@ -593,6 +593,20 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
   about 55% RH, so the unit holds the temperature without taking water out (as Mitsubishi and Daikin describe for steady
   running; NREL/DOE 2017: a mini-split at low load in standard mode above 60% RH 65% of the hours). Now near Yun et al.
   2020 (68.3% AC on) and above Ryu & Kim 2021 (45-46%).
+- Winter humidity (2026-11-26). Ours Jan living room 14-17% vs measured 35-50% (families of 2-5; Cho & Choi 2013: 20
+  flats, mean 35.4%, 23-54%). January moisture budget [ours, 31 days, g/day, 063 / office]: person 838 / 749, shower 508 /
+  530, stove 234 / 175, laundry racks 143 / 318 (about 1.7 kg/day in all; BS 5250:2011 table D.4 one person "low" 3-4 kg);
+  out through the ventilation unit and hood 766 / 670, frames 433 / 576, bathroom saturation clip 404 / 464, windows and
+  balcony 112 / 75. Per event our cooking (about 300 g) and the shower's net gain to the air (about 100 g a day) are near
+  Choi et al. 2020's measurements (290 g a meal; 125 g a 20-min shower). January what-ifs [ours, living room RH, 063 /
+  office]: now 14.0 / 16.5; ventilation unit off 16.8 / 21.8; frames 0.10 /h 14.6 / 17.5; person moisture x3 19.2 /
+  24.8. So most of the gap is one person and a ventilation unit that runs long (persona), not physics [interpretation].
+  Changed: the unit's moisture recovery while outdoors is colder, 59% (Choi & Song 2017 field means 55.1 / 57.4 / 65.8%),
+  was the heat factor 46%. Check [ours, 1 year, Jan living room RH, before -> after]: 063 14.0 -> 14.5, office 16.5 ->
+  17.3, remote 16.3 -> 17.0, retiree 15.4 -> 15.9%; order checks all 0. Not changed, no measured basis found yet: a
+  person's moisture by activity (BS 5250 table D.6 asleep 40 / seated 70 / housework 90 g/h; physiology: insensible loss
+  about 800 ml a day at rest, Brandis), hand dishwashing and floor mopping (BS 5250 400 / 200 g a day; ASHRAE 1979 via
+  NRC CBD-231: 0.45 L / 1.09 L per 7.4 m2, basis not stated).
 - Python port equals the JS simulator: outdoor values within 1e-12, physics within 1e-15 (`tests/test_port.py`).
 - 2026 weather vs climate normals [ours]: monthly max/min temperature within 0.9 C, PM within 1.2 ug/m3, 86 wet days
   vs 79.3, 1,509 mm vs 1,418 mm.
