@@ -85,6 +85,50 @@ def pm_factor_at(ms):
     return day_factor(i) * (1 - f) + day_factor(i + 1) * f
 
 
+# Day-to-day temperature anomaly (2026-11-26). Before, the temperature was the monthly normals shaped by the weather of
+# the day, so a month's daily means hardly varied (January SD 0.38 K) and the year had no day at 33 C or above, no
+# tropical night and no January night below -6.2 C. Now a day's anomaly z follows an AR(1) from day to day, lag-1
+# correlation 0.74 (Kim, Do & Kim 2013, Korean J. Appl. Stat. 26(3): GLM weather generator for Seoul daily temperature),
+# drawn from hashes of the day (no random numbers, any start gives the same days), on a line between day noons, times an
+# SD that runs as a cosine from TEMP_ANOM["sdSummer"] (late July) to ["sdWinter"] (late January), both set so that over
+# many years Seoul's 1991-2020 normals come out: heat-wave days (max >= 33 C) 8.7 and tropical nights (min >= 25 C) 12.5
+# a year (KMA 2021 new normals), January lows below -10 C almost every year and sometimes below -15 C (Wikipedia
+# "Climate of Seoul"). The anomaly moves the whole day (max and min alike) [assume]. Calibration [ours, 1991-2020 drawn,
+# hourly]: SD 4.5 / 2.8 K give 9.7 heat-wave days and 10.0 tropical nights a year (8.7 / 12.5: one SD cannot match both;
+# 3.0 gives 11.4 / 11.7), January below -10 C in 70% of years and below -15 C in 17%, 2.9 days a year at or below
+# -12 C (national 1991-2020 mean 6.9, Choi et al. 2023; Seoul's not found), SD of daily means in January 3.6 K, August
+# 2.3 K (no measured Seoul value found). Every profile runs 2026, so the draw is chosen, as a typical meteorological
+# year is: of 300 draws, 205 gives 2026 9 heat-wave days, 12 tropical nights, a January low of -13.1 C and monthly
+# mean max / min 1.2 K RMS from the normals (draw 85: 0.93 K but 7 / 9 days) [our choice].
+TEMP_ANOM = dict(rho=0.74, sdWinter=4.5, sdSummer=2.8, originDay=7305, draw=205)  # originDay: 1990-01-01
+_anom = []
+
+
+def _anom_z(d):
+    i = d - TEMP_ANOM["originDay"]
+    if i < 0:
+        return 0.0
+    r = TEMP_ANOM["rho"]
+    while len(_anom) <= i:
+        dd = TEMP_ANOM["originDay"] + len(_anom)
+        k = 9000000 + TEMP_ANOM["draw"] * 40000 + (dd - TEMP_ANOM["originDay"]) * 2
+        u1 = hash01(k + 1) or 1e-9
+        z = math.sqrt(-2 * math.log(u1)) * math.cos(2 * math.pi * hash01(k + 2))
+        _anom.append(r * (_anom[-1] if _anom else 0.0) + math.sqrt(1 - r * r) * z)
+    return _anom[i]
+
+
+def temp_anomaly_at(ms):
+    """K added to the outdoor temperature at ms"""
+    x = day_index(ms) + hours(ms) / 24 - 0.5
+    i = math.floor(x)
+    f = x - i
+    z = _anom_z(i) * (1 - f) + _anom_z(i + 1) * f
+    A = TEMP_ANOM
+    sd = (A["sdWinter"] + A["sdSummer"]) / 2 + (A["sdWinter"] - A["sdSummer"]) / 2 * math.cos(2 * math.pi * (_month_pos(ms) - 0.5) / 12)
+    return z * sd
+
+
 def _month_pos(ms):
     y, m, d, _ = ymd(day_index(ms))
     return m + (d - 0.5) / month_days(y, m) - 0.5
@@ -388,7 +432,8 @@ def outdoor_at(ms):
     nm = weather_norm_for(ms)
     state = weather_state_at(ms)
     dw = day_weather(day_index(ms))
-    temperature = b["mean"] + b["half"] * b["c"] * fx["swing"] * nm["swing"] + nm["tShift"]
+    anom = temp_anomaly_at(ms)
+    temperature = b["mean"] + b["half"] * b["c"] * fx["swing"] * nm["swing"] + nm["tShift"] + anom
     humidity = min(100, max(10, b["humidity"] + (WEATHER["wetRH"] - b["humidity"]) * fx["wet"] + nm["hDryShift"] * (1 - fx["wet"])))
     wind = max(0, (WIND["mean"] + WIND["amp"] * math.cos(2 * math.pi * (_month_pos(ms) - WIND["peakPos"]) / 12)) * dw["wind"] * (1 + WIND["diurnal"] * b["c"]))
     precip = precip_at(ms)
@@ -398,7 +443,7 @@ def outdoor_at(ms):
     o = dict(temperature=temperature, humidity=humidity,
              pm25=b["pm25"] * pm_factor_at(ms) * nm["pmScale"] * (1 - washout_at(ms)), co2=SEOUL_CO2_PPM,
              daylight=solar_at(ms)["ghi"] * SOLAR["luxPerW"],  # 2026-11-21: from the calibrated irradiance (was 25,000 lux x sin)
-             noise=base_noise if rain_db is None else db_sum([base_noise, rain_db]), meanTemperature=b["mean"] + nm["tShift"],
+             noise=base_noise if rain_db is None else db_sum([base_noise, rain_db]), meanTemperature=b["mean"] + nm["tShift"] + anom,
              weather=state, windSpeed=js_round(wind * 10) / 10, precipitation=js_round(precip * 10) / 10,
              sunAz=90 + 180 * (h - rise) / day_len if up else None)
     if len(_out) > 200000:

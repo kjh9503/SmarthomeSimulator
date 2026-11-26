@@ -21,12 +21,13 @@ def rel(a, b):
 
 class TestAgainstJS(unittest.TestCase):
     def test_outdoor_matches_js(self):
-        """outdoor weather, temperature, humidity, PM2.5, wind, rain and noise at 600 moments of 2026 (daylight left out
-        since 2026-11-21: the Python side takes it from the calibrated irradiance; the browser version is on hold)"""
+        """outdoor weather, humidity, PM2.5, wind, rain and noise at 600 moments of 2026 (daylight left out since
+        2026-11-21: the Python side takes it from the calibrated irradiance; temperature and meanTemperature left out since
+        2026-11-26: the Python side adds a day-to-day anomaly; the browser version is on hold)"""
         for t, o in json.load(open(os.path.join(FIX, "outdoor_js.json"))):
             p = outdoor_at(t)
             for k, v in o.items():
-                if k == "daylight":
+                if k in ("daylight", "temperature", "meanTemperature"):
                     continue
                 if isinstance(v, (int, float)) and p[k] is not None:
                     self.assertLess(rel(v, p[k]), 1e-9, (t, k, v, p[k]))
