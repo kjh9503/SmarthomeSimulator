@@ -607,6 +607,14 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
   person's moisture by activity (BS 5250 table D.6 asleep 40 / seated 70 / housework 90 g/h; physiology: insensible loss
   about 800 ml a day at rest, Brandis), hand dishwashing and floor mopping (BS 5250 400 / 200 g a day; ASHRAE 1979 via
   NRC CBD-231: 0.45 L / 1.09 L per 7.4 m2, basis not stated).
+  - Then (2026-11-26) the interpretation "one person, so drier" was checked and dropped: one-room student flats in
+    Cheongju, mostly one person, 54.3% mean (35.2-68.5%; laundry dried indoors; Choi & Kim 2010); Finnish flats: occupant
+    number has no effect on the mean moisture excess (Vinha et al. 2018). Ours: living room moisture excess at <= 5 C
+    outdoors 0.5-1.2 g/m3 mean, upper 10% 1.1-2.4 (Finnish flats upper 10% 2.4-3.6). Combined what-ifs [ours, January,
+    living room]: office 4 kg/day with the unit off 40.8%, 6 kg/day with it 42.5%; 063 6 kg off 40.4%, 9 kg on 34.8%. So
+    the physics reaches the measured range; the gap is the moisture sources: cooking 0.7-0.8 times a day, racks 0.14-0.32
+    kg/day (dryer share 55-85%) against 871 g/day cooking (Choi et al. 2020) and 1.22 kg/day indoor drying a person
+    (Zemitis et al. 2016) -> persona list (open_tasks 6).
 - Python port equals the JS simulator: outdoor values within 1e-12, physics within 1e-15 (`tests/test_port.py`).
 - 2026 weather vs climate normals [ours]: monthly max/min temperature within 0.9 C, PM within 1.2 ug/m3, 86 wet days
   vs 79.3, 1,509 mm vs 1,418 mm.

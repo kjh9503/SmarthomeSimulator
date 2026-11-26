@@ -45,10 +45,17 @@ Rewritten 2026-11-21: finished items removed (their record is in docs/agent_desi
    the effect of each mode on room humidity is still to decide.
 4. "Cooling at 100% RH" seen earlier: not reproduced (85-90% at 16 C on three older commits); where it came from is
    unknown. Deferred by the user.
-5. The measured summer figures used for comparison (Yun et al. 2020: indoor 26.6 C, outdoor 23.6 C) cover a "summer"
-   whose months were not checked, so the comparison with our Jul-Aug may not be like for like.
-6. Winter humidity: 063 is at 13% in January (one person in 84 m2, ventilation unit always on, airing twice a day);
-   measured winter means are 36.6% (households 19.5-58.5%). Not yet compared with a family-sized household.
+5. (resolved 2026-11-25) Yun et al. 2020's "summer" is June-August.
+6. Winter humidity (2026-11-26): physics part closed. Ours Jan living room 14-17% vs measured 35-50%. With 4-6 kg/day of
+   moisture (ours about 1.7) the physics reaches the measured range (office: 4 kg with the ventilation unit off 40.8%,
+   6 kg with it 42.5%). Not a one-person effect (one-room student flats, mostly one person: 54.3% mean, Choi & Kim 2010;
+   occupant number no effect on moisture excess, Vinha et al. 2018). Moved to the persona list: cooking times (0.7-0.8 a
+   day vs three meals, 871 g a day, Choi et al. 2020), dryer share 55-85% so racks 0.14-0.32 kg/day (indoor drying 1.22
+   kg/day a person measured, Zemitis et al. 2016), ventilation unit use (063 always on). Open without measured data:
+   hand dishwashing, floor mopping, plants (BS 5250 values only); re-evaporation from bathroom surfaces after a shower
+   (the air's excess is deleted, 404-464 g/day; adding it all back is about +1-3 %p by interpolation, not run).
+6b. Open-window cooling faster than measured: temperature difference halves in about 3 min vs about 7 min (Fitzner &
+   Finke 2012). Next.
 7. Device reservations (timers) for air conditioner, purifier, TV: not built, no SmartThings definition found; 7 items
    listed in the conversation of 2026-11-04.
 8. Wifi router `connectedDevices` is our own attribute name: to be marked in the docs (agreed, not done).
