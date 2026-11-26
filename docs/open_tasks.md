@@ -58,6 +58,14 @@ Rewritten 2026-11-21: finished items removed (their record is in docs/agent_desi
    kg/day a person measured, Zemitis et al. 2016), ventilation unit use (063 always on). Open without measured data:
    hand dishwashing, floor mopping, plants (BS 5250 values only); re-evaporation from bathroom surfaces after a shower
    (the air's excess is deleted, 404-464 g/day; adding it all back is about +1-3 %p by interpolation, not run).
+6c. Summer remote +5.2 K over outdoors (Jun-Aug; 063 / office / retiree +2.0 / +2.5 / +3.3; Yun et al. 2020 +3.0 with
+   AC and windows in use). Checked 2026-11-26: remote never cools, never opens a window for heat, airs 0 times a day and is
+   home 93% (habits drawn by tools/make_test_profiles.py) -> persona list (combination of habits). Physics: no measurement
+   of a closed flat without AC found. Ham, Lee & Kim 2024 (Sustainability 16(22) 9831; Chuncheon, Gwangju, heatwave
+   days 2022, windows not controlled): non-AC pre-2000 flats 29.5-32.3 C, mean 30.3, outdoor daily mean 28.0-29.3 ->
+   about +1-2 K; ours on our 10 hottest days (outdoor mean 26.5): 063 (windows open 55%, no AC) +1.4 K, remote (closed)
+   +4.2 K. Found on the way: our 2026 weather has no day at 33 C or above (hottest 31.9 C, daily mean 26.9 C) -> to check
+   against Seoul's heatwave-day count.
 6b. (checked 2026-11-26, not an error) Open-window cooling "faster than measured" compared a 14 m2 living room with a
    window half open (2.8 m2, about 48 /h, at the 0.8 a minute cap) with Fitzner & Finke 2012's 180 m3 office (6.3 m2
    open, 12.5 /h). Our physics on their room (80 m2, six 0.71 x 1.48 m sashes, 21 C flat, 6.9 C outdoors): CO2
