@@ -189,26 +189,70 @@ def enthalpy(t, w):
     return 1.006 * t + w * (2501 + 1.86 * t)
 
 
-def coil_outlet(t_in, e_in, kw, m3min):
-    """air through a cooling coil that removes kw: (t_out, e_out). Sensible cooling until the air reaches its dew point;
-    beyond that the outlet is saturated air with the remaining enthalpy, the excess vapour leaving as condensate
-    (ideal coil, no bypass)."""
-    rho = 1.2
-    m = rho * m3min / 60  # kg/s
-    w_in = w_from_e(e_in)
-    h_out = enthalpy(t_in, w_in) - kw / m
-    t_s = (h_out - w_in * 2501) / (1.006 + 1.86 * w_in)  # outlet with the same moisture
-    if e_in <= sat_vapor(t_s):
-        return t_s, e_in
-    lo, hi = -20.0, t_in
-    for _ in range(40):  # saturated outlet: h_sat(t) = h_out
+def _t_sat_from_h(h):
+    """temperature of saturated air with enthalpy h (kJ/kg)"""
+    lo, hi = -40.0, 60.0
+    for _ in range(40):
         mid = (lo + hi) / 2
-        if enthalpy(mid, w_from_e(sat_vapor(mid))) > h_out:
+        if enthalpy(mid, w_from_e(sat_vapor(mid))) > h:
             hi = mid
         else:
             lo = mid
-    t = (lo + hi) / 2
-    return t, sat_vapor(t)
+    return (lo + hi) / 2
+
+
+# Cooling coil (2026-11-26): apparatus dew point / bypass factor, the method of EnergyPlus's DX cooling coil (Engineering
+# Reference, single-speed DX coil, eqs. 460-466: BF = exp(-A0 / m), h_ADP = h_in - Q / m / (1 - BF),
+# SHR = (h(T_in, w_ADP) - h_ADP) / (h_in - h_ADP), dry coil when w_in <= w_ADP). A0 from the catalogue of the same unit family
+# (Samsung WindFree 1Way cassette AC026RN1DKG: 2.6 kW total, 1.9 kW sensible, airflow high 7.3 m3/min, at 27 C / 19 C wet
+# bulb [the EN 14511 rating point; the sheet says "nominal"]): BF 0.239, A0 0.0803 kg/s per kW of rated capacity, taken
+# in proportion to capacity for our units [our assumption]. Check: the same A0 per kW gives the 3.5 kW AC035RN1DKG
+# (9.0 m3/min) SHR 0.714, catalogue 2.5 / 3.5 = 0.714. Before: an ideal coil (sensible down to the dew point, then
+# saturated), which at high output sent out saturated air at 3-9 C and at rated removed less water than the catalogue
+# (2.3 kW at 27 / 19: 0.66 kg/h, SHR 0.80).
+COIL_RATED = dict(kw=2.6, sensibleKw=1.9, m3min=7.3, t=27.0, wb=19.0)
+
+
+def _a0_per_kw():
+    R = COIL_RATED
+    m = 1.2 * R["m3min"] / 60
+    e = sat_vapor(R["wb"]) - 0.00066 * (1 + 0.00115 * R["wb"]) * P_HPA * (R["t"] - R["wb"])  # psychrometer formula
+    w = w_from_e(e)
+    h = enthalpy(R["t"], w)
+    h_out = h - R["kw"] / m
+    t_out = R["t"] - R["sensibleKw"] / (m * (1.006 + 1.86 * w))
+    w_out = (h_out - 1.006 * t_out) / (2501 + 1.86 * t_out)
+    slope = (w_out - w) / (t_out - R["t"])
+    f = lambda x: w_from_e(sat_vapor(x)) - w - slope * (x - R["t"])
+    lo, hi = -20.0, t_out  # the apparatus dew point: where the line through inlet and outlet meets saturation
+    for _ in range(60):
+        mid = (lo + hi) / 2
+        if f(lo) * f(mid) <= 0:
+            hi = mid
+        else:
+            lo = mid
+    t_adp = (lo + hi) / 2
+    h_adp = enthalpy(t_adp, w_from_e(sat_vapor(t_adp)))
+    bf = (h_out - h_adp) / (h - h_adp)
+    return -math.log(bf) * m / R["kw"]
+
+
+
+def coil_outlet(t_in, e_in, kw, m3min, rated_kw):
+    """air through the cooling coil of a unit of rated_kw that removes kw at m3min: (t_out, e_out)"""
+    m = 1.2 * m3min / 60  # kg/s
+    w_in = w_from_e(e_in)
+    h_in = enthalpy(t_in, w_in)
+    h_out = h_in - kw / m
+    bf = math.exp(-COIL_A0_PER_KW * rated_kw / m)
+    h_adp = h_in - kw / m / (1 - bf)
+    w_adp = w_from_e(sat_vapor(_t_sat_from_h(h_adp)))
+    if w_in <= w_adp:  # dry coil: all sensible
+        return (h_out - 2501 * w_in) / (1.006 + 1.86 * w_in), e_in
+    shr = min(1.0, (enthalpy(t_in, w_adp) - h_adp) / (h_in - h_adp))
+    h_tw = h_in - (1 - shr) * (h_in - h_out)
+    w_out = (h_tw - 1.006 * t_in) / (2501 + 1.86 * t_in)
+    return (h_out - 2501 * w_out) / (1.006 + 1.86 * w_out), e_from_w(w_out)
 
 
 def opening_flow(width, height, dt, t_mean):
@@ -239,6 +283,9 @@ def free_indoor_temp(out, profile=NO_PROFILE):
 
 def sat_vapor(t):
     return 6.112 * math.exp(17.62 * t / (243.12 + t))
+
+
+COIL_A0_PER_KW = _a0_per_kw()  # needs sat_vapor (above)
 
 
 def vapor_from_rh(rh, t):
@@ -715,7 +762,7 @@ class Environment:
                     # inverter minimum, high at its maximum, in proportion between [our assumption, agreed 2026-11-05]
                     share = (kw / rated - AC_MIN) / (AC_MAX - AC_MIN)
                     fan = m3 * (4.0 / 6.0 + 2.0 / 6.0 * max(0.0, min(1.0, share)))
-                    t_out, e_out = coil_outlet(e["temperature"], e["vapor"], kw, fan)
+                    t_out, e_out = coil_outlet(e["temperature"], e["vapor"], kw, fan, rated)
                     f = min(1, fan * dt / n / (p["areaM2"] * PHYS["ceilingM"]))  # share of the room's air through the coil
                     w_room = w_from_e(e["vapor"])
                     e["temperature"] += (t_out - e["temperature"]) * f
