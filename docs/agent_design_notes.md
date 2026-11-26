@@ -557,6 +557,19 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
   (KJACR 19(5); Uiwang, January 2005, one night, bedroom heated to 24 C, outdoor -2 to 2 C; balcony air about 8-10 C
   read from fig. 6, MRT 12.1 C) about 0.35-0.5; Shanghai 0.46. One flat each, so a loose check. Room temperature
   differences within a room are not modelled (one air node; agreed 2026-11-26 not to add them).
+- Weather: day-to-day temperature (agreed 2026-11-26). The generator gave the monthly normals shaped by the day's weather
+  only: 2026 had no day at 33 C or above, no tropical night, January lowest -6.2 C, SD of January daily means 0.38 K.
+  Seoul 1991-2020 normals (KMA 2021): 8.7 heat-wave days, 12.5 tropical nights. Now weather.TEMP_ANOM: AR(1) 0.74 from
+  day to day (Kim, Do & Kim 2013), SD 4.5 K late January to 2.8 K late July, set over 30 drawn years (9.7 heat-wave days,
+  10.0 tropical nights, January below -10 C in 70% of years); draw 205 chosen for 2026 (9 / 12 days, January low
+  -13.1 C, monthly mean max / min 1.2 K RMS from the normals). The browser parity test now skips temperature. Re-run
+  [ours, 1 year each, before -> after; 063 / office / remote / retiree]: Jan outdoor median -1.1 -> -2.9 C; Jan living
+  room RH 14.5 -> 12.8 / 17.3 -> 17.5 / 17.0 -> 16.2 / 15.9 -> 15.7%; heating kWh/m2 23.0 -> 25.0 / 14.9 -> 16.2 / 15.3
+  -> 16.9 / 20.6 -> 21.5; cooling hours office 1,357 -> 1,571, retiree 256 -> 366; living RH while cooling office 62.3
+  -> 63.8, retiree 54.9 -> 62.0%; summer rooms over outdoors +2.0 -> +1.8 / +2.5 -> +2.1 / +5.2 -> +4.9 / +3.3 -> +2.9 K;
+  on the 10 days at 33 C living room minus outdoor mean -0.8 / -3.8 / +0.5 / -3.4 K (Ham, Lee & Kim 2024, heat-wave days,
+  post-2010 flats -0.6 to -1.1 K, AC use not stated); January balcony position 0.47 / - / 0.43 / 0.42 (unchanged), its
+  lowest -2.2 / - / -2.1 / -1.4 C. Order checks all 0.
 - Neighbours above and below, all year from measurement (agreed 2026-11-26). Before (2026-11-05): 22 C [our assumption]
   while the outdoor daily mean was below 15 C, otherwise no heat flow at all (the old "same temperature as this flat"
   assumption left over, never decided for summer), so a closed flat kept all its summer heat. Now Yun et al. 2020 table 3

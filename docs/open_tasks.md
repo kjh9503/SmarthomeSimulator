@@ -64,8 +64,8 @@ Rewritten 2026-11-21: finished items removed (their record is in docs/agent_desi
    of a closed flat without AC found. Ham, Lee & Kim 2024 (Sustainability 16(22) 9831; Chuncheon, Gwangju, heatwave
    days 2022, windows not controlled): non-AC pre-2000 flats 29.5-32.3 C, mean 30.3, outdoor daily mean 28.0-29.3 ->
    about +1-2 K; ours on our 10 hottest days (outdoor mean 26.5): 063 (windows open 55%, no AC) +1.4 K, remote (closed)
-   +4.2 K. Found on the way: our 2026 weather has no day at 33 C or above (hottest 31.9 C, daily mean 26.9 C) -> to check
-   against Seoul's heatwave-day count.
+   +4.2 K. Found on the way: our 2026 weather had no day at 33 C or above -> fixed 2026-11-26 (day-to-day anomaly; design
+   notes "Weather: day-to-day temperature"); remote on the 10 days at 33 C: +0.5 K over the outdoor mean.
 6b. (checked 2026-11-26, not an error) Open-window cooling "faster than measured" compared a 14 m2 living room with a
    window half open (2.8 m2, about 48 /h, at the 0.8 a minute cap) with Fitzner & Finke 2012's 180 m3 office (6.3 m2
    open, 12.5 /h). Our physics on their room (80 m2, six 0.71 x 1.48 m sashes, 21 C flat, 6.9 C outdoors): CO2
