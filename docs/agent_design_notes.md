@@ -562,6 +562,20 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
   21.7 C (was 0.4-0.7 K warmer; measured 20.0). Heating energy up: 19.3 -> 23.3, 11.0 -> 14.8, 10.1 -> 15.3, 14.3 -> 20.1
   kWh/m2 (063 / office / remote / retiree). Cooling hours down: office 2,687 -> 1,468, retiree 556 -> 259. Order checks
   all 0. Still above the measured summer: remote +5.2 K vs +3.0 (sun, envelope: see the closed-flat variants).
+- Cooling coil from the catalogue (agreed 2026-11-26: the problem is "the coil does not match real units", not "too dry";
+  measured RH while cooling disagrees: Yun et al. 2020 68.3% (8 Seoul flats, AC-on hours, range 66.5-69.4), Ryu & Kim
+  2021 45-46% (Daegu high-rise with ERV, mean over the monitoring period)). Before: an ideal coil (sensible to the dew
+  point, then saturated). Now the apparatus dew point / bypass factor method of EnergyPlus's DX coil (eqs. 460-466),
+  A0 from the Samsung WindFree 1Way cassette AC026RN1DKG (2.6 kW, 1.9 sensible, 7.3 m3/min at 27 / 19 C wet bulb):
+  0.0803 kg/s per kW, in proportion to capacity [assume]. Check: the same A0 gives AC035RN1DKG SHR 0.714 = catalogue
+  2.5 / 3.5. Our 2.3 kW unit at rated: 0.92 kg/h water, SHR 0.72 (was 0.66 kg/h, 0.80). Check [ours, 1 year each,
+  before -> after]: RH while cooling office living room 48.3 -> 47.8%, room1 56.4 -> 56.8%, retiree living room 45.6 ->
+  43.1%; water a running hour office 0.61 -> 0.71 (3.2 kW), retiree 2.14 -> 2.22 (7.2 kW); outlet at or below 9 C 17.2
+  -> 14.3% (office), 12.2 -> 10.3% (retiree) of coil steps; order checks all 0. So the coil was not what set the room
+  humidity: the room dew point while cooling stays 4-8 K below outdoors because little outdoor air comes in (0.18 /h
+  frames, ventilation unit 0.5 /h with 27% recovery) [interpretation]. Still open: output above rated at the high fan
+  (6 m3/min for up to 3.7 kW) gives outlets of 5-9 C, no data on airflow or outlet at maximum; the unit stops at the
+  setpoint (real inverters keep running at low output; no data found yet).
 - Python port equals the JS simulator: outdoor values within 1e-12, physics within 1e-15 (`tests/test_port.py`).
 - 2026 weather vs climate normals [ours]: monthly max/min temperature within 0.9 C, PM within 1.2 ug/m3, 86 wet days
   vs 79.3, 1,509 mm vs 1,418 mm.
