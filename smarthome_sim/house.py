@@ -553,6 +553,7 @@ class Environment:
         self.racks = []  # laundry drying indoors: dict(room, start, gMin, leftG) (agent, after a wash not dried in the dryer)
         self.real_balcony = "balcony" in house.room_ids  # only plans with a real balcony have one (House.room_ids)
         self.neighbours = Neighbours(0)  # the flats above and below; the Simulator gives it its seed
+        self.laundry_open = False  # the laundry room's outer window (no sensor; the person opens it, agent.laundry_window_visit)
         self.ac_hold = {}  # room -> compressor state of its air conditioner below the setpoint (dict(on, offAt))
         for r in house.room_ids:
             self.rooms[r] = dict(temperature=22, mass=22, humidity=45, pm25=15, co2=600, illuminance=0, noise=30)
@@ -611,8 +612,8 @@ class Environment:
         swap air quickly, so the minute is split into WINDOW_SUBSTEPS steps (2026-11-25: one step a minute gave 9.3 C
         after 10 min of airing in the office living room, 6 steps 11.0 C, 600 steps 11.3 C)"""
         H = self.house
-        n = WINDOW_SUBSTEPS if any(d.type == "window_contact" and d.state.get("contactSensor.contact") == "open"
-                                   for d in H.devices.values()) else 1
+        n = WINDOW_SUBSTEPS if self.laundry_open or any(d.type == "window_contact" and d.state.get("contactSensor.contact") == "open"
+                                                         for d in H.devices.values()) else 1
         for i in range(n):
             self._step(ms, dt / n)
 
@@ -641,7 +642,7 @@ class Environment:
 
             occ = is_("occupancy_sensor", "presenceSensor", "presence", "present")
             light_on = is_("light", "switch", "switch", "on")
-            win_open = is_("window_contact", "contactSensor", "contact", "open")
+            win_open = is_("window_contact", "contactSensor", "contact", "open") or (r == "laundry" and self.laundry_open)
             is_open = win_open
             # what the room's windows and frames face: outdoors, or the balcony for the living room of a flat with one
             side = dict(temperature=bal0["temperature"], vapor=bal0["vapor"], pm25=bal0["pm25"], co2=bal0["co2"]) if RB and r == "living_room" else \

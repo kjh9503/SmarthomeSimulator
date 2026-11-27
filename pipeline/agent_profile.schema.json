@@ -636,6 +636,23 @@
               "type": "number"
             }
           }
+        },
+        "laundryOpenAboveC": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "min",
+            "max"
+          ],
+          "description": "Optional (2026-11-27): laundry room temperature (C) at which the person opens the laundry room's outer window on going in; without it the engine uses openAboveC.",
+          "properties": {
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            }
+          }
         }
       }
     },

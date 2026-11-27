@@ -192,7 +192,9 @@ Every room of our flats has an air conditioner. Write `coolingRanges` and `windo
 `pipeline/sample_cooling_person.py` and `pipeline/sample_window_person.py` draw the person's habits, and the engine then
 cools the room the person is in once it reaches the switch-on temperature, opens windows of hot rooms when outdoor air is
 cooler, airs the flat 0-2 times a day and closes windows for rain, cooling, leaving and (unless the person sleeps with them
-open) bedtime. Do not write rules that only do this; rules for particular situations (e.g. cooling before arriving home)
+open) bedtime. The laundry room is the unheated rear utility balcony with an outer window: on going in, the person opens
+that window when the room is above `laundryOpenAboveC` (optional; else `openAboveC`) and closes it for rain or when it has
+cooled; write the range from the persona (no data). Do not write rules that only do this; rules for particular situations (e.g. cooling before arriving home)
 stay. Figures: Seoul flats switched cooling on at 29.8 C and off at 27.3 C on average; rooms with cooling on were at 25.2 C;
 airing once a day 49.7%, twice 30.7%, under 20 min 43.0%, 20-40 min 39.6%; in winter mostly under 10 min. Bedtime and
 leaving habits, opening for heat and sleeping with the window open have no data: choose from the persona and say why in
@@ -213,7 +215,8 @@ leaving habits, opening for heat and sleeping with the window open have no data:
   "sleepOpen": { "yes": 1, "no": 1 },
   "airingPerDay": { "0": 20, "1": 50, "2": 30 },
   "airingMinutes": { "min": 10, "max": 40 },
-  "winterAiringMinutes": { "min": 5, "max": 10 }
+  "winterAiringMinutes": { "min": 5, "max": 10 },
+  "laundryOpenAboveC": { "min": 26, "max": 30 }
 }
 ```
 

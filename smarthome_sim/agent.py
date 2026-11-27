@@ -91,7 +91,14 @@ DRY_DEFAULT = dict(airMinC=10, airMaxC=28)  # mild weather for opening windows t
 LAUNDRY_WAIT_MIN = (5, 40)  # the laundry is dealt with this long after the wash ends, once home and awake [assume]
 COOL_ROOM = dict(kitchen="living_room", dining_room="living_room", hallway="living_room", entryway="living_room")  # no unit there: the living room's
 WINDOW_CLOSE_BELOW_K = 4.0
+LAUNDRY_OPEN_DEFAULT_C = 28.0  # a profile with no window habits [assume]
 WINDOW_MIN_OPEN_MIN = 60  # a window opened for heat stays open at least this long (no data; avoids opening and closing every few minutes)
+# Laundry room window (agreed 2026-11-27, every person): on coming into the laundry room (the unheated rear utility balcony)
+# the person opens its outer window when the room is above windowHabits.laundryOpenAboveC (the persona's; without it the
+# persona's openAboveC), and keeps the door to the kitchen shut as always. Closing [our assumption, the user left it open]:
+# as the other windows opened for heat: for rain or snow (while home and awake), and on a later visit after
+# WINDOW_MIN_OPEN_MIN when the room is WINDOW_CLOSE_BELOW_K below the threshold or outdoor air is hotter than the room.
+# Not closed on leaving or at bedtime [assume]. The window has no sensor: no line, only its effect (Environment.laundry_open).
 AIRING_SLOTS = [(9, 11, 55.8), (17, 19, 33.4)]  # local hours and the survey's share for one airing a day
 # ventilation habits (profile ventilationHabits, drawn by pipeline/sample_ventilation_person.py; agreed 2026-11-18): the
 # flat's ventilation unit (house.py PHYS envelope.ventilator) runs always / while someone is home / while the person is
@@ -245,7 +252,9 @@ class AgentRunner:
         self.cool = profile.get("coolingHabits")  # None: cooling only by the profile's rules
         self.win = profile.get("windowHabits")  # None: windows only by the profile's rules
         self.cool_stats = dict(switchedOn=0, setpoint=0, sleepOff=0, leaveOff=0, keptOn=0, unusedOff=0)
-        self.win_stats = dict(hotOpen=0, closedCool=0, closedHotOutside=0, closedRain=0, closedForCooling=0, airings=0, sleepOpen=0, closedAtCheck=0)
+        self.win_stats = dict(hotOpen=0, closedCool=0, closedHotOutside=0, closedRain=0, closedForCooling=0, airings=0, sleepOpen=0, closedAtCheck=0,
+                              laundryOpen=0, laundryClosed=0)
+        self.laundry_opened = 0
         self.airing_plan = {}  # local day -> list of dict(at, until, done)
         self.win_hot, self.win_airing = {}, set()  # windows the habit opened because of heat (id -> opened at) / for airing
         self.vent = profile.get("ventilationHabits")  # None: no ventilation unit running
@@ -619,6 +628,8 @@ class AgentRunner:
             self.sec = sec
             self.sim.clock.set_to(self.minute_ms + self.sec * 1000)
             n += self.phone.move_room(hop, WALK_STEPS)
+            if hop == "laundry" and hop == room:
+                self.laundry_window_visit()
             if door is not None and hop == "living_room" and self.door_to_close:
                 self.door_to_close = False
                 if self.win_is_open(door):
@@ -1307,6 +1318,21 @@ class AgentRunner:
             if back:
                 self.go_to(back)
 
+    def laundry_window_visit(self):
+        W, env = self.win or {}, self.sim.house.env
+        if "laundry" not in env.rooms:
+            return
+        t, out, temp = self.now(), outdoor_at(self.now()), env.rooms["laundry"]["temperature"]
+        th = W.get("laundryOpenAboveC", W.get("openAboveC", LAUNDRY_OPEN_DEFAULT_C))
+        wet = out["weather"] in ("rain", "snow")
+        if not env.laundry_open:
+            if not wet and temp > th:
+                env.laundry_open, self.laundry_opened = True, t
+                self.win_stats["laundryOpen"] += 1
+        elif wet or (t - self.laundry_opened >= WINDOW_MIN_OPEN_MIN * MIN_MS and (temp <= th - WINDOW_CLOSE_BELOW_K or out["temperature"] > temp + 1)):
+            env.laundry_open = False
+            self.win_stats["laundryClosed"] += 1
+
     def window_tick(self, t):
         """awake at home: windows closed for rain; the room's window opened when it is hot inside and cooler outside, closed
         again when cool enough, when outdoor air is hotter or for cooling (only windows the habit opened); airing"""
@@ -1315,6 +1341,9 @@ class AgentRunner:
             return
         out, rooms = outdoor_at(t), self.sim.house.env.rooms
         if out["weather"] in ("rain", "snow"):
+            if self.sim.house.env.laundry_open:
+                self.sim.house.env.laundry_open = False
+                self.win_stats["laundryClosed"] += 1
             wins = sorted((d for d in self.sim.house.devices.values() if d.type == "window_contact"),
                           key=lambda d: d.id != "balcony.window_contact")  # the outer window before the sliding door
             for d in wins:

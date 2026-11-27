@@ -10,7 +10,10 @@ The LLM writes `windowRanges` from the persona (agreed 2026-11-20):
     "sleepOpen": {"yes": 1, "no": 1},              sleeps with it open on warm dry nights
     "airingPerDay": {"0": 20, "1": 50, "2": 30},   airings a day (morning 9-11 and/or evening 17-19)
     "airingMinutes": {"min": 10, "max": 40},        the person's usual airing outside the heating season (whole minutes)
-    "winterAiringMinutes": {"min": 5, "max": 10}    in the heating season
+    "winterAiringMinutes": {"min": 5, "max": 10},   in the heating season
+    "laundryOpenAboveC": {"min": 26, "max": 30}     optional (2026-11-27): laundry room temperature at which the person
+                                                    opens its outer window on going in (0.5 C steps); without it the
+                                                    engine uses openAboveC
   }
 Figures: airing once a day 49.7%, twice 30.7%; under 20 min 43.0%, 20-40 min 39.6% (spring survey, 154 flats in Seoul and
 Gyeonggi, Lee 2010); winter: 75% open 1-2 times a day for under 10 min (20 flats in Cheongju, Cho & Choi 2013). Nothing
@@ -36,9 +39,13 @@ def whole(rnd, r):
 
 def draw(rnd, R):
     lo, hi = R["openAboveC"]["min"], R["openAboveC"]["max"]
-    return dict(summerOpen=pick(rnd, R["summerOpen"]) == "yes", openAboveC=lo + 0.5 * int(rnd.random() * (round((hi - lo) / 0.5) + 1)),
+    h = dict(summerOpen=pick(rnd, R["summerOpen"]) == "yes", openAboveC=lo + 0.5 * int(rnd.random() * (round((hi - lo) / 0.5) + 1)),
                 sleepOpen=pick(rnd, R["sleepOpen"]) == "yes", airingPerDay=int(pick(rnd, R["airingPerDay"])),
                 airingMinutes=whole(rnd, R["airingMinutes"]), winterAiringMinutes=whole(rnd, R["winterAiringMinutes"]))
+    if "laundryOpenAboveC" in R:
+        lo, hi = R["laundryOpenAboveC"]["min"], R["laundryOpenAboveC"]["max"]
+        h["laundryOpenAboveC"] = lo + 0.5 * int(rnd.random() * (round((hi - lo) / 0.5) + 1))
+    return h
 
 
 def main():
