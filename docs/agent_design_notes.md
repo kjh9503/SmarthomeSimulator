@@ -581,6 +581,14 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
   kWh/m2 25.0 -> 27.7 / 16.2 -> 18.1 / 16.9 -> 17.8 / 21.5 -> 23.0. Order checks all 0. Open: our laundry room is a
   sealed, windowless 2.3-3.1 m2 room with one insulated outer wall; in Korean flats it is often the rear balcony with a
   window (not checked) -> the 41-48 C maxima with the dryer.
+  - Laundry room as the unheated rear utility balcony (agreed 2026-11-27): outer window on the kitchen's side, glass
+    sqrt(area) x 1.5 m [assume], no slab exchange with the neighbours, then (same day) the front balcony's glass U 2.4 and
+    frames 1.0 /h [same assumptions], no ventilation unit air. The window has no sensor and stays closed. Check [ours, 1
+    year, closed windowless room -> window -> leakier, 063 / office / remote / retiree]: January median 18.1 -> 16.4 ->
+    10.6 / 18.4 -> 16.1 -> 10.6 / 18.1 -> 16.2 -> 10.3 / 18.7 -> 17.0 -> 10.5 C (position between kitchen and outdoors at
+    21-10 h 0.55-0.59; front balcony 0.42-0.47); July median 27.9 -> 37.3 -> 33.9 / - -> 36.9 -> 33.3 / 28.9 -> 41.0 -> 36.0
+    / - -> 38.7 -> 34.7 C, 03-06 h 31-34 C; year max 43.9 -> 53.2 -> 53.0 / 43.7 -> 54.8 -> 47.5 / 48.4 -> 60.3 -> 52.4 /
+    41.4 -> 54.6 -> 50.5 C (the dryer's 600 W). Order checks all 0. Open: summer still hot with the window always shut.
 - Neighbours above and below, all year from measurement (agreed 2026-11-26). Before (2026-11-05): 22 C [our assumption]
   while the outdoor daily mean was below 15 C, otherwise no heat flow at all (the old "same temperature as this flat"
   assumption left over, never decided for summer), so a closed flat kept all its summer heat. Now Yun et al. 2020 table 3
