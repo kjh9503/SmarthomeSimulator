@@ -589,6 +589,14 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
     21-10 h 0.55-0.59; front balcony 0.42-0.47); July median 27.9 -> 37.3 -> 33.9 / - -> 36.9 -> 33.3 / 28.9 -> 41.0 -> 36.0
     / - -> 38.7 -> 34.7 C, 03-06 h 31-34 C; year max 43.9 -> 53.2 -> 53.0 / 43.7 -> 54.8 -> 47.5 / 48.4 -> 60.3 -> 52.4 /
     41.4 -> 54.6 -> 50.5 C (the dryer's 600 W). Order checks all 0. Open: summer still hot with the window always shut.
+  - Laundry window opened by the person (agreed 2026-11-27, everyone): on going into the laundry room, above
+    windowHabits.laundryOpenAboveC (optional range in windowRanges; else the persona's openAboveC), the outer window is
+    opened, the kitchen door stays shut. Closed [assume] for rain or snow while home and awake, or on a later visit after
+    60 min when 4 K below the threshold or outdoor air is hotter. No sensor, no line. Check [ours, 1 year, before ->
+    after, 063 / office / remote / retiree]: opened 25 / 34 / 37 / 29 times a year; July median 33.9 -> 32.6 / 33.3 ->
+    30.9 / 36.0 -> 32.0 / 34.7 -> 30.8 C, year max 53.0 -> 45.5 / 47.5 -> 43.1 / 52.4 -> 44.6 / 50.5 -> 43.8 C; January
+    unchanged (10.3-10.6 C). Order checks all 0. Why so few: the person goes into the laundry room only to wash and dry
+    (and rain shuts the window until the next visit).
 - Neighbours above and below, all year from measurement (agreed 2026-11-26). Before (2026-11-05): 22 C [our assumption]
   while the outdoor daily mean was below 15 C, otherwise no heat flow at all (the old "same temperature as this flat"
   assumption left over, never decided for summer), so a closed flat kept all its summer heat. Now Yun et al. 2020 table 3
