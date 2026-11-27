@@ -651,6 +651,9 @@ class Environment:
             if r == "balcony":  # outer glass instead of a window; leakier frames
                 B = E["balcony"]
                 E = dict(E, uWindow=B["uGlass"], shgc=B["shgc"], ach=B["ach"], windowHeightM=dict(E["windowHeightM"], large=B["glassHeightM"]))
+            elif r == "laundry":  # the rear utility balcony (2026-11-27): the front balcony's glass and frames [same assumptions]
+                B = E["balcony"]
+                E = dict(E, uWindow=B["uGlass"], shgc=B["shgc"], ach=B["ach"])
             af = p["areaM2"]
             vol = af * PHYS["ceilingM"]
             k_open = 0.0
@@ -669,7 +672,7 @@ class Environment:
             V = E["ventilator"]
             k_vent = V["ach"] / 60 if self.ventilator else 0.0  # outdoor air brought in by the ventilation unit, per minute
             rec = V["recoveryHeating"] if out["temperature"] < e["temperature"] else V["recoveryCooling"]
-            if r == "balcony":
+            if r in ("balcony", "laundry"):
                 k_vent = 0.0  # the ventilation unit serves the heated rooms
             k_side = k_open + k_inf  # air through the windows and frames (from outdoors, or from the balcony), per minute
             k_out = k_vent * (1 - rec)  # outdoor air from the ventilation unit (heat), per minute
