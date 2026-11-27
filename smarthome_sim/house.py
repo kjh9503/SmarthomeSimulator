@@ -751,8 +751,13 @@ class Environment:
             ta_mean = t_inf + (ta - t_inf) * ((1 - decay) / x if x > 1e-9 else 1.0)  # mean air temperature over the step
             ts = (h_is * ta_mean + b_s) / d_s
             # the downward share of the floor heating leaves to the flat below; the floor and ceiling slabs exchange heat with
-            # the flats below and above (NEIGHBOUR), all year
-            phi_nb = E["uPartyFloor"] * af * ((nb_above - tm) + (nb_below - tm)) if r != "balcony" else 0.0
+            # the flats below and above (NEIGHBOUR), all year; not the balcony and the laundry room, whose slabs face the
+            # neighbours' own (unheated) balcony and laundry room
+            # Laundry room (agreed 2026-11-27): the rear, unheated utility balcony with an outer window, as in Korean flats
+            # [assume, not checked against plans]: window on the kitchen's side, glass sqrt(area) x 1.5 m (room_profiles.json
+            # glassM2), U and SHGC of the room windows; before: windowless, one insulated outer wall, slabs to heated
+            # neighbours (with the 600 W dryer up to 41-48 C)
+            phi_nb = E["uPartyFloor"] * af * ((nb_above - tm) + (nb_below - tm)) if r not in ("balcony", "laundry") else 0.0
             e["mass"] = tm + (h_ms * (ts - tm) + h_em * (t_side - tm) + phi_m + phi_nb) * sec / c_m
             if e.get("vapor") is None:
                 e["vapor"] = vapor_from_rh(e["humidity"], e["temperature"])

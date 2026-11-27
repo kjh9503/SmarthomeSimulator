@@ -43,9 +43,10 @@
    },
    "laundry": {
     "areaM2": 2.6,
-    "window": null,
-    "windowSize": "none",
-    "exteriorWalls": 1
+    "window": "N",
+    "windowSize": "medium",
+    "exteriorWalls": 1,
+    "glassM2": 2.42
    },
    "closet": {
     "areaM2": 2.6,
@@ -105,9 +106,10 @@
    },
    "laundry": {
     "areaM2": 2.4,
-    "window": null,
-    "windowSize": "none",
-    "exteriorWalls": 1
+    "window": "W",
+    "windowSize": "medium",
+    "exteriorWalls": 1,
+    "glassM2": 2.32
    },
    "closet": {
     "areaM2": 2.4,
@@ -167,9 +169,10 @@
    },
    "laundry": {
     "areaM2": 2.6,
-    "window": null,
-    "windowSize": "none",
-    "exteriorWalls": 1
+    "window": "W",
+    "windowSize": "medium",
+    "exteriorWalls": 1,
+    "glassM2": 2.42
    },
    "closet": {
     "areaM2": 2.6,
@@ -235,9 +238,10 @@
    },
    "laundry": {
     "areaM2": 2.3,
-    "window": null,
-    "windowSize": "none",
-    "exteriorWalls": 1
+    "window": "N",
+    "windowSize": "medium",
+    "exteriorWalls": 1,
+    "glassM2": 2.27
    },
    "closet": {
     "areaM2": 2.3,
@@ -322,9 +326,10 @@
    },
    "laundry": {
     "areaM2": 2.3,
-    "window": null,
-    "windowSize": "none",
-    "exteriorWalls": 1
+    "window": "NW",
+    "windowSize": "medium",
+    "exteriorWalls": 1,
+    "glassM2": 2.27
    },
    "closet": {
     "areaM2": 2.3,
@@ -409,9 +414,10 @@
    },
    "laundry": {
     "areaM2": 1.9,
-    "window": null,
-    "windowSize": "none",
-    "exteriorWalls": 1
+    "window": "E",
+    "windowSize": "medium",
+    "exteriorWalls": 1,
+    "glassM2": 2.07
    },
    "closet": {
     "areaM2": 1.9,
@@ -495,9 +501,10 @@
    },
    "laundry": {
     "areaM2": 3.9,
-    "window": null,
-    "windowSize": "none",
-    "exteriorWalls": 1
+    "window": "N",
+    "windowSize": "medium",
+    "exteriorWalls": 1,
+    "glassM2": 2.96
    },
    "closet": {
     "areaM2": 3.9,
@@ -588,9 +595,10 @@
    },
    "laundry": {
     "areaM2": 3.1,
-    "window": null,
-    "windowSize": "none",
-    "exteriorWalls": 1
+    "window": "NW",
+    "windowSize": "medium",
+    "exteriorWalls": 1,
+    "glassM2": 2.64
    },
    "closet": {
     "areaM2": 3.1,
@@ -681,9 +689,10 @@
    },
    "laundry": {
     "areaM2": 3.9,
-    "window": null,
-    "windowSize": "none",
-    "exteriorWalls": 1
+    "window": "W",
+    "windowSize": "medium",
+    "exteriorWalls": 1,
+    "glassM2": 2.96
    },
    "closet": {
     "areaM2": 3.9,
