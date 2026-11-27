@@ -570,6 +570,17 @@ Log size [ours, background lines fixed at 500 a day]: phone log 359,464 lines a 
   on the 10 days at 33 C living room minus outdoor mean -0.8 / -3.8 / +0.5 / -3.4 K (Ham, Lee & Kim 2024, heat-wave days,
   post-2010 flats -0.6 to -1.1 K, AC use not stated); January balcony position 0.47 / - / 0.43 / 0.42 (unchanged), its
   lowest -2.2 / - / -2.1 / -1.4 C. Order checks all 0.
+- Laundry room, dryer, closed doors (2026-11-27). The laundry room's jumps (+4 K in 10 min) all came with the dryer
+  running (remote, January replay: 13 of 13). Dryer heat 300 -> 600 W (Korea Consumer Agency 2019: heat-pump 9-10 kg,
+  full load 1.576-2.442 kWh in about 3-3.5 h, 0.53-0.69 kW; a heat-pump dryer vents nothing), dryer moisture 0.035 hPa/min
+  -> 0 (condensed and drained). Closed doors 0.1 m3/h [assume] -> buoyancy through the gaps, ELA 97 cm2 (BSC CP-0909
+  table A-5 median), 3-15 m3/h at 0.5-10 K. Check [ours, 1 year, before -> after, 063 / office / remote / retiree]:
+  winter laundry median 14.9 -> 18.1 / 15.8 -> 18.4 / 15.7 -> 18.1 / 16.3 -> 18.7 C, winter max 26.9 -> 35.1 / 27.1 ->
+  35.9 / 28.5 -> 37.4 / 25.6 -> 33.3 C, year max 39.2 -> 43.9 / 38.0 -> 43.7 / 41.4 -> 48.4 / 37.7 -> 41.4 C; bathroom
+  at >= 99% RH 1.9 -> 1.3% / 2.3 -> 1.2% / 2.1 -> 1.4% / 1.8 -> 1.3% of the year, longest spell 310-440 min; heating
+  kWh/m2 25.0 -> 27.7 / 16.2 -> 18.1 / 16.9 -> 17.8 / 21.5 -> 23.0. Order checks all 0. Open: our laundry room is a
+  sealed, windowless 2.3-3.1 m2 room with one insulated outer wall; in Korean flats it is often the rear balcony with a
+  window (not checked) -> the 41-48 C maxima with the dryer.
 - Neighbours above and below, all year from measurement (agreed 2026-11-26). Before (2026-11-05): 22 C [our assumption]
   while the outdoor daily mean was below 15 C, otherwise no heat flow at all (the old "same temperature as this flat"
   assumption left over, never decided for summer), so a closed flat kept all its summer heat. Now Yun et al. 2020 table 3
