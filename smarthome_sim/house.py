@@ -61,8 +61,9 @@ PHYS = dict(
     # a person 52 g/h (family of 4: 0.44 pint/h, Minnesota 1988 table; 1.25 L a day, Quirouette, NRC Canada), a shower
     # 0.24 kg per 5 min (same table), indoor laundry drying 2.2-2.9 kg a load (same table) released over rackHours [assume]
     # or more slowly when the room air is saturated.
-    # dryer / washer / humidifierMax stay hPa a minute for a 10 m2 room (older values).
-    moisture=dict(personGh=52, showerGMin=48, rackKg=(2.2, 2.9), rackHours=(8, 12), dryer=0.035, washer=0.007, humidifierMax=0.04),
+    # dryer / washer / humidifierMax stay hPa a minute for a 10 m2 room (older values). Dryer 0 since 2026-11-27: a heat-pump
+    # dryer condenses the water inside and drains it (was 0.035, no source).
+    moisture=dict(personGh=52, showerGMin=48, rackKg=(2.2, 2.9), rackHours=(8, 12), dryer=0.0, washer=0.007, humidifierMax=0.04),
     report=dict(temperature=dict(th=0.5, dec=1), humidity=dict(th=2, dec=0), illuminance=dict(th=30, rel=0.1, dec=0),
                 pm25=dict(th=3, dec=0), co2=dict(th=50, dec=0), noise=dict(th=3, dec=0)),
     jitter=dict(temperature=0.05, humidity=0.3, illuminance=0.02, pm25=0.5, co2=4, noise=0.8),
@@ -80,7 +81,10 @@ PHYS = dict(
     # Korean flats) / 20 (Persily's rule; Sherman's N ~ 20) = 0.18 per hour. Our own assumptions: window area 40 / 25 / 15 %
     # of the floor (large / medium / small), each exterior wall sqrt(floor area) long, SHGC 0.5, daylight 110 lux per W/m2 (not used for heat since 2026-11-20: phi_sol),
     # curtain passes the same share of solar heat as of light, internal gains (W): person 65 (Kim & Byun 2008 sensible),
-    # ceiling light 10 W/m2 (ibid., bedroom), TV 100, oven 2000, dryer 300, washer 150, dishwasher 300. Stove: see stove=.
+    # ceiling light 10 W/m2 (ibid., bedroom), TV 100, oven 2000, washer 150, dishwasher 300. Stove: see stove=. Dryer 600
+    # (2026-11-27; was 300 [assume]): a heat-pump dryer vents nothing, so its electricity ends up as room heat; Korea
+    # Consumer Agency 2019, seven 9-10 kg heat-pump dryers, standard course full load 1.576-2.442 kWh in 2 h 59 min - 3 h
+    # 33 min -> 0.53-0.69 kW, middle taken.
     # Neighbours (2026-11-05): the flat is a middle floor; its floor and ceiling slabs (each the room's floor area) pass heat to
     # the flats below and above at U 0.810 W/m2K (design standard, floor between storeys, notice 2025-738), into the mass node;
     # side neighbours are left out (about 1% of the heat, Lee, Koo & Hong 2016). Their temperature: NEIGHBOUR (measured, all year;
@@ -97,7 +101,7 @@ PHYS = dict(
                   # (Jang et al. 2007: wood 52.0 up, 10.8 down, mean surface 26.8 C). Downward heat goes to the flat below.
                   floor=dict(supplyC=40.0, bandK=0.5, cPerM2=80000, hUp=11.1, kPipe=4.72, downShare=10.8 / 52.0),
                   uPartyFloor=0.810,
-                  gains=dict(person=65, lightPerM2=10, tv=100, oven=2000, dryer=300, washer=150, dishwasher=300),
+                  gains=dict(person=65, lightPerM2=10, tv=100, oven=2000, dryer=600, washer=150, dishwasher=300),
                   # stove (2026-11-21): one large burner at full flame while the stove is on [assume], 4.07 kW of gas
                   # (Rinnai RBR-S3000, city gas; seller's table); of a gas range's energy 30% heats the room air and 20%
                   # goes to moisture (Building America benchmark): 1.22 kW sensible, 0.81 kW latent (about 1.2 kg water/h)
@@ -138,7 +142,12 @@ PHYS = dict(
     # doorway (Riffat 1989, ASHRAE Trans. 95(2); a doorway between floors), dT held within the measured 0.5-13 K (below 0.5 K
     # the exchange does not fall to zero: Lidwell 1977). Closed door: 0.1 m3/h (NIST 2017, closed interior door with undercut,
     # yearly mean 0.12 m3/h). Door 0.9 x 2.1 m; open-plan widths in CONNECTIONS are our own assumption, height = ceiling.
-    door=dict(widthM=0.9, heightM=2.1, closedM3h=0.1, dTmin=0.5, dTmax=13),
+    # closed door (2026-11-27): air through its gaps by buoyancy, each way (ELA / 2) x sqrt(g H dT / T) (neutral plane at
+    # mid height, half the leakage area above it); ELA 97 cm2 = the median of six closed bedroom doors to the living space
+    # in a US house (Building Science Corp. CP-0909, ASHRAE, table A-5: C 8.6-25.6 L/s/Pa^n, n about 0.5; ELA at 4 Pa,
+    # Cd 1) [no Korean measurement found]. Before: 0.1 m3/h, our assumption (about 30-60 times less at 1-5 K).
+    # closedM3h stays for the closed living room window onto the balcony.
+    door=dict(widthM=0.9, heightM=2.1, closedM3h=0.1, closedElaM2=0.0097, dTmin=0.5, dTmax=13),
     curtain=dict(closed=.15, partially_open=.6, opening=.6, closing=.6, open=1, unknown=.6),
 )
 SENSOR_ATTRS = dict(
@@ -269,6 +278,12 @@ def opening_flow(width, height, dt, t_mean):
     tk = t_mean + 273.15
     cd = 0.0835 * (dt / tk) ** -0.313
     return cd / 3 * width * height * math.sqrt(9.81 * height * dt / tk) * 60
+
+
+def closed_door_flow(dt, t_mean):
+    """m3 per minute one way through a closed door's gaps (PHYS door closedElaM2)"""
+    D = PHYS["door"]
+    return D["closedElaM2"] / 2 * math.sqrt(9.81 * D["heightM"] * abs(dt) / (t_mean + 273.15)) * 60
 
 
 def round_to(v, dec):
@@ -565,7 +580,7 @@ class Environment:
                 D = PHYS["door"]
                 q = opening_flow(D["widthM"], D["heightM"], ea["temperature"] - eb["temperature"], (ea["temperature"] + eb["temperature"]) / 2)
             else:
-                q = PHYS["door"]["closedM3h"] / 60
+                q = closed_door_flow(ea["temperature"] - eb["temperature"], (ea["temperature"] + eb["temperature"]) / 2)
             self._swap(a, b, q, dt)
         if self.real_balcony:
             # living room and balcony through the living room window (agreed 2026-11-23: one sliding glass door that is
